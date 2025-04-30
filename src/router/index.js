@@ -15,11 +15,14 @@ const DistrictView = () => import('@/views/address/DistrictView.vue');
 const CommuneView = () => import('@/views/address/CommuneView.vue');
 const VillageVue = () => import('@/views/address/VillageView.vue');
 const ProductColorView = () => import('@/views/products/ProductColorView.vue');
+const ProductSizeView = () => import('@/views/products/ProductSizeView.vue');
 const LocationView = () => import('@/views/locations/LocationView.vue');
 const LocationPhotoView = () => import('@/views/locations/LocationPhotoView.vue');
 const ProfileView = () => import('@/views/profile/ProfileView.vue');
 const ProductBrandView = () => import('@/views/products/ProductBrandView.vue');
 const ProductCategoryView = () => import('@/views/products/ProductCategoryView.vue');
+const ProductView = () => import('@/views/products/ProductView.vue');
+const ProductVariantView = () => import('@/views/products/ProductVariantView.vue');
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -98,8 +101,26 @@ const router = createRouter({
             }
         }, {
             path: '/color',
-            name: 'color',
+            name: 'product color',
             component: ProductColorView,
+            meta: {
+                title: 'Admin Adventure . Dashboard',
+                layout: 'board',
+                auth: true
+            }
+        },  {
+            path: '/product/variant',
+            name: 'product variant',
+            component: ProductVariantView,
+            meta: {
+                title: 'Admin Adventure . Dashboard',
+                layout: 'board',
+                auth: true
+            }
+        },  {
+            path: '/product/size',
+            name: 'product size',
+            component: ProductSizeView,
             meta: {
                 title: 'Admin Adventure . Dashboard',
                 layout: 'board',
@@ -173,6 +194,15 @@ const router = createRouter({
             path: '/product/category',
             name: 'product category',
             component: ProductCategoryView,
+            meta: {
+                title: 'Admin Adventure . Dashboard',
+                layout: 'board',
+                auth: true
+            }
+        }, {
+            path: '/product',
+            name: 'product',
+            component: ProductView,
             meta: {
                 title: 'Admin Adventure . Dashboard',
                 layout: 'board',

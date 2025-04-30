@@ -115,11 +115,14 @@
               </RouterLink>
             </div>
             <div class="nav-item-wrapper">
-              <RouterLink to="/location/photo" class="nav-link dropdown-indicator label-1">
+              <RouterLink
+                to="/location/photo"
+                class="nav-link dropdown-indicator label-1"
+              >
                 <div class="d-flex align-items-center">
                   <div class="dropdown-indicator-icon-wrapper"></div>
                   <span class="nav-link-icon">
-                    <span data-feather="navigation"></span>
+                    <span data-feather="image"></span>
                   </span>
                   <span class="nav-link-text">Location Photo</span>
                 </div>
@@ -157,12 +160,24 @@
                   id="nv-product"
                 >
                   <li class="collapsed-nav-item-title d-none">Products</li>
+                  <RouterLink to="/product">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">
+                        <div class="d-flex align-items-center">
+                          <span class="nav-link-icon">
+                            <span data-feather="box"></span>
+                          </span>
+                          <span class="nav-link-text">Product</span>
+                        </div>
+                      </a>
+                    </li>
+                  </RouterLink>
                   <RouterLink to="/product/category">
                     <li class="nav-item">
                       <a class="nav-link" href="#">
                         <div class="d-flex align-items-center">
                           <span class="nav-link-icon">
-                            <span data-feather="folder"></span>
+                            <span data-feather="grid"></span>
                           </span>
                           <span class="nav-link-text">Product Categories</span>
                         </div>
@@ -189,6 +204,30 @@
                             <span data-feather="droplet"></span>
                           </span>
                           <span class="nav-link-text">Product Colors</span>
+                        </div>
+                      </a>
+                    </li>
+                  </RouterLink>
+                  <RouterLink to="/product/size">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">
+                        <div class="d-flex align-items-center">
+                          <span class="nav-link-icon">
+                            <span data-feather="maximize-2"></span>
+                          </span>
+                          <span class="nav-link-text">Product Sizes</span>
+                        </div>
+                      </a>
+                    </li>
+                  </RouterLink>
+                  <RouterLink to="/product/variant">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">
+                        <div class="d-flex align-items-center">
+                          <span class="nav-link-icon">
+                            <span data-feather="layers"></span>
+                          </span>
+                          <span class="nav-link-text">Product Variants</span>
                         </div>
                       </a>
                     </li>
