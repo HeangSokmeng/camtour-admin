@@ -8,26 +8,78 @@
     <div id="products">
       <div class="mb-4">
         <div class="row g-3 justify-content-between">
-          <div class="col-auto">
+          <div class="col-auto justify-content-between row g-3">
             <div class="search-box">
               <input
                 v-model="searchQuery"
                 class="form-control search-input search"
                 type="search"
                 placeholder="Search products"
+                @input="handleSearchInput"
               />
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedBrand"
+                class="form-select"
+                aria-label="Filter Brand"
+                @change="handleSearch"
+              >
+                <option value="">Filter Brand</option>
+                <option
+                  v-for="brand in brands"
+                  :key="brand.id"
+                  :value="brand.id"
+                >
+                  {{ brand.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedCategory"
+                class="form-select"
+                aria-label="Filter Category"
+                @change="handleSearch"
+              >
+                <option value="">Filter Category</option>
+                <option
+                  v-for="category in productCategories"
+                  :key="category.id"
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                class="form-select"
+                aria-label="Items per page"
+                v-model="perPage"
+                @change="handleSearch"
+              >
+                <option :value="10">10 per page</option>
+                <option :value="15">15 per page</option>
+                <option :value="25">25 per page</option>
+                <option :value="50">50 per page</option>
+              </select>
             </div>
           </div>
           <div class="col-auto">
-            <button class="btn btn-primary" @click="openModal">
+            <button class="btn btn-primary" @click="openCreateModal">
               <span class="fas fa-plus me-2"></span>Add Product
             </button>
           </div>
         </div>
       </div>
-      <div v-if="state.isLoading" class="text-center">Loading...</div>
-      <div v-else-if="state.error" class="text-center text-danger">
-        {{ state.error }}
+      <div v-if="isLoading" class="text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      <div v-else-if="error" class="text-center text-danger">
+        {{ error }}
       </div>
       <div v-else class="table-responsive">
         <table class="table table-sm fs-9 mb-0">
@@ -35,21 +87,55 @@
             <tr>
               <th class="align-middle ps-0">#</th>
               <th class="align-middle">Thumbnail</th>
-              <th class="align-middle">Name</th>
-              <th class="align-middle">Code</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('name')">
+                  Name
+                  <i
+                    v-if="sortCol === 'name'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('code')">
+                  Code
+                  <i
+                    v-if="sortCol === 'code'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle">Brand</th>
               <th class="align-middle">Category</th>
-              <th class="align-middle">Price</th>
-              <th class="align-middle">Status</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('price')">
+                  Price
+                  <i
+                    v-if="sortCol === 'price'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('status')">
+                  Status
+                  <i
+                    v-if="sortCol === 'status'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle text-end">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredProducts.length === 0">
+            <tr v-if="products.length === 0">
               <td colspan="9" class="text-center">No product found</td>
             </tr>
-            <tr v-else v-for="(product, index) in filteredProducts" :key="product.id">
-              <td class="align-middle ps-0">{{ index + 1 }}</td>
+            <tr v-else v-for="(product, index) in products" :key="product.id">
+              <td class="align-middle ps-0">
+                {{ (paginationData.current_page - 1) * perPage + index + 1 }}
+              </td>
               <td class="align-middle">
                 <img
                   :src="product.thumbnail"
@@ -83,13 +169,27 @@
                 >
                   <span class="fas fa-edit me-1"></span>Edit
                 </button>
-                <button class="btn btn-sm btn-danger" @click="deleteProduct(product.id)">
+                <button 
+                  class="btn btn-sm btn-danger" 
+                  @click="deleteProduct(product.id)"
+                >
                   <span class="fas fa-trash me-1"></span>Delete
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+        
+        <!-- Pagination -->
+        <pagination
+          v-if="!isLoading && products.length > 0"
+          :current-page="paginationData.current_page"
+          :last-page="paginationData.last_page"
+          :first-item="paginationData.first_item"
+          :last-item="paginationData.last_item"
+          :total="paginationData.total"
+          @page-changed="changePage"
+        />
       </div>
     </div>
   </div>
@@ -97,15 +197,15 @@
   <div v-if="showModal" class="modal-overlay">
     <div class="modal-content product-form">
       <h4>{{ isEditMode ? "Edit" : "Create" }} Product</h4>
-      <div v-if="modalMessage" class="alert alert-danger">
-        {{ modalMessage }}
+      <div v-if="modalError" class="alert alert-danger">
+        {{ modalError }}
       </div>
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
         <!-- Basic Information -->
         <div class="col-md-4">
           <label class="form-label" for="productName">Product Name</label>
           <input
-            v-model="newProduct.name"
+            v-model="productForm.name"
             class="form-control"
             id="productName"
             type="text"
@@ -116,7 +216,7 @@
         <div class="col-md-4">
           <label class="form-label" for="productNameKm">Product Name (Khmer)</label>
           <input
-            v-model="newProduct.name_km"
+            v-model="productForm.name_km"
             class="form-control"
             id="productNameKm"
             type="text"
@@ -127,7 +227,7 @@
         <div class="col-md-4">
           <label class="form-label" for="productCode">Product Code</label>
           <input
-            v-model="newProduct.code"
+            v-model="productForm.code"
             class="form-control"
             id="productCode"
             type="text"
@@ -139,7 +239,7 @@
         <!-- Categories and Brand -->
         <div class="col-md-4">
           <label class="form-label" for="brandId">Brand</label>
-          <select v-model="newProduct.brand_id" class="form-select" id="brandId">
+          <select v-model="productForm.brand_id" class="form-select" id="brandId">
             <option value="" disabled>Select a brand</option>
             <option v-for="brand in brands" :key="brand.id" :value="brand.id">
               {{ brand.name }}
@@ -148,7 +248,7 @@
         </div>
         <div class="col-md-4">
           <label class="form-label" for="categoryId">Category</label>
-          <select v-model="newProduct.category_id" class="form-select" id="categoryId">
+          <select v-model="productForm.category_id" class="form-select" id="categoryId">
             <option value="" disabled>Select a category</option>
             <option
               v-for="category in categories"
@@ -162,7 +262,7 @@
         <div class="col-md-4">
           <label class="form-label" for="productCategoryId">Product Category</label>
           <select
-            v-model="newProduct.product_category_id"
+            v-model="productForm.product_category_id"
             class="form-select"
             id="productCategoryId"
           >
@@ -181,7 +281,7 @@
         <div class="col-md-4">
           <label class="form-label" for="price">Price</label>
           <input
-            v-model="newProduct.price"
+            v-model="productForm.price"
             class="form-control"
             id="price"
             type="number"
@@ -192,7 +292,7 @@
         </div>
         <div class="col-md-4">
           <label class="form-label" for="status">Status</label>
-          <select v-model="newProduct.status" class="form-select" id="status" required>
+          <select v-model="productForm.status" class="form-select" id="status" required>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
           </select>
@@ -209,9 +309,9 @@
             @change="handleFileUpload"
             accept="image/*"
           />
-          <div v-if="newProduct.thumbnail" class="mt-2">
+          <div v-if="productForm.thumbnail" class="mt-2">
             <img
-              :src="getImagePreviewUrl(newProduct.thumbnail)"
+              :src="getImagePreviewUrl(productForm.thumbnail)"
               alt="Preview"
               class="thumbnail-preview"
               width="100"
@@ -223,7 +323,7 @@
         <div class="col-md-12">
           <label class="form-label" for="description">Description</label>
           <textarea
-            v-model="newProduct.description"
+            v-model="productForm.description"
             class="form-control"
             id="description"
             rows="4"
@@ -289,32 +389,55 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
+import Pagination from "@/components/layouts/Pagination.vue";
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 // Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
 
-const state = reactive({
-  products: [],
-  isLoading: false,
-  error: null,
-});
+// Router and Store
+const router = useRouter();
+const globalStore = useGlobalStore();
 
 // Data collections
+const products = ref([]);
 const brands = ref([]);
 const categories = ref([]);
 const productCategories = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+
+// Pagination settings
+const perPage = ref(15);
+const sortCol = ref("id");
+const sortDir = ref("desc");
+const paginationData = reactive({
+  has_page: false,
+  on_first_page: true,
+  has_more_pages: false,
+  first_item: 0,
+  last_item: 0,
+  total: 0,
+  current_page: 1,
+  last_page: 1,
+});
+
+// Search and Filter
+const searchQuery = ref("");
+const selectedBrand = ref("");
+const selectedCategory = ref("");
+let searchTimeout = null;
 
 // UI state
-const searchQuery = ref("");
 const showModal = ref(false);
 const isEditMode = ref(false);
 const currentProductId = ref(null);
 const isSubmitting = ref(false);
-const modalMessage = ref("");
+const modalError = ref("");
 const objectUrls = ref([]);
 
 // Confirmation modal state
@@ -326,8 +449,8 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// New product form data
-const newProduct = reactive({
+// Product form data
+const productForm = reactive({
   name: "",
   name_km: "",
   code: "",
@@ -383,70 +506,72 @@ const cleanupObjectURLs = () => {
   objectUrls.value = [];
 };
 
-// Data fetching functions
-const fetchProducts = async () => {
-  state.isLoading = true;
-  state.error = null;
-  try {
-    const res = await axios.get("/api/products");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.products = res.data.data;
-      console.log("Fetched products:", state.products);
-    } else {
-      state.error = res.data.message || "Failed to fetch products";
-    }
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    state.error = "An error occurred while fetching products.";
+// Handle search input with debounce
+const handleSearchInput = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
-  state.isLoading = false;
+
+  searchTimeout = setTimeout(() => {
+    handleSearch();
+  }, 500);
 };
 
-const fetchBrands = async () => {
-  try {
-    const res = await axios.get("/api/brands");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      brands.value = res.data.data;
-      console.log("Fetched brands:", brands.value);
-    } else {
-      console.error("Failed to fetch brands:", res.data);
-      showNotification("error", "Error", "Failed to fetch brands");
-    }
-  } catch (error) {
-    console.error("Error fetching brands:", error);
-    showNotification("error", "Error", "Failed to fetch brands");
-  }
+// Handle search when user submits the search
+const handleSearch = async () => {
+  paginationData.current_page = 1;
+  await getProducts(1);
 };
 
-const fetchCategories = async () => {
-  try {
-    const res = await axios.get("/api/categories");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      categories.value = res.data.data;
-      console.log("Fetched categories:", categories.value);
-    } else {
-      console.error("Failed to fetch categories:", res.data);
-      showNotification("error", "Error", "Failed to fetch categories");
-    }
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    showNotification("error", "Error", "Failed to fetch categories");
+// Toggle sorting
+const toggleSort = async (column) => {
+  if (sortCol.value === column) {
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+  } else {
+    sortCol.value = column;
+    sortDir.value = "asc";
   }
+
+  await getProducts(1);
 };
 
-const fetchProductCategories = async () => {
+// Handle pagination
+const changePage = async (page) => {
+  await getProducts(page);
+};
+
+// Fetch products data
+const getProducts = async (page = 1) => {
+  isLoading.value = true;
+  error.value = null;
+  
   try {
-    const res = await axios.get("/api/product-categories");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      productCategories.value = res.data.data;
-      console.log("Fetched product categories:", productCategories.value);
+    // Build query URL with all filter parameters
+    const url = `/api/products?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&brand_id=${selectedBrand.value}&category_id=${selectedCategory.value}`;
+    
+    console.log("API URL:", url);
+    
+    const res = await axios.get(url, globalStore.getAxiosHeader());
+
+    if (res.data.result) {
+      products.value = res.data.data;
+
+      // Update pagination data
+      if (res.data.paginate) {
+        Object.assign(paginationData, res.data.paginate);
+      }
+
+      return true;
     } else {
-      console.error("Failed to fetch product categories:", res.data);
-      showNotification("error", "Error", "Failed to fetch product categories");
+      error.value = res.data.message || "Failed to fetch products";
+      return false;
     }
-  } catch (error) {
-    console.error("Error fetching product categories:", error);
-    showNotification("error", "Error", "Failed to fetch product categories");
+  } catch (err) {
+    error.value = err.message || "An error occurred while fetching products";
+    await globalStore.onCheckError(err, router);
+    return false;
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -507,314 +632,156 @@ const getCategoryName = (product) => {
   return "Unknown";
 };
 
+// Data fetching functions
+const fetchBrands = async () => {
+  try {
+    const res = await axios.get("/api/brands", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      brands.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch brands", err);
+    showNotification("error", "Error", "Failed to fetch brands");
+    return false;
+  }
+};
+
+const fetchCategories = async () => {
+  try {
+    const res = await axios.get("/api/categories", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      categories.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch categories", err);
+    showNotification("error", "Error", "Failed to fetch categories");
+    return false;
+  }
+};
+
+const fetchProductCategories = async () => {
+  try {
+    const res = await axios.get("/api/product-categories", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      productCategories.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch product categories", err);
+    showNotification("error", "Error", "Failed to fetch product categories");
+    return false;
+  }
+};
+
 // File upload handling
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    newProduct.thumbnail = file;
+    productForm.thumbnail = file;
   }
 };
 
-// CRUD operations for products
-const createProduct = async () => {
-  const globalStore = useGlobalStore();
-  isSubmitting.value = true;
-  modalMessage.value = "";
-
-  try {
-    // Create form data for submission
-    const formData = new FormData();
-
-    // Add basic product fields
-    formData.append("name", newProduct.name);
-    formData.append("name_km", newProduct.name_km);
-    formData.append("code", newProduct.code);
-    formData.append("description", newProduct.description || "");
-    formData.append("price", newProduct.price);
-    formData.append("status", newProduct.status);
-
-    // Add foreign keys
-    if (newProduct.brand_id) {
-      formData.append("brand_id", newProduct.brand_id);
-    }
-    if (newProduct.category_id) {
-      formData.append("category_id", newProduct.category_id);
-    }
-    if (newProduct.product_category_id) {
-      formData.append("product_category_id", newProduct.product_category_id);
-    }
-
-    // Add thumbnail if selected
-    if (newProduct.thumbnail instanceof File) {
-      formData.append("thumbnail", newProduct.thumbnail);
-    }
-
-    const res = await axios.post(`/api/products`, formData, globalStore.getAxiosHeader());
-
-    if (res.data.result) {
-      await fetchProducts();
-      closeModal();
-      resetProductForm();
-      showNotification("success", "Success", "Product created successfully!");
-    } else {
-      modalMessage.value = res.data.message || "Failed to create product";
-    }
-  } catch (error) {
-    console.error("Error creating product:", error);
-    if (error.response && error.response.data) {
-      if (error.response.data.message) {
-        modalMessage.value = error.response.data.message;
-      } else if (error.response.data.errors) {
-        // Format validation errors
-        const errors = Object.values(error.response.data.errors).flat();
-        modalMessage.value = errors.join("\n");
-      } else {
-        modalMessage.value = "An error occurred while creating the product.";
-      }
-    } else {
-      modalMessage.value = "An error occurred while creating the product.";
-    }
-
-    await globalStore.onCheckError(error);
-  }
-
-  isSubmitting.value = false;
-};
-
-const updateProduct = async () => {
-  const globalStore = useGlobalStore();
-  isSubmitting.value = true;
-  modalMessage.value = "";
-
-  try {
-    // Create form data for submission
-    const formData = new FormData();
-
-    // Add method override for Laravel
-    formData.append("_method", "PUT");
-
-    // Add basic product fields
-    formData.append("name", newProduct.name);
-    formData.append("name_km", newProduct.name_km);
-    formData.append("code", newProduct.code);
-    formData.append("description", newProduct.description || "");
-    formData.append("price", newProduct.price);
-    formData.append("status", newProduct.status);
-
-    // Add foreign keys
-    if (newProduct.brand_id) {
-      formData.append("brand_id", newProduct.brand_id);
-    }
-    if (newProduct.category_id) {
-      formData.append("category_id", newProduct.category_id);
-    }
-    if (newProduct.product_category_id) {
-      formData.append("product_category_id", newProduct.product_category_id);
-    }
-
-    // Add thumbnail if selected
-    if (newProduct.thumbnail instanceof File) {
-      formData.append("thumbnail", newProduct.thumbnail);
-    }
-
-    // Use POST with _method=PUT for FormData
-    const res = await axios.post(
-      `/api/products/${currentProductId.value}`,
-      formData,
-      globalStore.getAxiosHeader()
-    );
-
-    if (res.data.result) {
-      await fetchProducts();
-      closeModal();
-      resetProductForm();
-      showNotification("success", "Success", "Product updated successfully!");
-    } else {
-      modalMessage.value = res.data.message || "Failed to update product";
-    }
-  } catch (error) {
-    console.error("Error updating product:", error);
-    if (error.response && error.response.data) {
-      if (error.response.data.message) {
-        modalMessage.value = error.response.data.message;
-      } else if (error.response.data.errors) {
-        // Format validation errors
-        const errors = Object.values(error.response.data.errors).flat();
-        modalMessage.value = errors.join("\n");
-      } else {
-        modalMessage.value = "An error occurred while updating the product.";
-      }
-    } else {
-      modalMessage.value = "An error occurred while updating the product.";
-    }
-
-    await globalStore.onCheckError(error);
-  }
-
-  isSubmitting.value = false;
-};
-
-// Delete product function
-const performDeleteProduct = async (productId) => {
-  const globalStore = useGlobalStore();
-  try {
-    const res = await axios.delete(
-      `/api/products/${productId}`,
-      globalStore.getAxiosHeader()
-    );
-    if (res.data.result) {
-      state.products = state.products.filter((p) => p.id !== productId);
-      await fetchProducts();
-      showNotification("success", "Success", "Product deleted successfully!");
-    } else {
-      showNotification("error", "Error", res.data.message || "Failed to delete product");
-    }
-  } catch (error) {
-    showNotification("error", "Error", "An error occurred while deleting the product.");
-    await globalStore.onCheckError(error);
-  }
-};
-
-// Show delete confirmation
-const deleteProduct = (productId) => {
-  showConfirmation(
-    "Delete Product",
-    "Are you sure you want to delete this product?",
-    performDeleteProduct,
-    productId
-  );
-};
-
-// Modal controls
-const openModal = () => {
-  resetProductForm();
+// Modal Methods
+const openCreateModal = () => {
   isEditMode.value = false;
+  currentProductId.value = null;
+  resetProductForm();
+  modalError.value = "";
   showModal.value = true;
 };
 
 const editProduct = async (productId) => {
+  isLoading.value = true;
   try {
-    const globalStore = useGlobalStore();
-    state.isLoading = true;
-
-    // Fetch the full product data
-    const response = await axios.get(
-      `/api/products/${productId}`,
-      globalStore.getAxiosHeader()
-    );
-
-    if (response.data.result && response.data.data) {
-      const product = response.data.data;
-      console.log("Fetched product detail:", product);
-
-      // Set all the product fields
-      newProduct.name = product.name || "";
-      newProduct.name_km = product.name_km || "";
-      newProduct.code = product.code || "";
-      newProduct.description = product.description || "";
-      newProduct.price = product.price || "";
-      newProduct.status = product.status || "draft";
-
-      // Handle relations - use direct IDs from nested objects for edit form
-      // And ensure IDs are stored as the same type as in the select elements
-      if (product.brand && product.brand.id) {
-        newProduct.brand_id = String(product.brand.id);
-      } else if (product.brand_id) {
-        newProduct.brand_id = String(product.brand_id);
-      } else {
-        newProduct.brand_id = "";
-      }
-
-      if (product.category && product.category.id) {
-        newProduct.category_id = String(product.category.id);
-      } else if (product.category_id) {
-        newProduct.category_id = String(product.category_id);
-      } else {
-        newProduct.category_id = "";
-      }
-
-      if (product.product_category && product.product_category.id) {
-        newProduct.product_category_id = String(product.product_category.id);
-      } else if (product.product_category_id) {
-        newProduct.product_category_id = String(product.product_category_id);
-      } else {
-        newProduct.product_category_id = "";
-      }
-
-      // Maintain the existing thumbnail URL for display
-      if (product.thumbnail && typeof product.thumbnail === "string") {
-        newProduct.thumbnail = product.thumbnail;
-      } else {
-        newProduct.thumbnail = null;
-      }
-
+    const res = await axios.get(`/api/products/${productId}`, globalStore.getAxiosHeader());
+    if (res.data.result) {
+      const product = res.data.data;
+      
+      // Set basic info
       currentProductId.value = productId;
+      productForm.name = product.name || "";
+      productForm.name_km = product.name_km || "";
+      productForm.code = product.code || "";
+      productForm.description = product.description || "";
+      productForm.price = product.price || "";
+      productForm.status = product.status || "draft";
+      
+      // Handle relations
+      productForm.brand_id = product.brand ? product.brand.id : 
+                           product.brand_id ? product.brand_id : "";
+                           
+      productForm.category_id = product.category ? product.category.id : 
+                              product.category_id ? product.category_id : "";
+                              
+      productForm.product_category_id = product.product_category ? product.product_category.id : 
+                                       product.product_category_id ? product.product_category_id : "";
+      
+      // Set thumbnail if exists
+      if (product.thumbnail && typeof product.thumbnail === 'string') {
+        productForm.thumbnail = product.thumbnail;
+      } else {
+        productForm.thumbnail = null;
+      }
+      
       isEditMode.value = true;
       showModal.value = true;
-
-      // Log the loaded IDs for debugging
-      console.log("Form fields after loading:", {
-        brand_id: newProduct.brand_id,
-        category_id: newProduct.category_id,
-        product_category_id: newProduct.product_category_id,
-      });
     } else {
       showNotification("error", "Error", "Failed to fetch product details");
     }
-  } catch (error) {
-    console.error("Error fetching product details:", error);
-    showNotification(
-      "error",
-      "Error",
-      "An error occurred while fetching product details"
-    );
+  } catch (err) {
+    console.error("Error fetching product:", err);
+    showNotification("error", "Error", "Failed to fetch product details");
   } finally {
-    state.isLoading = false;
+    isLoading.value = false;
   }
 };
 
 const closeModal = () => {
   showModal.value = false;
-  resetProductForm();
-  modalMessage.value = "";
+  modalError.value = "";
   cleanupObjectURLs();
 };
 
 const resetProductForm = () => {
-  newProduct.name = "";
-  newProduct.name_km = "";
-  newProduct.code = "";
-  newProduct.description = "";
-  newProduct.price = "";
-  newProduct.status = "published";
-  newProduct.brand_id = "";
-  newProduct.category_id = "";
-  newProduct.product_category_id = "";
-  newProduct.thumbnail = null;
-  currentProductId.value = null;
+  productForm.name = "";
+  productForm.name_km = "";
+  productForm.code = "";
+  productForm.description = "";
+  productForm.price = "";
+  productForm.status = "published";
+  productForm.brand_id = "";
+  productForm.category_id = "";
+  productForm.product_category_id = "";
+  productForm.thumbnail = null;
 };
 
+// Form submission
 const handleSubmit = async (event) => {
   event.preventDefault();
 
   // Validate required fields
-  if (!newProduct.name.trim()) {
-    modalMessage.value = "Product name is required";
+  if (!productForm.name.trim()) {
+    modalError.value = "Product name is required";
     return;
   }
 
-  if (!newProduct.name_km.trim()) {
-    modalMessage.value = "Product name in Khmer is required";
+  if (!productForm.name_km.trim()) {
+    modalError.value = "Product name in Khmer is required";
     return;
   }
 
-  if (!newProduct.code.trim()) {
-    modalMessage.value = "Product code is required";
+  if (!productForm.code.trim()) {
+    modalError.value = "Product code is required";
     return;
   }
 
-  if (!newProduct.price) {
-    modalMessage.value = "Price is required";
+  if (!productForm.price) {
+    modalError.value = "Price is required";
     return;
   }
 
@@ -825,48 +792,331 @@ const handleSubmit = async (event) => {
   }
 };
 
-const filteredProducts = computed(() => {
-  return state.products.filter(
-    (product) =>
-      product.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      product.code?.toLowerCase().includes(searchQuery.value.toLowerCase())
+// Create product
+const createProduct = async () => {
+  isSubmitting.value = true;
+  modalError.value = "";
+
+  try {
+    // Create form data for submission
+    const formData = new FormData();
+
+    // Add basic product fields
+    formData.append("name", productForm.name);
+    formData.append("name_km", productForm.name_km);
+    formData.append("code", productForm.code);
+    formData.append("description", productForm.description || "");
+    formData.append("price", productForm.price);
+    formData.append("status", productForm.status);
+
+    // Add foreign keys
+    if (productForm.brand_id) {
+      formData.append("brand_id", productForm.brand_id);
+    }
+    if (productForm.category_id) {
+      formData.append("category_id", productForm.category_id);
+    }
+    if (productForm.product_category_id) {
+      formData.append("product_category_id", productForm.product_category_id);
+    }
+
+    // Add thumbnail if selected
+    if (productForm.thumbnail instanceof File) {
+      formData.append("thumbnail", productForm.thumbnail);
+    }
+
+    const res = await axios.post(
+      `/api/products`,
+      formData,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      await getProducts(paginationData.current_page);
+      closeModal();
+      showNotification("success", "Success", "Product created successfully!");
+    } else {
+      modalError.value = res.data.message || "Failed to create product";
+    }
+  } catch (error) {
+    console.error("Error creating product:", error);
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        modalError.value = error.response.data.message;
+      } else if (error.response.data.errors) {
+        // Format validation errors
+        const errors = Object.values(error.response.data.errors).flat();
+        modalError.value = errors.join("\n");
+      } else {
+        modalError.value = "An error occurred while creating the product.";
+      }
+    } else {
+      modalError.value = "An error occurred while creating the product.";
+    }
+
+    await globalStore.onCheckError(error, router);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Update product
+const updateProduct = async () => {
+  isSubmitting.value = true;
+  modalError.value = "";
+
+  try {
+    // Create form data for submission
+    const formData = new FormData();
+
+    // Add method override for Laravel
+    formData.append("_method", "PUT");
+
+    // Add basic product fields
+    formData.append("name", productForm.name);
+    formData.append("name_km", productForm.name_km);
+    formData.append("code", productForm.code);
+    formData.append("description", productForm.description || "");
+    formData.append("price", productForm.price);
+    formData.append("status", productForm.status);
+
+    // Add foreign keys
+    if (productForm.brand_id) {
+      formData.append("brand_id", productForm.brand_id);
+    }
+    if (productForm.category_id) {
+      formData.append("category_id", productForm.category_id);
+    }
+    if (productForm.product_category_id) {
+      formData.append("product_category_id", productForm.product_category_id);
+    }
+
+    // Add thumbnail if selected
+    if (productForm.thumbnail instanceof File) {
+      formData.append("thumbnail", productForm.thumbnail);
+    }
+
+    // Use POST with _method=PUT for FormData
+    const res = await axios.post(
+      `/api/products/${currentProductId.value}`,
+      formData,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      await getProducts(paginationData.current_page);
+      closeModal();
+      showNotification("success", "Success", "Product updated successfully!");
+    } else {
+      modalError.value = res.data.message || "Failed to update product";
+    }
+  } catch (error) {
+    console.error("Error updating product:", error);
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        modalError.value = error.response.data.message;
+      } else if (error.response.data.errors) {
+        // Format validation errors
+        const errors = Object.values(error.response.data.errors).flat();
+        modalError.value = errors.join("\n");
+      } else {
+        modalError.value = "An error occurred while updating the product.";
+      }
+    } else {
+      modalError.value = "An error occurred while updating the product.";
+    }
+
+    await globalStore.onCheckError(error, router);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Delete product
+const performDeleteProduct = async (id) => {
+  try {
+    const res = await axios.delete(`/api/products/${id}`, globalStore.getAxiosHeader());
+
+    if (res.data.result) {
+      // If there was only one item on the current page and it's not the first page
+      if (products.value.length === 1 && paginationData.current_page > 1) {
+        await getProducts(paginationData.current_page - 1);
+      } else {
+        await getProducts(paginationData.current_page);
+      }
+      
+      showNotification("success", "Success", "Product deleted successfully!");
+    } else {
+      showNotification("error", "Error", res.data.message || "Failed to delete product");
+    }
+  } catch (err) {
+    showNotification("error", "Error", "An error occurred while deleting the product");
+    console.error("Error deleting product:", err);
+    await globalStore.onCheckError(err, router);
+  }
+};
+
+// Show delete confirmation
+const deleteProduct = (id) => {
+  showConfirmation(
+    "Delete Product",
+    "Are you sure you want to delete this product?",
+    performDeleteProduct,
+    id
   );
-});
+};
 
 // Clean up when component unmounts
 onBeforeUnmount(() => {
   cleanupObjectURLs();
 });
 
-// Initialize data on component mount
+// Lifecycle Hook
 onMounted(async () => {
+  isLoading.value = true;
+  error.value = null;
+
   try {
-    console.log("Component mounted, fetching data...");
-
-    // Fetch brands, categories, and product categories first
-    await Promise.all([fetchBrands(), fetchCategories(), fetchProductCategories()]);
-
-    // Then fetch products to ensure we have reference data first
-    await fetchProducts();
-
-    // Log the data to verify everything loaded correctly
-    console.log("Data loading complete.");
-    console.log("Brands count:", brands.value.length);
-    console.log("Categories count:", categories.value.length);
-    console.log("Product categories count:", productCategories.value.length);
-    console.log("Products count:", state.products.length);
-
-    // Check if we can match products to their related entities
-    if (state.products.length > 0) {
-      const firstProduct = state.products[0];
-      console.log("First product:", firstProduct);
-      console.log("Brand ID:", firstProduct.brand_id);
-      console.log("Brand name:", getBrandName(firstProduct));
-      console.log("Category name:", getCategoryName(firstProduct));
-    }
-  } catch (error) {
-    console.error("Error during initialization:", error);
-    showNotification("error", "Error", "Failed to initialize the component");
+    // Load reference data in parallel
+    await Promise.all([
+      fetchBrands(),
+      fetchCategories(),
+      fetchProductCategories()
+    ]);
+    
+    // Then load products
+    await getProducts(1);
+  } catch (err) {
+    error.value = "Failed to load initial data";
+    showNotification("error", "Error", "Failed to load initial data");
+    console.error("Failed to load initial data", err);
+  } finally {
+    isLoading.value = false;
   }
 });
 </script>
+
+<style scoped>
+.product-thumbnail {
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.modal-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  overflow-y: auto;
+}
+
+.modal-content {
+  left: 120px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: unset;
+  overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
+}
+
+.product-form .form-label {
+  font-weight: 500;
+}
+
+.thumbnail-preview {
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+/* Additional styling for sortable columns */
+th a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+th a:hover {
+  text-decoration: underline;
+}
+
+/* Media queries for responsive modal */
+@media (max-width: 992px) {
+  .modal-content {
+    width: 95%;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 20px 0;
+  }
+}
+
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.confirmation-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.confirmation-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.confirmation-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.confirmation-icon.warning {
+  background-color: #fff3cd;
+  color: #ff9800;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.confirmation-body {
+  padding: 1rem;
+}
+
+.confirmation-footer {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #dee2e6;
+}
+</style>

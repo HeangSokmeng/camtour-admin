@@ -15,6 +15,7 @@
                 class="form-control search-input search"
                 type="search"
                 placeholder="Search villages"
+                @input="handleSearchInput"
               />
             </div>
             <div class="col-auto">
@@ -26,7 +27,7 @@
               >
                 <option value="">Filter Province</option>
                 <option
-                  v-for="province in state.provinces"
+                  v-for="province in provinces"
                   :key="province.id"
                   :value="province.id"
                 >
@@ -56,6 +57,7 @@
                 v-model="selectedCommune"
                 class="form-select"
                 aria-label="Filter Commune"
+                @change="handleSearch"
               >
                 <option value="">Filter Commune</option>
                 <option
@@ -67,43 +69,80 @@
                 </option>
               </select>
             </div>
+            <div class="col-auto">
+              <select
+                class="form-select"
+                aria-label="Items per page"
+                v-model="perPage"
+                @change="handleSearch"
+              >
+                <option :value="10">10 per page</option>
+                <option :value="25">25 per page</option>
+                <option :value="50">50 per page</option>
+                <option :value="100">100 per page</option>
+              </select>
+            </div>
           </div>
           <div class="col-auto">
-            <button class="btn btn-primary" @click="openModal">
+            <button class="btn btn-primary" @click="openCreateModal">
               <span class="fas fa-plus me-2"></span>Add Village
             </button>
           </div>
         </div>
       </div>
-      <div v-if="state.isLoading" class="text-center">
+      <div v-if="isLoading" class="text-center">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-      <div v-else-if="state.error" class="text-center text-danger">
-        {{ state.error }}
+      <div v-else-if="error" class="text-center text-danger">
+        {{ error }}
       </div>
       <div v-else class="table-responsive">
         <table class="table table-sm fs-9 mb-0">
           <thead>
             <tr>
               <th class="align-middle ps-0">#</th>
-              <th class="align-middle">Village Name</th>
-              <th class="align-middle">Village Local Name</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('name')">
+                  Village Name
+                  <i
+                    v-if="sortCol === 'name'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('local_name')">
+                  Village Local Name
+                  <i
+                    v-if="sortCol === 'local_name'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle">Province</th>
               <th class="align-middle">District</th>
               <th class="align-middle">Commune</th>
-              <th class="align-middle text-end">Created At</th>
+              <th class="align-middle text-end">
+                <a href="#" @click.prevent="toggleSort('created_at')">
+                  Created At
+                  <i
+                    v-if="sortCol === 'created_at'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle text-end">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredVillages.length === 0">
-              <td colspan="7" class="text-center">No village found</td>
+            <tr v-if="villages.length === 0">
+              <td colspan="8" class="text-center">No village found</td>
             </tr>
-            <tr v-else v-for="(village, index) in filteredVillages" :key="village.id">
+            <tr v-else v-for="(village, index) in villages" :key="village.id">
               <td class="align-middle ps-0">
-                {{ index + 1 + (currentPage - 1) * pageSize }}
+                {{ (paginationData.current_page - 1) * perPage + index + 1 }}
               </td>
               <td class="align-middle">{{ village.name }}</td>
               <td class="align-middle">{{ village.local_name }}</td>
@@ -112,10 +151,7 @@
               <td class="align-middle">{{ village.commune.name }}</td>
               <td class="align-middle text-end">{{ formatDate(village.created_at) }}</td>
               <td class="align-middle text-end">
-                <button
-                  class="btn btn-sm btn-primary me-2"
-                  @click="editVillage(village.id)"
-                >
+                <button class="btn btn-sm btn-primary me-2" @click="editVillage(village)">
                   <span class="fas fa-edit me-1"></span>Edit
                 </button>
                 <button class="btn btn-sm btn-danger" @click="deleteVillage(village.id)">
@@ -125,69 +161,33 @@
             </tr>
           </tbody>
         </table>
-        <div class="row align-items-center justify-content-between py-2 pe-0 fs-9">
-          <div class="col-auto d-flex">
-            <p
-              class="mb-0 d-none d-sm-block me-3 fw-semibold text-body"
-              data-list-info="data-list-info"
-            >
-              Showing page {{ state.paginate.current_page }} of
-              {{ state.paginate.last_page }}
-            </p>
-            <a
-              class="fw-semibold"
-              href="#!"
-              @click.prevent="fetchVillages(1)"
-              data-list-view="*"
-            >
-              View all
-              <span class="fas fa-angle-right ms-1" data-fa-transform="down-1"></span>
-            </a>
-          </div>
-          <div class="col-auto d-flex">
-            <button
-              class="page-link"
-              :disabled="state.paginate.current_page === 1"
-              @click.prevent="fetchVillages(state.paginate.current_page - 1)"
-              data-list-pagination="prev"
-            >
-              <span class="fas fa-chevron-left"></span>
-            </button>
-            <ul class="pagination mb-0">
-              <li class="page-item" v-for="page in totalPages" :key="page">
-                <button
-                  class="page-link"
-                  :class="{ active: currentPage === page }"
-                  @click.prevent="fetchVillages(page)"
-                >
-                  {{ page }}
-                </button>
-              </li>
-            </ul>
-            <button
-              class="page-link pe-0"
-              :disabled="!state.paginate.has_more_pages"
-              @click.prevent="fetchVillages(state.paginate.current_page + 1)"
-              data-list-pagination="next"
-            >
-              <span class="fas fa-chevron-right"></span>
-            </button>
-          </div>
-        </div>
+
+        <!-- Pagination -->
+        <pagination
+          v-if="!isLoading && villages.length > 0"
+          :current-page="paginationData.current_page"
+          :last-page="paginationData.last_page"
+          :first-item="paginationData.first_item"
+          :last-item="paginationData.last_item"
+          :total="paginationData.total"
+          @page-changed="changePage"
+        />
       </div>
+
+      <!-- Village Modal -->
       <div v-if="showModal" class="modal-overlay">
         <div class="modal-content">
           <h4>{{ isEditMode ? "Edit" : "Create" }} Village</h4>
-          <div v-if="modalMessage" class="alert alert-danger">{{ modalMessage }}</div>
+          <div v-if="modalError" class="alert alert-danger">{{ modalError }}</div>
           <form
             class="row g-3 needs-validation"
             novalidate
-            @submit.prevent="handleSubmit"
+            @submit.prevent="submitVillage"
           >
             <div class="col-md-12">
               <label class="form-label" for="villageName">Village Name</label>
               <input
-                v-model="newVillage.name"
+                v-model="villageForm.name"
                 class="form-control"
                 id="villageName"
                 type="text"
@@ -198,7 +198,7 @@
             <div class="col-md-12">
               <label class="form-label" for="villageName">Village Local Name</label>
               <input
-                v-model="newVillage.local_name"
+                v-model="villageForm.local_name"
                 class="form-control"
                 id="villageLocalName"
                 type="text"
@@ -209,7 +209,7 @@
             <div class="col-md-12">
               <label class="form-label" for="provinceId">Province</label>
               <select
-                v-model="newVillage.province_id"
+                v-model="villageForm.province_id"
                 class="form-select"
                 id="provinceId"
                 required
@@ -217,7 +217,7 @@
               >
                 <option value="">Select a province</option>
                 <option
-                  v-for="province in state.provinces"
+                  v-for="province in provinces"
                   :key="province.id"
                   :value="province.id"
                 >
@@ -226,48 +226,43 @@
               </select>
               <div class="invalid-feedback">Please select a province</div>
             </div>
-            <div class="col-md-12">
-              <label class="form-label" for="districtId">District</label>
+            <div class="col-auto">
               <select
-                v-model="newVillage.district_id"
+                v-model="selectedDistrict"
                 class="form-select"
-                id="districtId"
-                required
-                :disabled="!newVillage.province_id"
-                @change="updateModalCommuneOptions"
+                aria-label="Filter District"
+                @change="handleDistrictChange"
+                :disabled="!selectedProvince"
               >
-                <option value="">Select a district</option>
+                <option value="">Filter District</option>
                 <option
-                  v-for="district in filteredDistricts"
+                  v-for="district in filteredDistrictOptions"
                   :key="district.id"
                   :value="district.id"
                 >
                   {{ district.name }}
                 </option>
               </select>
-              <div class="invalid-feedback">Please select a district</div>
             </div>
-            <div class="col-md-12">
-              <label class="form-label" for="communeId">Commune</label>
+            <div class="col-auto">
               <select
-                v-model="newVillage.commune_id"
+                v-model="selectedCommune"
                 class="form-select"
-                id="communeId"
-                required
-                :disabled="!newVillage.district_id"
+                aria-label="Filter Commune"
+                @change="handleSearch"
+                :disabled="!selectedDistrict"
               >
-                <option value="">Select a commune</option>
+                <option value="">Filter Commune</option>
                 <option
-                  v-for="commune in filteredCommunes"
+                  v-for="commune in filteredCommuneOptions"
                   :key="commune.id"
                   :value="commune.id"
                 >
                   {{ commune.name }}
                 </option>
               </select>
-              <div class="invalid-feedback">Please select a commune</div>
             </div>
-            <div class="col-12 float-end">
+            <div class="col-12 d-flex justify-content-end">
               <button class="btn btn-secondary me-2" type="button" @click="closeModal">
                 Cancel
               </button>
@@ -327,42 +322,70 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
+import Pagination from "@/components/layouts/Pagination.vue";
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 // Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
 
-const state = reactive({
-  villages: [],
-  provinces: [],
-  districts: [],
-  communes: [],
-  isLoading: false,
-  error: null,
-  paginate: {
-    has_more_pages: false,
-    current_page: 1,
-    last_page: 1,
-  },
+// Router and Store
+const router = useRouter();
+const globalStore = useGlobalStore();
+
+// State Management
+const villages = ref([]);
+const provinces = ref([]);
+const districts = ref([]);
+const communes = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+
+// Pagination settings
+const perPage = ref(10);
+const sortCol = ref("name");
+const sortDir = ref("asc");
+const paginationData = reactive({
+  has_page: false,
+  on_first_page: true,
+  has_more_pages: false,
+  first_item: 0,
+  last_item: 0,
+  total: 0,
+  current_page: 1,
+  last_page: 1,
 });
 
-// Filtering states
+// Search and Filter
 const searchQuery = ref("");
 const selectedProvince = ref("");
 const selectedDistrict = ref("");
 const selectedCommune = ref("");
-const filteredDistrictOptions = ref([]);
-const filteredCommuneOptions = ref([]);
+let searchTimeout = null;
 
-// Modal states
+// Computed filter options
+const filteredDistrictOptions = computed(() => {
+  if (!selectedProvince.value) return [];
+  return districts.value.filter(
+    (district) => String(district.province.id) === String(selectedProvince.value)
+  );
+});
+
+const filteredCommuneOptions = computed(() => {
+  if (!selectedDistrict.value) return [];
+  return communes.value.filter(
+    (commune) => String(commune.district.id) === String(selectedDistrict.value)
+  );
+});
+
+// Modal Management
 const showModal = ref(false);
 const isEditMode = ref(false);
-const currentVillageId = ref(null);
 const isSubmitting = ref(false);
-const modalMessage = ref("");
+const modalError = ref("");
 
 // Confirmation modal state
 const confirmationModal = reactive({
@@ -373,18 +396,15 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Form data
-const newVillage = reactive({
+// Form Data
+const villageForm = reactive({
+  id: null,
   name: "",
   local_name: "",
   province_id: "",
   district_id: "",
   commune_id: "",
 });
-
-// Pagination variables
-const currentPage = ref(1);
-const pageSize = 10;
 
 // Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
@@ -410,249 +430,252 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Utility function to format date
+// Utility Functions
 const formatDate = (dateString) => {
-  if (!dateString) return "";
   return new Date(dateString).toLocaleDateString();
 };
 
-// Filter handlers for top filters
+// Handle search input with debounce
+const handleSearchInput = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+
+  searchTimeout = setTimeout(() => {
+    handleSearch();
+  }, 500);
+};
+
+// Handle search when user submits the search
+const handleSearch = async () => {
+  paginationData.current_page = 1;
+  await getVillages(1);
+};
+
+// Toggle sorting
+const toggleSort = async (column) => {
+  if (sortCol.value === column) {
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+  } else {
+    sortCol.value = column;
+    sortDir.value = "asc";
+  }
+
+  await getVillages(1);
+};
+
+// Handle pagination
+const changePage = async (page) => {
+  await getVillages(page);
+};
+
+// Filter handlers
 const handleProvinceChange = () => {
   selectedDistrict.value = "";
   selectedCommune.value = "";
-  // Update district dropdown options
-  filteredDistrictOptions.value = state.districts.filter(
-    (district) => String(district.province.id) === String(selectedProvince.value)
-  );
+  handleSearch();
 };
 
 const handleDistrictChange = () => {
   selectedCommune.value = "";
-  // Update commune dropdown options
-  filteredCommuneOptions.value = state.communes.filter(
-    (commune) => String(commune.district.id) === String(selectedDistrict.value)
-  );
+  handleSearch();
 };
 
 // Modal dropdown handlers
 const updateModalDistrictOptions = () => {
-  newVillage.district_id = "";
-  newVillage.commune_id = "";
+  villageForm.district_id = "";
+  villageForm.commune_id = "";
 };
 
 const updateModalCommuneOptions = () => {
-  newVillage.commune_id = "";
+  villageForm.commune_id = "";
 };
 
-// Fetch all villages data
-const fetchVillages = async (page = 1) => {
-  const globalStore = useGlobalStore();
-  state.isLoading = true;
-  state.error = null;
+// Computed for filtered form options
+const filteredDistricts = computed(() => {
+  if (!villageForm.province_id) return [];
+  return districts.value.filter(
+    (district) => String(district.province.id) === String(villageForm.province_id)
+  );
+});
+
+const filteredCommunes = computed(() => {
+  if (!villageForm.district_id) return [];
+  return communes.value.filter(
+    (commune) => String(commune.district.id) === String(villageForm.district_id)
+  );
+});
+
+// Fetch villages data
+const getVillages = async (page = 1) => {
+  isLoading.value = true;
+  error.value = null;
+
   try {
-    const res = await axios.get(
-      `/api/villages?page=${page}`,
-      globalStore.getAxiosHeader()
-    );
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.villages = res.data.data;
-      state.paginate = res.data.paginate;
-      currentPage.value = res.data.paginate.current_page;
+    // Build query URL with all filter parameters
+    const url = `/api/villages?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}&commune=${selectedCommune.value}`;
+
+    console.log("API URL:", url);
+    console.log("Selected province:", selectedProvince.value);
+    console.log("Selected district:", selectedDistrict.value);
+    console.log("Selected commune:", selectedCommune.value);
+
+    const res = await axios.get(url, globalStore.getAxiosHeader());
+
+    if (res.data.result) {
+      villages.value = res.data.data;
+
+      // Update pagination data
+      if (res.data.paginate) {
+        Object.assign(paginationData, res.data.paginate);
+      }
+
+      return true;
     } else {
-      state.error = res.data.message || "Failed to fetch villages";
-      showNotification("error", "Error", state.error);
+      error.value = res.data.message || "Failed to fetch villages";
+      return false;
     }
   } catch (err) {
-    state.error = err.message || "An error occurred while fetching villages";
-    showNotification("error", "Error", state.error);
+    error.value = err.message || "An error occurred while fetching villages";
+    await globalStore.onCheckError(err, router);
+    return false;
   } finally {
-    state.isLoading = false;
+    isLoading.value = false;
   }
 };
 
-// Fetch all provinces
-const fetchProvinces = async () => {
-  const globalStore = useGlobalStore();
+// Fetch additional data
+const getProvinces = async () => {
   try {
     const res = await axios.get("/api/provinces", globalStore.getAxiosHeader());
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.provinces = res.data.data;
-    } else {
-      const errorMsg = res.data.message || "Failed to fetch provinces";
-      console.error(errorMsg);
-      showNotification("error", "Error", errorMsg);
+    if (res.data.result) {
+      provinces.value = res.data.data;
+      return true;
     }
+    return false;
   } catch (err) {
-    const errorMsg = err.message || "An error occurred while fetching provinces";
-    console.error(errorMsg);
-    showNotification("error", "Error", errorMsg);
+    console.error("Failed to fetch provinces", err);
+    showNotification("error", "Error", "Failed to fetch provinces");
+    return false;
   }
 };
 
-// Fetch all districts
-const fetchDistricts = async () => {
-  const globalStore = useGlobalStore();
+const getDistricts = async () => {
   try {
     const res = await axios.get("/api/districts", globalStore.getAxiosHeader());
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.districts = res.data.data;
-    } else {
-      const errorMsg = res.data.message || "Failed to fetch districts";
-      console.error(errorMsg);
-      showNotification("error", "Error", errorMsg);
+    if (res.data.result) {
+      districts.value = res.data.data;
+      return true;
     }
+    return false;
   } catch (err) {
-    const errorMsg = err.message || "An error occurred while fetching districts";
-    console.error(errorMsg);
-    showNotification("error", "Error", errorMsg);
+    console.error("Failed to fetch districts", err);
+    showNotification("error", "Error", "Failed to fetch districts");
+    return false;
   }
 };
 
-// Fetch all communes
-const fetchCommunes = async () => {
-  const globalStore = useGlobalStore();
+const getCommunes = async () => {
   try {
     const res = await axios.get("/api/communes", globalStore.getAxiosHeader());
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.communes = res.data.data;
-    } else {
-      const errorMsg = res.data.message || "Failed to fetch communes";
-      console.error(errorMsg);
-      showNotification("error", "Error", errorMsg);
+    if (res.data.result) {
+      communes.value = res.data.data;
+      return true;
     }
+    return false;
   } catch (err) {
-    const errorMsg = err.message || "An error occurred while fetching communes";
-    console.error(errorMsg);
-    showNotification("error", "Error", errorMsg);
+    console.error("Failed to fetch communes", err);
+    showNotification("error", "Error", "Failed to fetch communes");
+    return false;
   }
 };
 
-// Computed for filtered villages
-const filteredVillages = computed(() => {
-  let filtered = state.villages.filter((village) => {
-    const nameMatch = village.name
-      .toLowerCase()
-      .includes(searchQuery.value.toLowerCase());
-    const localNameMatch = village.local_name
-      .toLowerCase()
-      .includes(searchQuery.value.toLowerCase());
-    const provinceMatch =
-      !selectedProvince.value ||
-      String(village.province.id) === String(selectedProvince.value);
-    const districtMatch =
-      !selectedDistrict.value ||
-      String(village.district.id) === String(selectedDistrict.value);
-    const communeMatch =
-      !selectedCommune.value ||
-      String(village.commune.id) === String(selectedCommune.value);
-    return nameMatch && provinceMatch && districtMatch && communeMatch && localNameMatch;
-  });
-  return filtered;
-});
-
-// Computed for filtered districts in the modal
-const filteredDistricts = computed(() => {
-  if (!newVillage.province_id) return [];
-  return state.districts.filter(
-    (district) => String(district.province.id) === String(newVillage.province_id)
-  );
-});
-
-// Computed for filtered communes in the modal
-const filteredCommunes = computed(() => {
-  if (!newVillage.district_id) return [];
-  return state.communes.filter(
-    (commune) => String(commune.district.id) === String(newVillage.district_id)
-  );
-});
-
-// Computed for pagination
-const totalPages = computed(() => {
-  const pages = [];
-  for (let i = 1; i <= state.paginate.last_page; i++) {
-    pages.push(i);
-  }
-  return pages;
-});
-
-// Watch for changes in selection fields
-watch(
-  () => newVillage.province_id,
-  () => {
-    newVillage.district_id = "";
-    newVillage.commune_id = "";
-  }
-);
-
-watch(
-  () => newVillage.district_id,
-  () => {
-    newVillage.commune_id = "";
-  }
-);
-
-// Modal controls
-const openModal = () => {
-  showModal.value = true;
+// Modal Methods
+const openCreateModal = () => {
   isEditMode.value = false;
-  newVillage.name = "";
-  newVillage.local_name = "";
-  newVillage.province_id = "";
-  newVillage.district_id = "";
-  newVillage.commune_id = "";
-  modalMessage.value = "";
+  villageForm.id = null;
+  villageForm.name = "";
+  villageForm.local_name = "";
+  villageForm.province_id = "";
+  villageForm.district_id = "";
+  villageForm.commune_id = "";
+  modalError.value = "";
+  showModal.value = true;
+};
+
+const editVillage = (village) => {
+  isEditMode.value = true;
+  villageForm.id = village.id;
+  villageForm.name = village.name;
+  villageForm.local_name = village.local_name;
+  villageForm.province_id = village.province.id;
+
+  // Set district and commune values after a brief delay to ensure computed properties update
+  setTimeout(() => {
+    villageForm.district_id = village.district.id;
+
+    setTimeout(() => {
+      villageForm.commune_id = village.commune.id;
+    }, 10);
+  }, 10);
+
+  modalError.value = "";
+  showModal.value = true;
 };
 
 const closeModal = () => {
   showModal.value = false;
-  modalMessage.value = "";
+  modalError.value = "";
 };
 
-// Form submission handler
-const handleSubmit = async () => {
+// Form submission
+const submitVillage = async () => {
   if (isSubmitting.value) return;
 
   // Form validation
-  if (!newVillage.name.trim()) {
-    modalMessage.value = "Village name is required";
+  if (!villageForm.name.trim()) {
+    modalError.value = "Village name is required";
     return;
   }
-  if (!newVillage.local_name.trim()) {
-    modalMessage.value = "Village local name is required";
+  if (!villageForm.local_name.trim()) {
+    modalError.value = "Village local name is required";
     return;
   }
-  if (!newVillage.province_id) {
-    modalMessage.value = "Province is required";
+  if (!villageForm.province_id) {
+    modalError.value = "Province is required";
     return;
   }
-  if (!newVillage.district_id) {
-    modalMessage.value = "District is required";
+  if (!villageForm.district_id) {
+    modalError.value = "District is required";
     return;
   }
-  if (!newVillage.commune_id) {
-    modalMessage.value = "Commune is required";
+  if (!villageForm.commune_id) {
+    modalError.value = "Commune is required";
     return;
   }
 
   isSubmitting.value = true;
-  modalMessage.value = "";
+  modalError.value = "";
 
   try {
-    const globalStore = useGlobalStore();
-    const config = globalStore.getAxiosHeader();
     const data = {
-      name: newVillage.name,
-      local_name: newVillage.local_name,
-      province_id: newVillage.province_id,
-      district_id: newVillage.district_id,
-      commune_id: newVillage.commune_id,
+      name: villageForm.name,
+      local_name: villageForm.local_name,
+      province_id: villageForm.province_id,
+      district_id: villageForm.district_id,
+      commune_id: villageForm.commune_id,
     };
+
     const res = isEditMode.value
-      ? await axios.put(`/api/villages/${currentVillageId.value}`, data, config)
-      : await axios.post("/api/villages", data, config);
+      ? await axios.put(
+          `/api/villages/${villageForm.id}`,
+          data,
+          globalStore.getAxiosHeader()
+        )
+      : await axios.post("/api/villages", data, globalStore.getAxiosHeader());
 
     if (res.data.result) {
-      await fetchVillages(state.paginate.current_page);
+      await getVillages(paginationData.current_page);
       closeModal();
 
       const successMsg = isEditMode.value
@@ -660,65 +683,40 @@ const handleSubmit = async () => {
         : "Village created successfully!";
       showNotification("success", "Success", successMsg);
     } else {
-      modalMessage.value = res.data.message || "Failed to save village";
+      modalError.value = res.data.message || "Failed to save village";
     }
   } catch (error) {
-    modalMessage.value =
+    modalError.value =
       error.response?.data?.message || error.message || "An error occurred";
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Edit village - fetch and populate form
-const editVillage = async (id) => {
-  isEditMode.value = true;
-  currentVillageId.value = id;
-  modalMessage.value = "";
-
-  const globalStore = useGlobalStore();
-  const config = globalStore.getAxiosHeader();
-  try {
-    const res = await axios.get(`/api/villages/${id}`, config);
-    if (res.data.result) {
-      const village = res.data.data;
-      newVillage.name = village.name;
-      newVillage.local_name = village.local_name;
-      newVillage.province_id = village.province_id;
-
-      // Need to wait for province selection to update district options
-      await nextTick();
-      newVillage.district_id = village.district_id;
-
-      // Need to wait for district selection to update commune options
-      await nextTick();
-      newVillage.commune_id = village.commune_id;
-
-      showModal.value = true;
-    } else {
-      showNotification("error", "Error", "Failed to fetch village details");
-    }
-  } catch (error) {
-    console.error(error);
-    showNotification("error", "Error", "Failed to fetch village details");
-  }
-};
-
-// Perform delete operation
+// Delete village
 const performDeleteVillage = async (id) => {
-  const globalStore = useGlobalStore();
-  const config = globalStore.getAxiosHeader();
   try {
-    const res = await axios.delete(`/api/villages/${id}`, config);
+    const res = await axios.delete(`/api/villages/${id}`, globalStore.getAxiosHeader());
+
     if (res.data.result) {
-      await fetchVillages(state.paginate.current_page);
+      // Refresh the current page or go to the previous page if no items left
+      const page = paginationData.current_page;
+
+      if (villages.value.length === 1 && paginationData.current_page > 1) {
+        // If deleting the last item on a page (not the first page), go to the previous page
+        await getVillages(page - 1);
+      } else {
+        // Otherwise refresh the current page
+        await getVillages(page);
+      }
+
       showNotification("success", "Success", "Village deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete village");
     }
-  } catch (error) {
-    console.error(error);
-    showNotification("error", "Error", "Failed to delete village");
+  } catch (err) {
+    showNotification("error", "Error", "An error occurred while deleting the village");
+    console.error("Error deleting village:", err);
   }
 };
 
@@ -732,21 +730,40 @@ const deleteVillage = (id) => {
   );
 };
 
-// Lifecycle hook - fetch data on mount
+// Lifecycle Hook
 onMounted(async () => {
+  isLoading.value = true;
+  error.value = null;
+
   try {
-    // Load data
-    await Promise.all([
-      fetchVillages(),
-      fetchProvinces(),
-      fetchDistricts(),
-      fetchCommunes(),
-    ]);
+    // Load data in sequence to ensure proper initialization
+    await getProvinces();
+    await getDistricts();
+    await getCommunes();
+
+    // Then load villages after dependencies are loaded
+    await getVillages(1);
   } catch (err) {
-    console.error("Failed to initialize:", err);
+    error.value = "Failed to load initial data";
     showNotification("error", "Error", "Failed to load initial data");
+    console.error("Failed to load initial data", err);
+  } finally {
+    isLoading.value = false;
   }
 });
-
-const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
 </script>
+
+<style scoped>
+/* Additional styling for sortable columns */
+th a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+th a:hover {
+  text-decoration: underline;
+}
+</style>

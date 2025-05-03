@@ -15,6 +15,7 @@
                 class="form-control search-input search"
                 type="search"
                 placeholder="Search districts"
+                @input="handleSearchInput"
               />
             </div>
             <div class="col-auto">
@@ -22,6 +23,7 @@
                 v-model="selectedProvince"
                 class="form-select"
                 aria-label="Province filter"
+                @change="handleSearch"
               >
                 <option value="">Filter Province</option>
                 <option
@@ -31,6 +33,19 @@
                 >
                   {{ province.name }}
                 </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                class="form-select"
+                aria-label="Items per page"
+                v-model="perPage"
+                @change="handleSearch"
+              >
+                <option :value="10">10 per page</option>
+                <option :value="25">25 per page</option>
+                <option :value="50">50 per page</option>
+                <option :value="100">100 per page</option>
               </select>
             </div>
           </div>
@@ -60,20 +75,44 @@
           <thead>
             <tr>
               <th class="align-middle ps-0">#</th>
-              <th class="align-middle">District Name</th>
-              <th class="align-middle">District Local Name</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('name')">
+                  District Name
+                  <i 
+                    v-if="sortCol === 'name'" 
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('local_name')">
+                  District Local Name
+                  <i 
+                    v-if="sortCol === 'local_name'" 
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle">Province Name</th>
-              <th class="align-middle text-end">Created At</th>
+              <th class="align-middle text-end">
+                <a href="#" @click.prevent="toggleSort('created_at')">
+                  Created At
+                  <i 
+                    v-if="sortCol === 'created_at'" 
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredDistricts.length === 0">
+            <tr v-if="districts.length === 0">
               <td colspan="6" class="text-center">No districts found</td>
             </tr>
-            <tr v-else v-for="(district, index) in filteredDistricts" :key="district.id">
+            <tr v-else v-for="(district, index) in districts" :key="district.id">
               <td class="align-middle ps-0">
-                {{ index + 1 + (currentPage - 1) * pageSize }}
+                {{ ((paginationData.current_page - 1) * perPage) + index + 1 }}
               </td>
               <td class="align-middle">{{ district.name }}</td>
               <td class="align-middle">{{ district.local_name }}</td>
@@ -98,44 +137,15 @@
         </table>
 
         <!-- Pagination -->
-        <div class="row align-items-center justify-content-between py-2 pe-0 fs-9">
-          <div class="col-auto d-flex">
-            <p class="mb-0 d-none d-sm-block me-3 fw-semibold text-body">
-              Showing page {{ currentPage }} of {{ totalPages }}
-            </p>
-            <a href="#!" class="fw-semibold" @click.prevent="fetchDistricts(1)">
-              View all
-              <i class="fas fa-angle-right ms-1"></i>
-            </a>
-          </div>
-          <div class="col-auto d-flex">
-            <button
-              class="page-link"
-              :disabled="currentPage === 1"
-              @click.prevent="fetchDistricts(currentPage - 1)"
-            >
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <ul class="pagination mb-0">
-              <li v-for="page in totalPagesArray" :key="page" class="page-item">
-                <button
-                  class="page-link"
-                  :class="{ active: currentPage === page }"
-                  @click.prevent="fetchDistricts(page)"
-                >
-                  {{ page }}
-                </button>
-              </li>
-            </ul>
-            <button
-              class="page-link pe-0"
-              :disabled="currentPage === totalPages"
-              @click.prevent="fetchDistricts(currentPage + 1)"
-            >
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
-        </div>
+        <pagination
+          v-if="!isLoading && districts.length > 0"
+          :current-page="paginationData.current_page"
+          :last-page="paginationData.last_page"
+          :first-item="paginationData.first_item"
+          :last-item="paginationData.last_item"
+          :total="paginationData.total"
+          @page-changed="changePage"
+        />
       </div>
 
       <!-- District Modal -->
@@ -258,13 +268,19 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
+import Pagination from '@/components/layouts/Pagination.vue';
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
-import { computed, onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 // Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
+
+// Router and Store
+const router = useRouter();
+const globalStore = useGlobalStore();
 
 // State management
 const isLoading = ref(false);
@@ -272,14 +288,25 @@ const error = ref(null);
 const districts = ref([]);
 const provinces = ref([]);
 
-// Pagination
-const currentPage = ref(1);
-const pageSize = ref(10);
-const totalPages = ref(1);
+// Pagination settings
+const perPage = ref(10);
+const sortCol = ref('name');
+const sortDir = ref('asc');
+const paginationData = reactive({
+  has_page: false,
+  on_first_page: true,
+  has_more_pages: false,
+  first_item: 0,
+  last_item: 0,
+  total: 0,
+  current_page: 1,
+  last_page: 1
+});
 
 // Search and Filter
 const searchQuery = ref("");
 const selectedProvince = ref("");
+let searchTimeout = null;
 
 // Modal Management
 const showModal = ref(false);
@@ -302,23 +329,6 @@ const districtForm = reactive({
   name: "",
   local_name: "",
   province_id: "",
-});
-
-// Computed Properties
-const filteredDistricts = computed(() => {
-  return districts.value.filter((district) => {
-    const nameMatch = district.name
-      .toLowerCase()
-      .includes(searchQuery.value.toLowerCase());
-    const provinceMatch =
-      !selectedProvince.value ||
-      String(district.province.id) === String(selectedProvince.value);
-    return nameMatch && provinceMatch;
-  });
-});
-
-const totalPagesArray = computed(() => {
-  return Array.from({ length: totalPages.value }, (_, i) => i + 1);
 });
 
 // Show confirmation modal
@@ -350,39 +360,84 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
 
+// Handle search input with debounce
+const handleSearchInput = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  
+  searchTimeout = setTimeout(() => {
+    handleSearch();
+  }, 500);
+};
+
+// Handle search when user submits the search
+const handleSearch = async () => {
+  paginationData.current_page = 1;
+  await getDistricts(1);
+};
+
+// Toggle sorting
+const toggleSort = async (column) => {
+  if (sortCol.value === column) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol.value = column;
+    sortDir.value = 'asc';
+  }
+  
+  await getDistricts(1);
+};
+
+// Handle pagination
+const changePage = async (page) => {
+  await getDistricts(page);
+};
+
 // API Interactions
-const fetchDistricts = async (page = 1) => {
-  const globalStore = useGlobalStore();
+const getDistricts = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-
+  
   try {
-    const res = await axios.get(
-      `/api/districts?page=${page}`,
-      globalStore.getAxiosHeader()
-    );
+    const url = `/api/districts?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}`;
+    
+    const res = await axios.get(url, globalStore.getAxiosHeader());
+    
     if (res.data.result) {
       districts.value = res.data.data;
-      currentPage.value = res.data.paginate.current_page;
-      totalPages.value = res.data.paginate.last_page;
+      
+      // Update pagination data
+      if (res.data.paginate) {
+        Object.assign(paginationData, res.data.paginate);
+      }
+      
+      return true;
     } else {
-      error.value = res.data.message || "Failed to fetch districts";
+      error.value = res.data.message || "Failed to fetch data";
+      return false;
     }
   } catch (err) {
-    error.value = err.message || "An error occurred while fetching districts";
+    error.value = err.message || "An error occurred while fetching data";
+    await globalStore.onCheckError(err, router);
+    return false;
   } finally {
     isLoading.value = false;
   }
 };
 
-const fetchProvinces = async () => {
-  const globalStore = useGlobalStore();
+const getProvinces = async () => {
   try {
     const res = await axios.get("/api/provinces", globalStore.getAxiosHeader());
-    provinces.value = res.data.result ? res.data.data : [];
+    if (res.data.result) {
+      provinces.value = res.data.data;
+      return true;
+    }
+    return false;
   } catch (err) {
     console.error("Failed to fetch provinces", err);
     showNotification("error", "Error", "Failed to fetch provinces");
+    return false;
   }
 };
 
@@ -402,10 +457,7 @@ const openEditModal = (district) => {
   districtForm.id = district.id;
   districtForm.name = district.name;
   districtForm.local_name = district.local_name;
-
-  // Update this line to use the province_id from the nested province object
   districtForm.province_id = district.province.id;
-
   modalError.value = "";
   showModal.value = true;
 };
@@ -416,7 +468,6 @@ const closeModal = () => {
 };
 
 const submitDistrict = async () => {
-  const globalStore = useGlobalStore();
   isSubmitting.value = true;
   modalError.value = "";
 
@@ -436,7 +487,7 @@ const submitDistrict = async () => {
       : await axios.post("/api/districts", payload, globalStore.getAxiosHeader());
 
     if (res.data.result) {
-      await fetchDistricts(currentPage.value);
+      await getDistricts(paginationData.current_page);
       closeModal();
 
       // Show success notification
@@ -456,12 +507,21 @@ const submitDistrict = async () => {
 
 // Perform delete operation
 const performDeleteDistrict = async (id) => {
-  const globalStore = useGlobalStore();
   try {
     const res = await axios.delete(`/api/districts/${id}`, globalStore.getAxiosHeader());
 
     if (res.data.result) {
-      await fetchDistricts(currentPage.value);
+      // Refresh the current page or go to the previous page if no items left
+      const page = paginationData.current_page;
+      
+      if (districts.value.length === 1 && paginationData.current_page > 1) {
+        // If deleting the last item on a page (not the first page), go to the previous page
+        await getDistricts(page - 1);
+      } else {
+        // Otherwise refresh the current page
+        await getDistricts(page);
+      }
+      
       showNotification("success", "Success", "District deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete district");
@@ -483,8 +543,36 @@ const deleteDistrict = (id) => {
 };
 
 // Lifecycle Hook
-onMounted(() => {
-  fetchDistricts();
-  fetchProvinces();
+onMounted(async () => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // Load provinces first
+    await getProvinces();
+    // Then load districts
+    await getDistricts(1);
+  } catch (err) {
+    error.value = "Failed to load initial data";
+    showNotification("error", "Error", "Failed to load initial data");
+    console.error("Failed to load initial data", err);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
+
+<style scoped>
+/* Additional styling for sortable columns */
+th a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+th a:hover {
+  text-decoration: underline;
+}
+</style>

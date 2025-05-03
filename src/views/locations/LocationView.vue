@@ -8,26 +8,132 @@
     <div id="locations">
       <div class="mb-4">
         <div class="row g-3 justify-content-between">
-          <div class="col-auto">
+          <div class="col-auto justify-content-between row g-3">
             <div class="search-box">
               <input
                 v-model="searchQuery"
                 class="form-control search-input search"
                 type="search"
                 placeholder="Search locations"
+                @input="handleSearchInput"
               />
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedCategory"
+                class="form-select"
+                aria-label="Filter Category"
+                @change="handleSearch"
+              >
+                <option value="">Filter Category</option>
+                <option
+                  v-for="category in categories"
+                  :key="category.id"
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedProvince"
+                class="form-select"
+                aria-label="Filter Province"
+                @change="handleProvinceChange"
+              >
+                <option value="">Filter Province</option>
+                <option
+                  v-for="province in provinces"
+                  :key="province.id"
+                  :value="province.id"
+                >
+                  {{ province.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedDistrict"
+                class="form-select"
+                aria-label="Filter District"
+                @change="handleDistrictChange"
+                :disabled="!selectedProvince"
+              >
+                <option value="">Filter District</option>
+                <option
+                  v-for="district in filteredDistrictOptions"
+                  :key="district.id"
+                  :value="district.id"
+                >
+                  {{ district.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedCommune"
+                class="form-select"
+                aria-label="Filter Commune"
+                @change="handleCommuneChange"
+                :disabled="!selectedDistrict"
+              >
+                <option value="">Filter Commune</option>
+                <option
+                  v-for="commune in filteredCommuneOptions"
+                  :key="commune.id"
+                  :value="commune.id"
+                >
+                  {{ commune.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                v-model="selectedVillage"
+                class="form-select"
+                aria-label="Filter Village"
+                @change="handleSearch"
+                :disabled="!selectedCommune"
+              >
+                <option value="">Filter Village</option>
+                <option
+                  v-for="village in filteredVillageOptions"
+                  :key="village.id"
+                  :value="village.id"
+                >
+                  {{ village.name }}
+                </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                class="form-select"
+                aria-label="Items per page"
+                v-model="perPage"
+                @change="handleSearch"
+              >
+                <option :value="10">10 per page</option>
+                <option :value="25">25 per page</option>
+                <option :value="50">50 per page</option>
+                <option :value="100">100 per page</option>
+              </select>
             </div>
           </div>
           <div class="col-auto">
-            <button class="btn btn-primary" @click="openModal">
+            <button class="btn btn-primary" @click="openCreateModal">
               <span class="fas fa-plus me-2"></span>Add Location
             </button>
           </div>
         </div>
       </div>
-      <div v-if="state.isLoading" class="text-center">Loading...</div>
-      <div v-else-if="state.error" class="text-center text-danger">
-        {{ state.error }}
+      <div v-if="isLoading" class="text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      <div v-else-if="error" class="text-center text-danger">
+        {{ error }}
       </div>
       <div v-else class="table-responsive">
         <table class="table table-sm fs-9 mb-0">
@@ -35,21 +141,47 @@
             <tr>
               <th class="align-middle ps-0">#</th>
               <th class="align-middle">Thumbnail</th>
-              <th class="align-middle">Name</th>
-              <th class="align-middle">Local Name</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('name')">
+                  Name
+                  <i
+                    v-if="sortCol === 'name'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('name_local')">
+                  Local Name
+                  <i
+                    v-if="sortCol === 'name_local'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle">Category</th>
               <th class="align-middle">Province</th>
               <th class="align-middle">District</th>
-              <th class="align-middle">Published</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('published_at')">
+                  Published
+                  <i
+                    v-if="sortCol === 'published_at'"
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle text-end">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredLocations.length === 0">
+            <tr v-if="locations.length === 0">
               <td colspan="9" class="text-center">No location found</td>
             </tr>
-            <tr v-else v-for="(location, index) in filteredLocations" :key="location.id">
-              <td class="align-middle ps-0">{{ index + 1 }}</td>
+            <tr v-else v-for="(location, index) in locations" :key="location.id">
+              <td class="align-middle ps-0">
+                {{ (paginationData.current_page - 1) * perPage + index + 1 }}
+              </td>
               <td class="align-middle">
                 <img
                   :src="location.thumbnail"
@@ -95,6 +227,17 @@
             </tr>
           </tbody>
         </table>
+
+        <!-- Pagination -->
+        <pagination
+          v-if="!isLoading && locations.length > 0"
+          :current-page="paginationData.current_page"
+          :last-page="paginationData.last_page"
+          :first-item="paginationData.first_item"
+          :last-item="paginationData.last_item"
+          :total="paginationData.total"
+          @page-changed="changePage"
+        />
       </div>
     </div>
   </div>
@@ -102,15 +245,15 @@
   <div v-if="showModal" class="modal-overlay">
     <div class="modal-content location-form">
       <h4>{{ isEditMode ? "Edit" : "Create" }} Location</h4>
-      <div v-if="modalMessage" class="alert alert-danger">
-        {{ modalMessage }}
+      <div v-if="modalError" class="alert alert-danger">
+        {{ modalError }}
       </div>
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
         <!-- Basic Information -->
         <div class="col-md-4">
           <label class="form-label" for="locationName">Location Name</label>
           <input
-            v-model="newLocation.name"
+            v-model="locationForm.name"
             class="form-control"
             id="locationName"
             type="text"
@@ -121,7 +264,7 @@
         <div class="col-md-4">
           <label class="form-label" for="locationLocalName">Local Name</label>
           <input
-            v-model="newLocation.name_local"
+            v-model="locationForm.name_local"
             class="form-control"
             id="locationLocalName"
             type="text"
@@ -134,7 +277,7 @@
         <div class="col-md-4">
           <label class="form-label" for="categoryId">Category</label>
           <select
-            v-model="newLocation.category_id"
+            v-model="locationForm.category_id"
             class="form-select"
             id="categoryId"
             required
@@ -153,10 +296,10 @@
         <div class="col-md-4">
           <label class="form-label" for="provinceId">Province</label>
           <select
-            v-model="newLocation.province_id"
+            v-model="locationForm.province_id"
             class="form-select"
             id="provinceId"
-            @change="fetchDistricts"
+            @change="updateFormDistricts"
             required
           >
             <option value="" disabled>Select a province</option>
@@ -169,15 +312,19 @@
         <div class="col-md-4">
           <label class="form-label" for="districtId">District</label>
           <select
-            v-model="newLocation.district_id"
+            v-model="locationForm.district_id"
             class="form-select"
             id="districtId"
-            @change="fetchCommunes"
-            :disabled="!newLocation.province_id"
+            @change="updateFormCommunes"
+            :disabled="!locationForm.province_id"
             required
           >
             <option value="" disabled>Select a district</option>
-            <option v-for="district in districts" :key="district.id" :value="district.id">
+            <option
+              v-for="district in formDistricts"
+              :key="district.id"
+              :value="district.id"
+            >
               {{ district.name }}
             </option>
           </select>
@@ -187,14 +334,14 @@
         <div class="col-md-4">
           <label class="form-label" for="communeId">Commune</label>
           <select
-            v-model="newLocation.commune_id"
+            v-model="locationForm.commune_id"
             class="form-select"
             id="communeId"
-            @change="fetchVillages"
-            :disabled="!newLocation.district_id"
+            @change="updateFormVillages"
+            :disabled="!locationForm.district_id"
           >
             <option value="" disabled>Select a commune</option>
-            <option v-for="commune in communes" :key="commune.id" :value="commune.id">
+            <option v-for="commune in formCommunes" :key="commune.id" :value="commune.id">
               {{ commune.name }}
             </option>
           </select>
@@ -202,13 +349,13 @@
         <div class="col-md-4">
           <label class="form-label" for="villageId">Village</label>
           <select
-            v-model="newLocation.village_id"
+            v-model="locationForm.village_id"
             class="form-select"
             id="villageId"
-            :disabled="!newLocation.commune_id"
+            :disabled="!locationForm.commune_id"
           >
             <option value="" disabled>Select a village</option>
-            <option v-for="village in villages" :key="village.id" :value="village.id">
+            <option v-for="village in formVillages" :key="village.id" :value="village.id">
               {{ village.name }}
             </option>
           </select>
@@ -216,17 +363,17 @@
         <!-- Geographic Information -->
         <div class="col-md-4">
           <label class="form-label" for="lat">Latitude</label>
-          <input v-model="newLocation.lat" class="form-control" id="lat" type="text" />
+          <input v-model="locationForm.lat" class="form-control" id="lat" type="text" />
         </div>
         <div class="col-md-4">
           <label class="form-label" for="lot">Longitude</label>
-          <input v-model="newLocation.lot" class="form-control" id="lot" type="text" />
+          <input v-model="locationForm.lot" class="form-control" id="lot" type="text" />
         </div>
         <!-- URL Location -->
         <div class="col-md-4">
           <label class="form-label" for="urlLocation">URL Location</label>
           <input
-            v-model="newLocation.url_location"
+            v-model="locationForm.url_location"
             class="form-control"
             id="urlLocation"
             type="url"
@@ -236,7 +383,7 @@
         <div class="col-md-4">
           <label class="form-label" for="shortDescription">Short Description</label>
           <textarea
-            v-model="newLocation.short_description"
+            v-model="locationForm.short_description"
             class="form-control"
             id="shortDescription"
             rows="1"
@@ -250,7 +397,7 @@
             <input
               class="form-check-input"
               type="checkbox"
-              v-model="newLocation.published"
+              v-model="locationForm.published"
               id="locationPublished"
             />
             <label class="form-check-label" for="locationPublished">
@@ -268,9 +415,11 @@
             @change="handleFileUpload"
             accept="image/*"
           />
-          <div v-if="newLocation.thumbnail" class="mt-2">
+          <div v-if="locationForm.thumbnail" class="mt-2">
             <img
-              :src="newLocation.thumbnail"
+              :src="
+                typeof locationForm.thumbnail === 'string' ? locationForm.thumbnail : ''
+              "
               alt="Preview"
               class="thumbnail-preview"
               width="100"
@@ -280,7 +429,7 @@
         <!-- Tags -->
         <div class="col-md-8">
           <label class="form-label" for="tags">Tags</label>
-          <select v-model="newLocation.tag_ids" class="form-select" id="tags" multiple>
+          <select v-model="locationForm.tag_ids" class="form-select" id="tags" multiple>
             <option v-for="tag in tags" :key="tag.id" :value="tag.id">
               {{ tag.name }}
             </option>
@@ -291,7 +440,7 @@
         <div class="col-md-12">
           <label class="form-label" for="description">Full Description</label>
           <textarea
-            v-model="newLocation.description"
+            v-model="locationForm.description"
             class="form-control"
             id="description"
             rows="4"
@@ -300,13 +449,13 @@
 
         <!-- Form Buttons -->
         <div class="col-12 d-flex justify-content-end">
-    <button class="btn btn-secondary me-2" type="button" @click="closeModal">
-        Cancel
-    </button>
-    <button class="btn btn-primary" type="submit" :disabled="isSubmitting">
-        {{ isSubmitting ? "Processing..." : isEditMode ? "Update" : "Save" }}
-    </button>
-</div>
+          <button class="btn btn-secondary me-2" type="button" @click="closeModal">
+            Cancel
+          </button>
+          <button class="btn btn-primary" type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? "Processing..." : isEditMode ? "Update" : "Save" }}
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -357,35 +506,90 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
+import Pagination from "@/components/layouts/Pagination.vue";
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 
 // Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
 
-const state = reactive({
-  locations: [],
-  isLoading: false,
-  error: null,
-});
+// Router and Store
+const router = useRouter();
+const globalStore = useGlobalStore();
 
-// Data collections
+// State Management
+const locations = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+
+// Filter and Search Options
+const categories = ref([]);
 const provinces = ref([]);
 const districts = ref([]);
 const communes = ref([]);
 const villages = ref([]);
-const categories = ref([]);
 const tags = ref([]);
 
-// UI state
+// Form State
+const formDistricts = ref([]);
+const formCommunes = ref([]);
+const formVillages = ref([]);
+
+// Pagination settings
+const perPage = ref(10);
+const sortCol = ref("id");
+const sortDir = ref("desc");
+const paginationData = reactive({
+  has_page: false,
+  on_first_page: true,
+  has_more_pages: false,
+  first_item: 0,
+  last_item: 0,
+  total: 0,
+  current_page: 1,
+  last_page: 1,
+});
+
+// Search and Filter
 const searchQuery = ref("");
+const selectedCategory = ref("");
+const selectedProvince = ref("");
+const selectedDistrict = ref("");
+const selectedCommune = ref("");
+const selectedVillage = ref("");
+let searchTimeout = null;
+
+// Computed filter options
+const filteredDistrictOptions = computed(() => {
+  if (!selectedProvince.value) return [];
+  return districts.value.filter(
+    (district) => String(district.province_id) === String(selectedProvince.value)
+  );
+});
+
+const filteredCommuneOptions = computed(() => {
+  if (!selectedDistrict.value) return [];
+  return communes.value.filter(
+    (commune) => String(commune.district_id) === String(selectedDistrict.value)
+  );
+});
+
+const filteredVillageOptions = computed(() => {
+  if (!selectedCommune.value) return [];
+  return villages.value.filter(
+    (village) => String(village.commune_id) === String(selectedCommune.value)
+  );
+});
+
+// Modal Management
 const showModal = ref(false);
 const isEditMode = ref(false);
-const currentLocationId = ref(null);
 const isSubmitting = ref(false);
-const modalMessage = ref("");
+const modalError = ref("");
+const currentLocationId = ref(null);
 
 // Confirmation modal state
 const confirmationModal = reactive({
@@ -396,8 +600,8 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// New location form data
-const newLocation = reactive({
+// Location Form Data
+const locationForm = reactive({
   name: "",
   name_local: "",
   thumbnail: null,
@@ -439,98 +643,257 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Data fetching functions
-const fetchLocations = async () => {
-  state.isLoading = true;
-  state.error = null;
+// Utility Functions
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString();
+};
+
+// Handle search input with debounce
+const handleSearchInput = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+
+  searchTimeout = setTimeout(() => {
+    handleSearch();
+  }, 500);
+};
+
+// Handle search when user submits the search
+const handleSearch = async () => {
+  paginationData.current_page = 1;
+  await getLocations(1);
+};
+
+// Toggle sorting
+const toggleSort = async (column) => {
+  if (sortCol.value === column) {
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+  } else {
+    sortCol.value = column;
+    sortDir.value = "asc";
+  }
+
+  await getLocations(1);
+};
+
+// Handle pagination
+const changePage = async (page) => {
+  await getLocations(page);
+};
+
+// Filter handlers
+const handleProvinceChange = () => {
+  selectedDistrict.value = "";
+  selectedCommune.value = "";
+  selectedVillage.value = "";
+  handleSearch();
+};
+
+const handleDistrictChange = () => {
+  selectedCommune.value = "";
+  selectedVillage.value = "";
+  handleSearch();
+};
+
+const handleCommuneChange = () => {
+  selectedVillage.value = "";
+  handleSearch();
+};
+
+// Form dropdown handlers for modal
+const updateFormDistricts = async () => {
+  locationForm.district_id = "";
+  locationForm.commune_id = "";
+  locationForm.village_id = "";
+
+  if (!locationForm.province_id) {
+    formDistricts.value = [];
+    return;
+  }
+
   try {
-    const res = await axios.get("/api/locations");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.locations = res.data.data;
+    const res = await axios.get(
+      `/api/districts?province_id=${locationForm.province_id}`,
+      globalStore.getAxiosHeader()
+    );
+    if (res.data.result) {
+      formDistricts.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Failed to fetch districts for form", err);
+    formDistricts.value = [];
+  }
+};
+
+const updateFormCommunes = async () => {
+  locationForm.commune_id = "";
+  locationForm.village_id = "";
+
+  if (!locationForm.district_id) {
+    formCommunes.value = [];
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `/api/communes?district_id=${locationForm.district_id}`,
+      globalStore.getAxiosHeader()
+    );
+    if (res.data.result) {
+      formCommunes.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Failed to fetch communes for form", err);
+    formCommunes.value = [];
+  }
+};
+
+const updateFormVillages = async () => {
+  locationForm.village_id = "";
+
+  if (!locationForm.commune_id) {
+    formVillages.value = [];
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `/api/villages?commune_id=${locationForm.commune_id}`,
+      globalStore.getAxiosHeader()
+    );
+    if (res.data.result) {
+      formVillages.value = res.data.data;
+    }
+  } catch (err) {
+    console.error("Failed to fetch villages for form", err);
+    formVillages.value = [];
+  }
+};
+
+// Fetch locations data
+const getLocations = async (page = 1) => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // Build query URL with all filter parameters
+    const url = `/api/locations?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&category=${selectedCategory.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}&commune=${selectedCommune.value}&village=${selectedVillage.value}`;
+
+    console.log("API URL:", url);
+
+    const res = await axios.get(url, globalStore.getAxiosHeader());
+
+    if (res.data.result) {
+      locations.value = res.data.data;
+
+      // Update pagination data
+      if (res.data.paginate) {
+        Object.assign(paginationData, res.data.paginate);
+      }
+
+      return true;
     } else {
-      state.error = res.data.message || "Failed to fetch locations";
+      error.value = res.data.message || "Failed to fetch locations";
+      return false;
     }
-  } catch (error) {
-    state.error = "An error occurred while fetching locations.";
-  }
-  state.isLoading = false;
-};
-
-const fetchProvinces = async () => {
-  try {
-    const res = await axios.get("/api/provinces");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      provinces.value = res.data.data;
-    }
-  } catch (error) {
-    showNotification("error", "Error", "Failed to fetch provinces");
+  } catch (err) {
+    error.value = err.message || "An error occurred while fetching locations";
+    await globalStore.onCheckError(err, router);
+    return false;
+  } finally {
+    isLoading.value = false;
   }
 };
 
-const fetchDistricts = async () => {
-  if (!newLocation.province_id) return;
-
+// Fetch options data
+const getCategories = async () => {
   try {
-    const res = await axios.get(`/api/districts?province_id=${newLocation.province_id}`);
-    if (res.data.result && Array.isArray(res.data.data)) {
-      districts.value = res.data.data;
-      newLocation.district_id = "";
-      newLocation.commune_id = "";
-      newLocation.village_id = "";
-    }
-  } catch (error) {
-    showNotification("error", "Error", "Failed to fetch districts");
-  }
-};
-
-const fetchCommunes = async () => {
-  if (!newLocation.district_id) return;
-
-  try {
-    const res = await axios.get(`/api/communes?district_id=${newLocation.district_id}`);
-    if (res.data.result && Array.isArray(res.data.data)) {
-      communes.value = res.data.data;
-      newLocation.commune_id = "";
-      newLocation.village_id = "";
-    }
-  } catch (error) {
-    showNotification("error", "Error", "Failed to fetch communes");
-  }
-};
-
-const fetchVillages = async () => {
-  if (!newLocation.commune_id) return;
-
-  try {
-    const res = await axios.get(`/api/villages?commune_id=${newLocation.commune_id}`);
-    if (res.data.result && Array.isArray(res.data.data)) {
-      villages.value = res.data.data;
-      newLocation.village_id = "";
-    }
-  } catch (error) {
-    showNotification("error", "Error", "Failed to fetch villages");
-  }
-};
-
-const fetchCategories = async () => {
-  try {
-    const res = await axios.get("/api/categories");
-    if (res.data.result && Array.isArray(res.data.data)) {
+    const res = await axios.get("/api/categories", globalStore.getAxiosHeader());
+    if (res.data.result) {
       categories.value = res.data.data;
+      return true;
     }
-  } catch (error) {
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch categories", err);
     showNotification("error", "Error", "Failed to fetch categories");
+    return false;
   }
 };
 
-const fetchTags = async () => {
+const getProvinces = async () => {
   try {
-    const res = await axios.get("/api/tags");
-    if (res.data.result && Array.isArray(res.data.data)) {
-      tags.value = res.data.data;
+    const res = await axios.get("/api/provinces", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      provinces.value = res.data.data;
+      return true;
     }
-  } catch (error) {
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch provinces", err);
+    showNotification("error", "Error", "Failed to fetch provinces");
+    return false;
+  }
+};
+
+const getDistricts = async () => {
+  try {
+    const res = await axios.get("/api/districts", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      districts.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch districts", err);
+    showNotification("error", "Error", "Failed to fetch districts");
+    return false;
+  }
+};
+
+const getCommunes = async () => {
+  try {
+    const res = await axios.get("/api/communes", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      communes.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch communes", err);
+    showNotification("error", "Error", "Failed to fetch communes");
+    return false;
+  }
+};
+
+const getVillages = async () => {
+  try {
+    const res = await axios.get("/api/villages", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      villages.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch villages", err);
+    showNotification("error", "Error", "Failed to fetch villages");
+    return false;
+  }
+};
+
+const getTags = async () => {
+  try {
+    const res = await axios.get("/api/tags", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      tags.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch tags", err);
     showNotification("error", "Error", "Failed to fetch tags");
+    return false;
   }
 };
 
@@ -538,51 +901,185 @@ const fetchTags = async () => {
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    newLocation.thumbnail = file;
+    locationForm.thumbnail = file;
   }
 };
 
-// CRUD operations for locations
+// Modal Methods
+const openCreateModal = () => {
+  isEditMode.value = false;
+  currentLocationId.value = null;
+  resetLocationForm();
+  modalError.value = "";
+  showModal.value = true;
+};
+
+const editLocation = async (locationId) => {
+  isLoading.value = true;
+  try {
+    const res = await axios.get(
+      `/api/locations/${locationId}`,
+      globalStore.getAxiosHeader()
+    );
+    if (res.data.result) {
+      const location = res.data.data;
+
+      // Set basic info
+      currentLocationId.value = locationId;
+      locationForm.name = location.name || "";
+      locationForm.name_local = location.name_local || "";
+      locationForm.short_description = location.short_description || "";
+      locationForm.description = location.description || "";
+      locationForm.url_location = location.url_location || "";
+      locationForm.lat = location.lat || "";
+      locationForm.lot = location.lot || "";
+      locationForm.category_id = location.category ? location.category.id : "";
+      locationForm.published = !!location.published_at;
+
+      // Set thumbnail if exists
+      if (location.thumbnail && typeof location.thumbnail === "string") {
+        locationForm.thumbnail = location.thumbnail;
+      } else {
+        locationForm.thumbnail = null;
+      }
+
+      // Set tags
+      if (location.tags && Array.isArray(location.tags)) {
+        locationForm.tag_ids = location.tags.map((tag) => tag.id);
+      }
+      // Handle location hierarchy in sequence
+      locationForm.province_id = location.province ? location.province.id : "";
+
+      // We need to fetch districts before setting district_id
+      await updateFormDistricts();
+      locationForm.district_id = location.district ? location.district.id : "";
+
+      // We need to fetch communes before setting commune_id
+      await updateFormCommunes();
+      locationForm.commune_id = location.commune ? location.commune.id : "";
+
+      // We need to fetch villages before setting village_id
+      await updateFormVillages();
+      locationForm.village_id = location.village ? location.village.id : "";
+
+      isEditMode.value = true;
+      showModal.value = true;
+    } else {
+      showNotification("error", "Error", "Failed to fetch location details");
+    }
+  } catch (err) {
+    console.error("Error fetching location:", err);
+    showNotification("error", "Error", "Failed to fetch location details");
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  modalError.value = "";
+};
+
+const resetLocationForm = () => {
+  locationForm.name = "";
+  locationForm.name_local = "";
+  locationForm.thumbnail = null;
+  locationForm.url_location = "";
+  locationForm.short_description = "";
+  locationForm.description = "";
+  locationForm.lat = "";
+  locationForm.lot = "";
+  locationForm.category_id = "";
+  locationForm.province_id = "";
+  locationForm.district_id = "";
+  locationForm.commune_id = "";
+  locationForm.village_id = "";
+  locationForm.tag_ids = [];
+  locationForm.published = false;
+};
+
+// Form submission
+const handleSubmit = async (event) => {
+  event.preventDefault();
+
+  // Validate required fields
+  if (!locationForm.name.trim()) {
+    modalError.value = "Location name is required";
+    return;
+  }
+
+  if (!locationForm.name_local.trim()) {
+    modalError.value = "Local name is required";
+    return;
+  }
+
+  if (!locationForm.short_description.trim()) {
+    modalError.value = "Short description is required";
+    return;
+  }
+
+  if (!locationForm.category_id) {
+    modalError.value = "Category is required";
+    return;
+  }
+
+  if (!locationForm.province_id) {
+    modalError.value = "Province is required";
+    return;
+  }
+
+  if (!locationForm.district_id) {
+    modalError.value = "District is required";
+    return;
+  }
+
+  if (isEditMode.value) {
+    await updateLocation();
+  } else {
+    await createLocation();
+  }
+};
+
+// Create location
 const createLocation = async () => {
-  const globalStore = useGlobalStore();
   isSubmitting.value = true;
-  modalMessage.value = "";
+  modalError.value = "";
 
   try {
     // Create form data for submission
     const formData = new FormData();
 
     // Add basic location fields
-    formData.append("name", newLocation.name);
-    formData.append("name_local", newLocation.name_local);
-    formData.append("short_description", newLocation.short_description);
-    formData.append("description", newLocation.description || "");
+    formData.append("name", locationForm.name);
+    formData.append("name_local", locationForm.name_local);
+    formData.append("short_description", locationForm.short_description);
+    formData.append("description", locationForm.description || "");
 
     // Add geographical information
-    formData.append("lat", newLocation.lat || "");
-    formData.append("lot", newLocation.lot || "");
-    formData.append("url_location", newLocation.url_location || "");
+    formData.append("lat", locationForm.lat || "");
+    formData.append("lot", locationForm.lot || "");
+    formData.append("url_location", locationForm.url_location || "");
 
     // Add category and administrative areas
-    formData.append("category_id", newLocation.category_id);
-    formData.append("province_id", newLocation.province_id);
-    formData.append("district_id", newLocation.district_id);
+    formData.append("category_id", locationForm.category_id);
+    formData.append("province_id", locationForm.province_id);
+    formData.append("district_id", locationForm.district_id);
 
-    if (newLocation.commune_id) {
-      formData.append("commune_id", newLocation.commune_id);
+    if (locationForm.commune_id) {
+      formData.append("commune_id", locationForm.commune_id);
     }
 
-    if (newLocation.village_id) {
-      formData.append("village_id", newLocation.village_id);
+    if (locationForm.village_id) {
+      formData.append("village_id", locationForm.village_id);
     }
 
     // Add tags if selected
-    if (newLocation.tag_ids && newLocation.tag_ids.length > 0) {
-      formData.append("tag_ids", JSON.stringify(newLocation.tag_ids));
+    if (locationForm.tag_ids && locationForm.tag_ids.length > 0) {
+      formData.append("tag_ids", JSON.stringify(locationForm.tag_ids));
     }
 
     // Add publication status with the correct format (Y-m-d H:i:s)
-    if (newLocation.published) {
+    if (locationForm.published) {
       const now = new Date();
       const formattedDate =
         now.getFullYear() +
@@ -600,8 +1097,8 @@ const createLocation = async () => {
     }
 
     // Add thumbnail if selected
-    if (newLocation.thumbnail instanceof File) {
-      formData.append("thumbnail", newLocation.thumbnail);
+    if (locationForm.thumbnail instanceof File) {
+      formData.append("thumbnail", locationForm.thumbnail);
     }
 
     const res = await axios.post(
@@ -611,40 +1108,38 @@ const createLocation = async () => {
     );
 
     if (res.data.result) {
-      await fetchLocations();
+      await getLocations(paginationData.current_page);
       closeModal();
-      resetLocationForm();
       showNotification("success", "Success", "Location created successfully!");
     } else {
-      modalMessage.value = res.data.message || "Failed to create location";
+      modalError.value = res.data.message || "Failed to create location";
     }
   } catch (error) {
     console.error("Error creating location:", error);
     if (error.response && error.response.data) {
       if (error.response.data.message) {
-        modalMessage.value = error.response.data.message;
+        modalError.value = error.response.data.message;
       } else if (error.response.data.errors) {
         // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
-        modalMessage.value = errors.join("\n");
+        modalError.value = errors.join("\n");
       } else {
-        modalMessage.value = "An error occurred while creating the location.";
+        modalError.value = "An error occurred while creating the location.";
       }
     } else {
-      modalMessage.value = "An error occurred while creating the location.";
+      modalError.value = "An error occurred while creating the location.";
     }
 
-    const globalStore = useGlobalStore();
-    await globalStore.onCheckError(error);
+    await globalStore.onCheckError(error, router);
+  } finally {
+    isSubmitting.value = false;
   }
-
-  isSubmitting.value = false;
 };
 
+// Update location
 const updateLocation = async () => {
-  const globalStore = useGlobalStore();
   isSubmitting.value = true;
-  modalMessage.value = "";
+  modalError.value = "";
 
   try {
     // Create form data for submission
@@ -654,33 +1149,33 @@ const updateLocation = async () => {
     formData.append("_method", "PUT");
 
     // Add basic location fields
-    formData.append("name", newLocation.name);
-    formData.append("name_local", newLocation.name_local);
-    formData.append("short_description", newLocation.short_description);
-    formData.append("description", newLocation.description || "");
+    formData.append("name", locationForm.name);
+    formData.append("name_local", locationForm.name_local);
+    formData.append("short_description", locationForm.short_description);
+    formData.append("description", locationForm.description || "");
 
     // Add geographical information
-    formData.append("lat", newLocation.lat || "");
-    formData.append("lot", newLocation.lot || "");
-    formData.append("url_location", newLocation.url_location || "");
+    formData.append("lat", locationForm.lat || "");
+    formData.append("lot", locationForm.lot || "");
+    formData.append("url_location", locationForm.url_location || "");
 
     // Add category and administrative areas
-    formData.append("category_id", newLocation.category_id);
-    formData.append("province_id", newLocation.province_id);
-    formData.append("district_id", newLocation.district_id);
+    formData.append("category_id", locationForm.category_id);
+    formData.append("province_id", locationForm.province_id);
+    formData.append("district_id", locationForm.district_id);
 
-    if (newLocation.commune_id) {
-      formData.append("commune_id", newLocation.commune_id);
+    if (locationForm.commune_id) {
+      formData.append("commune_id", locationForm.commune_id);
     }
 
-    if (newLocation.village_id) {
-      formData.append("village_id", newLocation.village_id);
+    if (locationForm.village_id) {
+      formData.append("village_id", locationForm.village_id);
     }
 
     // Add tags if selected
-    if (newLocation.tag_ids && newLocation.tag_ids.length > 0) {
+    if (locationForm.tag_ids && locationForm.tag_ids.length > 0) {
       // Convert numeric strings to numbers if needed
-      const tagIds = newLocation.tag_ids.map((id) =>
+      const tagIds = locationForm.tag_ids.map((id) =>
         typeof id === "string" ? parseInt(id, 10) : id
       );
       formData.append("tag_ids", JSON.stringify(tagIds));
@@ -690,7 +1185,7 @@ const updateLocation = async () => {
     }
 
     // Add publication status with the correct format (Y-m-d H:i:s)
-    if (newLocation.published) {
+    if (locationForm.published) {
       const now = new Date();
       const formattedDate =
         now.getFullYear() +
@@ -710,8 +1205,8 @@ const updateLocation = async () => {
     }
 
     // Add thumbnail if selected
-    if (newLocation.thumbnail instanceof File) {
-      formData.append("thumbnail", newLocation.thumbnail);
+    if (locationForm.thumbnail instanceof File) {
+      formData.append("thumbnail", locationForm.thumbnail);
     }
 
     // Use POST with _method=PUT for FormData
@@ -722,261 +1217,93 @@ const updateLocation = async () => {
     );
 
     if (res.data.result) {
-      await fetchLocations();
+      await getLocations(paginationData.current_page);
       closeModal();
-      resetLocationForm();
       showNotification("success", "Success", "Location updated successfully!");
     } else {
-      modalMessage.value = res.data.message || "Failed to update location";
+      modalError.value = res.data.message || "Failed to update location";
     }
   } catch (error) {
     console.error("Error updating location:", error);
     if (error.response && error.response.data) {
       if (error.response.data.message) {
-        modalMessage.value = error.response.data.message;
+        modalError.value = error.response.data.message;
       } else if (error.response.data.errors) {
         // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
-        modalMessage.value = errors.join("\n");
+        modalError.value = errors.join("\n");
       } else {
-        modalMessage.value = "An error occurred while updating the location.";
+        modalError.value = "An error occurred while updating the location.";
       }
     } else {
-      modalMessage.value = "An error occurred while updating the location.";
+      modalError.value = "An error occurred while updating the location.";
     }
 
-    const globalStore = useGlobalStore();
-    await globalStore.onCheckError(error);
+    await globalStore.onCheckError(error, router);
+  } finally {
+    isSubmitting.value = false;
   }
-
-  isSubmitting.value = false;
 };
 
-// Delete location function
-const performDeleteLocation = async (locationId) => {
-  const globalStore = useGlobalStore();
+// Delete location
+const performDeleteLocation = async (id) => {
   try {
-    const res = await axios.delete(
-      `/api/locations/${locationId}`,
-      globalStore.getAxiosHeader()
-    );
+    const res = await axios.delete(`/api/locations/${id}`, globalStore.getAxiosHeader());
+
     if (res.data.result) {
-      state.locations = state.locations.filter((p) => p.id !== locationId);
-      await fetchLocations();
+      // If there was only one item on the current page and it's not the first page
+      if (locations.value.length === 1 && paginationData.current_page > 1) {
+        await getLocations(paginationData.current_page - 1);
+      } else {
+        await getLocations(paginationData.current_page);
+      }
+
       showNotification("success", "Success", "Location deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete location");
     }
-  } catch (error) {
-    showNotification("error", "Error", "An error occurred while deleting the location.");
-    const globalStore = useGlobalStore();
-    await globalStore.onCheckError(error);
+  } catch (err) {
+    showNotification("error", "Error", "An error occurred while deleting the location");
+    console.error("Error deleting location:", err);
+    await globalStore.onCheckError(err, router);
   }
 };
 
 // Show delete confirmation
-const deleteLocation = (locationId) => {
+const deleteLocation = (id) => {
   showConfirmation(
     "Delete Location",
     "Are you sure you want to delete this location?",
     performDeleteLocation,
-    locationId
+    id
   );
 };
 
-// Modal controls
-const openModal = () => {
-  resetLocationForm();
-  isEditMode.value = false;
-  showModal.value = true;
-};
-
-const editLocation = async (locationId) => {
-  try {
-    const globalStore = useGlobalStore();
-    state.isLoading = true;
-
-    // Fetch the full location data
-    const response = await axios.get(
-      `/api/locations/${locationId}`,
-      globalStore.getAxiosHeader()
-    );
-
-    if (response.data.result && response.data.data) {
-      const location = response.data.data;
-      console.log("Fetched location:", location);
-
-      // Set all the location fields
-      newLocation.name = location.name || "";
-      newLocation.name_local = location.name_local || "";
-      newLocation.short_description = location.short_description || "";
-      newLocation.description = location.description || "";
-      newLocation.url_location = location.url_location || "";
-      newLocation.lat = location.lat || "";
-      newLocation.lot = location.lot || "";
-
-      // Handle nested objects
-      newLocation.category_id = location.category ? location.category.id : "";
-      newLocation.province_id = location.province ? location.province.id : "";
-      newLocation.district_id = location.district ? location.district.id : "";
-      newLocation.commune_id = location.commune ? location.commune.id : "";
-      newLocation.village_id = location.village ? location.village.id : "";
-
-      console.log("Setting district_id:", newLocation.district_id);
-      console.log("Setting commune_id:", newLocation.commune_id);
-      console.log("Setting village_id:", newLocation.village_id);
-
-      // Handle tags - convert to array of IDs
-      if (location.tags && Array.isArray(location.tags)) {
-        newLocation.tag_ids = location.tags.map((tag) => tag.id);
-        console.log("Set tag_ids:", newLocation.tag_ids);
-      } else {
-        newLocation.tag_ids = [];
-      }
-
-      newLocation.published = !!location.published_at;
-
-      // Maintain the existing thumbnail URL for display
-      if (location.thumbnail && typeof location.thumbnail === "string") {
-        newLocation.thumbnail = location.thumbnail;
-      } else {
-        newLocation.thumbnail = null;
-      }
-
-      currentLocationId.value = locationId;
-      isEditMode.value = true;
-      showModal.value = true;
-
-      // Load related data in sequence
-      try {
-        // First load districts
-        if (location.province && location.province.id) {
-          const districtRes = await axios.get(
-            `/api/districts?province_id=${location.province.id}`
-          );
-          if (districtRes.data.result && Array.isArray(districtRes.data.data)) {
-            districts.value = districtRes.data.data;
-            console.log("Loaded districts:", districts.value);
-          }
-        }
-
-        // Then load communes
-        if (location.district && location.district.id) {
-          const communeRes = await axios.get(
-            `/api/communes?district_id=${location.district.id}`
-          );
-          if (communeRes.data.result && Array.isArray(communeRes.data.data)) {
-            communes.value = communeRes.data.data;
-            console.log("Loaded communes:", communes.value);
-          }
-        }
-
-        // Finally load villages
-        if (location.commune && location.commune.id) {
-          const villageRes = await axios.get(
-            `/api/villages?commune_id=${location.commune.id}`
-          );
-          if (villageRes.data.result && Array.isArray(villageRes.data.data)) {
-            villages.value = villageRes.data.data;
-            console.log("Loaded villages:", villages.value);
-          }
-        }
-      } catch (error) {
-        console.error("Error loading dependent data:", error);
-        showNotification("error", "Error", "Failed to load some dependent data");
-      }
-    } else {
-      showNotification("error", "Error", "Failed to fetch location details");
-    }
-  } catch (error) {
-    console.error("Error fetching location details:", error);
-    showNotification(
-      "error",
-      "Error",
-      "An error occurred while fetching location details"
-    );
-  } finally {
-    state.isLoading = false;
-  }
-};
-
-const closeModal = () => {
-  showModal.value = false;
-  resetLocationForm();
-  modalMessage.value = "";
-};
-
-const resetLocationForm = () => {
-  newLocation.name = "";
-  newLocation.name_local = "";
-  newLocation.thumbnail = null;
-  newLocation.url_location = "";
-  newLocation.short_description = "";
-  newLocation.description = "";
-  newLocation.lat = "";
-  newLocation.lot = "";
-  newLocation.category_id = "";
-  newLocation.province_id = "";
-  newLocation.district_id = "";
-  newLocation.commune_id = "";
-  newLocation.village_id = "";
-  newLocation.tag_ids = [];
-  newLocation.published = false;
-  currentLocationId.value = null;
-};
-
-const handleSubmit = async (event) => {
-  event.preventDefault();
-
-  // Validate required fields
-  if (!newLocation.name.trim()) {
-    modalMessage.value = "Location name is required";
-    return;
-  }
-
-  if (!newLocation.name_local.trim()) {
-    modalMessage.value = "Local name is required";
-    return;
-  }
-
-  if (!newLocation.short_description.trim()) {
-    modalMessage.value = "Short description is required";
-    return;
-  }
-
-  if (!newLocation.category_id) {
-    modalMessage.value = "Category is required";
-    return;
-  }
-
-  if (!newLocation.province_id) {
-    modalMessage.value = "Province is required";
-    return;
-  }
-
-  if (!newLocation.district_id) {
-    modalMessage.value = "District is required";
-    return;
-  }
-
-  if (isEditMode.value) {
-    await updateLocation();
-  } else {
-    await createLocation();
-  }
-};
-
-const filteredLocations = computed(() => {
-  return state.locations.filter(
-    (location) =>
-      location.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      location.name_local?.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
-
-// Initialize data on component mount
+// Lifecycle Hook
 onMounted(async () => {
-  await Promise.all([fetchLocations(), fetchProvinces(), fetchCategories(), fetchTags()]);
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // Load reference data in parallel
+    await Promise.all([
+      getCategories(),
+      getProvinces(),
+      getDistricts(),
+      getCommunes(),
+      getVillages(),
+      getTags(),
+    ]);
+
+    // Then load locations
+    await getLocations(1);
+  } catch (err) {
+    error.value = "Failed to load initial data";
+    showNotification("error", "Error", "Failed to load initial data");
+    console.error("Failed to load initial data", err);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
@@ -987,26 +1314,24 @@ onMounted(async () => {
 }
 
 .modal-overlay {
-  position: fixed;
-  top: 50px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  overflow-y: auto;
 }
 
 .modal-content {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
+  top: 20px;
   width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
+  max-width: 1200px;
+  max-height: 80vh;
+  left: 120px;
   overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
 }
 
 .location-form .form-label {
@@ -1018,64 +1343,31 @@ onMounted(async () => {
   border: 1px solid #dee2e6;
 }
 
-.confirmation-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+/* Additional styling for sortable columns */
+th a {
+  color: inherit;
+  text-decoration: none;
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1100;
+  gap: 0.5rem;
 }
 
-.confirmation-modal-content {
-  background-color: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  overflow: hidden;
+th a:hover {
+  text-decoration: underline;
 }
 
-.confirmation-header {
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #dee2e6;
+/* Media queries for responsive modal */
+@media (max-width: 992px) {
+  .modal-content {
+    width: 95%;
+    padding: 1.5rem;
+  }
 }
 
-.confirmation-icon {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
-
-.confirmation-icon.warning {
-  background-color: #fff3cd;
-  color: #ff9800;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-.confirmation-body {
-  padding: 1rem;
-}
-
-.confirmation-footer {
-  padding: 1rem;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #dee2e6;
+@media (max-height: 800px) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding: 20px 0;
+  }
 }
 </style>

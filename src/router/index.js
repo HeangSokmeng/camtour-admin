@@ -23,6 +23,7 @@ const ProductBrandView = () => import('@/views/products/ProductBrandView.vue');
 const ProductCategoryView = () => import('@/views/products/ProductCategoryView.vue');
 const ProductView = () => import('@/views/products/ProductView.vue');
 const ProductVariantView = () => import('@/views/products/ProductVariantView.vue');
+const UserView = () => import('@/views/users/UserView.vue');
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,6 +41,15 @@ const router = createRouter({
             path: '/login',
             name: 'login',
             component: LoginView,
+            meta: {
+                title: 'Admin Adventure . Login',
+                layout: 'auth',
+                auth: false
+            }
+        }, {
+            path: '/user',
+            name: 'user',
+            component: UserView,
             meta: {
                 title: 'Admin Adventure . Login',
                 layout: 'auth',

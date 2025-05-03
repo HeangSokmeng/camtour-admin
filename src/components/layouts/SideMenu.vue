@@ -239,6 +239,23 @@
 
           <!-- Settings -->
           <li class="nav-item">
+            <p class="navbar-vertical-label">User Management</p>
+            <hr class="navbar-vertical-line" />
+            <div class="nav-item-wrapper">
+              <RouterLink to="/user" class="nav-link dropdown-indicator label-1">
+                <div class="d-flex align-items-center">
+                  <div class="dropdown-indicator-icon-wrapper"></div>
+                  <span class="nav-link-icon">
+                    <span data-feather="user"></span>
+                  </span>
+                  <span class="nav-link-text">Users</span>
+                </div>
+              </RouterLink>
+            </div>
+           
+          </li>
+
+          <li class="nav-item">
             <p class="navbar-vertical-label">General Settings</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">

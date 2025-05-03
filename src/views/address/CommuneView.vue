@@ -16,6 +16,7 @@
                 class="form-control search-input search"
                 type="search"
                 placeholder="Search communes"
+                @input="handleSearchInput"
               />
             </div>
             <div class="col-auto">
@@ -40,6 +41,7 @@
                 class="form-select"
                 aria-label="District Filter"
                 v-model="selectedDistrict"
+                @change="handleSearch"
               >
                 <option value="">Filter District</option>
                 <option
@@ -49,6 +51,19 @@
                 >
                   {{ district.name }}
                 </option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <select
+                class="form-select"
+                aria-label="Items per page"
+                v-model="perPage"
+                @change="handleSearch"
+              >
+                <option :value="10">10 per page</option>
+                <option :value="25">25 per page</option>
+                <option :value="50">50 per page</option>
+                <option :value="100">100 per page</option>
               </select>
             </div>
           </div>
@@ -78,20 +93,44 @@
           <thead>
             <tr>
               <th class="align-middle ps-0" style="width: 50px">#</th>
-              <th class="align-middle">Commune Name</th>
-              <th class="align-middle">Commune Local Name</th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('name')">
+                  Commune Name
+                  <i 
+                    v-if="sortCol === 'name'" 
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
+              <th class="align-middle">
+                <a href="#" @click.prevent="toggleSort('local_name')">
+                  Commune Local Name
+                  <i 
+                    v-if="sortCol === 'local_name'" 
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle">Province</th>
               <th class="align-middle">District</th>
-              <th class="align-middle text-end">Created At</th>
+              <th class="align-middle text-end">
+                <a href="#" @click.prevent="toggleSort('created_at')">
+                  Created At
+                  <i 
+                    v-if="sortCol === 'created_at'" 
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
+                  ></i>
+                </a>
+              </th>
               <th class="align-middle text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredCommunes.length === 0">
+            <tr v-if="communes.length === 0">
               <td colspan="7" class="text-center">No communes found</td>
             </tr>
-            <tr v-else v-for="(commune, index) in filteredCommunes" :key="commune.id">
-              <td>{{ index + 1 }}</td>
+            <tr v-else v-for="(commune, index) in communes" :key="commune.id">
+              <td>{{ ((paginationData.current_page - 1) * perPage) + index + 1 }}</td>
               <td>{{ commune.name }}</td>
               <td>{{ commune.local_name }}</td>
               <td>{{ commune.province.name }}</td>
@@ -112,6 +151,17 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
+      <pagination
+        v-if="!isLoading && communes.length > 0"
+        :current-page="paginationData.current_page"
+        :last-page="paginationData.last_page"
+        :first-item="paginationData.first_item"
+        :last-item="paginationData.last_item"
+        :total="paginationData.total"
+        @page-changed="changePage"
+      />
 
       <!-- Commune Modal -->
       <div v-if="showModal" class="modal-overlay">
@@ -253,6 +303,7 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
+import Pagination from '@/components/layouts/Pagination.vue';
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
@@ -277,6 +328,22 @@ const error = ref(null);
 const searchQuery = ref("");
 const selectedProvince = ref("");
 const selectedDistrict = ref("");
+let searchTimeout = null;
+
+// Pagination settings
+const perPage = ref(10);
+const sortCol = ref('name');
+const sortDir = ref('asc');
+const paginationData = reactive({
+  has_page: false,
+  on_first_page: true,
+  has_more_pages: false,
+  first_item: 0,
+  last_item: 0,
+  total: 0,
+  current_page: 1,
+  last_page: 1
+});
 
 // Modal Management
 const showModal = ref(false);
@@ -338,24 +405,43 @@ const filteredDistricts = computed(() => {
     : districts.value;
 });
 
-const filteredCommunes = computed(() => {
-  return communes.value.filter((commune) => {
-    const nameMatch = commune.name
-      .toLowerCase()
-      .includes(searchQuery.value.toLowerCase());
-    const provinceMatch =
-      !selectedProvince.value ||
-      String(commune.province.id) === String(selectedProvince.value);
-    const districtMatch =
-      !selectedDistrict.value ||
-      String(commune.district.id) === String(selectedDistrict.value);
-    return nameMatch && provinceMatch && districtMatch;
-  });
-});
-
 // Utility Functions
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
+};
+
+// Handle search input with debounce
+const handleSearchInput = () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  
+  searchTimeout = setTimeout(() => {
+    handleSearch();
+  }, 500);
+};
+
+// Handle search when user submits the search
+const handleSearch = async () => {
+  paginationData.current_page = 1;
+  await getCommunes(1);
+};
+
+// Toggle sorting
+const toggleSort = async (column) => {
+  if (sortCol.value === column) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol.value = column;
+    sortDir.value = 'asc';
+  }
+  
+  await getCommunes(1);
+};
+
+// Handle pagination
+const changePage = async (page) => {
+  await getCommunes(page);
 };
 
 // Data Fetching
@@ -380,10 +466,35 @@ const fetchData = async (url, setData) => {
   }
 };
 
-const getCommunes = async () => {
-  return await fetchData("/api/communes", (data) => {
-    communes.value = data;
-  });
+const getCommunes = async (page = 1) => {
+  isLoading.value = true;
+  error.value = null;
+  
+  try {
+    const url = `/api/communes?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}`;
+    
+    const res = await axios.get(url, globalStore.getAxiosHeader());
+    
+    if (res.data.result) {
+      communes.value = res.data.data;
+      
+      // Update pagination data
+      if (res.data.paginate) {
+        Object.assign(paginationData, res.data.paginate);
+      }
+      
+      return true;
+    } else {
+      error.value = res.data.message || "Failed to fetch data";
+      return false;
+    }
+  } catch (err) {
+    error.value = err.message || "An error occurred while fetching data";
+    await globalStore.onCheckError(err, router);
+    return false;
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const getProvinces = async () => {
@@ -399,8 +510,9 @@ const getDistricts = async () => {
 };
 
 // Filter Methods
-const filterDistricts = () => {
+const filterDistricts = async () => {
   selectedDistrict.value = "";
+  await handleSearch();
 };
 
 const filterDistrictsForModal = () => {
@@ -467,7 +579,7 @@ const submitCommune = async () => {
       : await axios.post("/api/communes", payload, globalStore.getAxiosHeader());
 
     if (res.data.result) {
-      await getCommunes();
+      await getCommunes(paginationData.current_page);
       closeModal();
 
       // Show success notification
@@ -493,7 +605,18 @@ const performDeleteCommune = async (communeId) => {
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
-      await getCommunes();
+      // Refresh the current page or go to the previous page if no items left
+      const page = paginationData.current_page;
+      const lastItemOnPage = (paginationData.current_page - 1) * perPage.value + communes.value.length;
+      
+      if (communes.value.length === 1 && paginationData.current_page > 1) {
+        // If deleting the last item on a page (not the first page), go to the previous page
+        await getCommunes(page - 1);
+      } else {
+        // Otherwise refresh the current page
+        await getCommunes(page);
+      }
+      
       showNotification("success", "Success", "Commune deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete commune");
@@ -533,7 +656,7 @@ onMounted(async () => {
       return;
     }
 
-    const communesLoaded = await getCommunes();
+    const communesLoaded = await getCommunes(1);
     if (!communesLoaded) {
       showNotification("error", "Error", "Failed to load communes");
     }
@@ -546,3 +669,74 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+/* Additional styling for sortable columns */
+th a {
+  color: inherit;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+th a:hover {
+  text-decoration: underline;
+}
+
+/* Pagination styles (if not already defined in your global styles) */
+.pagination {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.page-item.active .page-link {
+  background-color: var(--falcon-primary);
+  border-color: var(--falcon-primary);
+}
+
+.page-link {
+  position: relative;
+  display: block;
+  color: var(--falcon-primary);
+  text-decoration: none;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  padding: 0.375rem 0.75rem;
+}
+
+.page-link:hover {
+  z-index: 2;
+  color: var(--falcon-primary-darker);
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.page-item.disabled .page-link {
+  color: #6c757d;
+  pointer-events: none;
+  background-color: #fff;
+  border-color: #dee2e6;
+}
+
+/* Items per page dropdown */
+.form-select {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  appearance: none;
+}
+</style>
