@@ -226,7 +226,7 @@
               </select>
               <div class="invalid-feedback">Please select a province</div>
             </div>
-            <div class="col-auto">
+            <div class="col-md-6">
               <select
                 v-model="selectedDistrict"
                 class="form-select"
@@ -244,7 +244,7 @@
                 </option>
               </select>
             </div>
-            <div class="col-auto">
+            <div class="col-md-6">
               <select
                 v-model="selectedCommune"
                 class="form-select"

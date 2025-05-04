@@ -197,8 +197,10 @@ const confirmAction = () => {
 const fetchProvinces = async () => {
     state.isLoading = true;
     state.error = null;
+    const globalStore = useGlobalStore();
+
     try {
-        const res = await axios.get("/api/provinces");
+        const res = await axios.get("/api/provinces", globalStore.getAxiosHeader());
         if (res.data.result && Array.isArray(res.data.data)) {
             state.provinces = res.data.data;
         } else {

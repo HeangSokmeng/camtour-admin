@@ -96,8 +96,8 @@
               <th class="align-middle">
                 <a href="#" @click.prevent="toggleSort('name')">
                   Commune Name
-                  <i 
-                    v-if="sortCol === 'name'" 
+                  <i
+                    v-if="sortCol === 'name'"
                     :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
@@ -105,8 +105,8 @@
               <th class="align-middle">
                 <a href="#" @click.prevent="toggleSort('local_name')">
                   Commune Local Name
-                  <i 
-                    v-if="sortCol === 'local_name'" 
+                  <i
+                    v-if="sortCol === 'local_name'"
                     :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
@@ -116,8 +116,8 @@
               <th class="align-middle text-end">
                 <a href="#" @click.prevent="toggleSort('created_at')">
                   Created At
-                  <i 
-                    v-if="sortCol === 'created_at'" 
+                  <i
+                    v-if="sortCol === 'created_at'"
                     :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
@@ -130,7 +130,7 @@
               <td colspan="7" class="text-center">No communes found</td>
             </tr>
             <tr v-else v-for="(commune, index) in communes" :key="commune.id">
-              <td>{{ ((paginationData.current_page - 1) * perPage) + index + 1 }}</td>
+              <td>{{ (paginationData.current_page - 1) * perPage + index + 1 }}</td>
               <td>{{ commune.name }}</td>
               <td>{{ commune.local_name }}</td>
               <td>{{ commune.province.name }}</td>
@@ -303,7 +303,7 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
-import Pagination from '@/components/layouts/Pagination.vue';
+import Pagination from "@/components/layouts/Pagination.vue";
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
@@ -332,8 +332,8 @@ let searchTimeout = null;
 
 // Pagination settings
 const perPage = ref(10);
-const sortCol = ref('name');
-const sortDir = ref('asc');
+const sortCol = ref("name");
+const sortDir = ref("asc");
 const paginationData = reactive({
   has_page: false,
   on_first_page: true,
@@ -342,7 +342,7 @@ const paginationData = reactive({
   last_item: 0,
   total: 0,
   current_page: 1,
-  last_page: 1
+  last_page: 1,
 });
 
 // Modal Management
@@ -415,7 +415,7 @@ const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
-  
+
   searchTimeout = setTimeout(() => {
     handleSearch();
   }, 500);
@@ -430,12 +430,12 @@ const handleSearch = async () => {
 // Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
   } else {
     sortCol.value = column;
-    sortDir.value = 'asc';
+    sortDir.value = "asc";
   }
-  
+
   await getCommunes(1);
 };
 
@@ -469,20 +469,20 @@ const fetchData = async (url, setData) => {
 const getCommunes = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-  
+
   try {
     const url = `/api/communes?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}`;
-    
+
     const res = await axios.get(url, globalStore.getAxiosHeader());
-    
+
     if (res.data.result) {
       communes.value = res.data.data;
-      
+
       // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-      
+
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch data";
@@ -607,8 +607,9 @@ const performDeleteCommune = async (communeId) => {
     if (res.data.result) {
       // Refresh the current page or go to the previous page if no items left
       const page = paginationData.current_page;
-      const lastItemOnPage = (paginationData.current_page - 1) * perPage.value + communes.value.length;
-      
+      const lastItemOnPage =
+        (paginationData.current_page - 1) * perPage.value + communes.value.length;
+
       if (communes.value.length === 1 && paginationData.current_page > 1) {
         // If deleting the last item on a page (not the first page), go to the previous page
         await getCommunes(page - 1);
@@ -616,7 +617,7 @@ const performDeleteCommune = async (communeId) => {
         // Otherwise refresh the current page
         await getCommunes(page);
       }
-      
+
       showNotification("success", "Success", "Commune deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete commune");
@@ -684,15 +685,6 @@ th a:hover {
   text-decoration: underline;
 }
 
-/* Pagination styles (if not already defined in your global styles) */
-.pagination {
-  display: flex;
-  justify-content: center;
-  list-style: none;
-  padding: 0;
-  margin: 1rem 0;
-}
-
 .page-item.active .page-link {
   background-color: var(--falcon-primary);
   border-color: var(--falcon-primary);
@@ -703,40 +695,8 @@ th a:hover {
   display: block;
   color: var(--falcon-primary);
   text-decoration: none;
-  background-color: #fff;
+  background-color: #ff0000;
   border: 1px solid #dee2e6;
   padding: 0.375rem 0.75rem;
-}
-
-.page-link:hover {
-  z-index: 2;
-  color: var(--falcon-primary-darker);
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-}
-
-.page-item.disabled .page-link {
-  color: #6c757d;
-  pointer-events: none;
-  background-color: #fff;
-  border-color: #dee2e6;
-}
-
-/* Items per page dropdown */
-.form-select {
-  display: block;
-  width: 100%;
-  padding: 0.375rem 2.25rem 0.375rem 0.75rem;
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.5;
-  color: #212529;
-  background-color: #fff;
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 0.25rem;
-  appearance: none;
 }
 </style>

@@ -252,13 +252,16 @@ const confirmAction = () => {
 const fetchProductCategories = async () => {
   state.isCategoryLoading = true;
   state.categoryError = null;
+  const globalStore = useGlobalStore();
+
   try {
-    const res = await axios.get("/api/product-categories");
+    const res = await axios.get("/api/product-categories",  globalStore.getAxiosHeader());
     if (res.data.result && Array.isArray(res.data.data)) {
       // Store only `name` and `id` for each category
       state.productCategories = res.data.data.map((category) => ({
         id: category.id,
-        name: category.name, // Only `name` and `id`
+        name: category.name,
+        created_at: category.created_at
       }));
     } else {
       state.categoryError = res.data.message || "Failed to fetch categories.";

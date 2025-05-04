@@ -223,8 +223,9 @@ const formatDate = (dateString) => {
 const fetchBrands = async () => {
   state.isLoading = true;
   state.error = null;
+  const globalStore = useGlobalStore();
   try {
-    const res = await axios.get("/api/brands");
+    const res = await axios.get("/api/brands", globalStore.getAxiosHeader());
     if (res.data.result && Array.isArray(res.data.data)) {
       state.brands = res.data.data;
     } else {

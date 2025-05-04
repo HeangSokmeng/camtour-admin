@@ -26,11 +26,7 @@
                 @change="handleSearch"
               >
                 <option value="">Filter Brand</option>
-                <option
-                  v-for="brand in brands"
-                  :key="brand.id"
-                  :value="brand.id"
-                >
+                <option v-for="brand in brands" :key="brand.id" :value="brand.id">
                   {{ brand.name }}
                 </option>
               </select>
@@ -169,17 +165,14 @@
                 >
                   <span class="fas fa-edit me-1"></span>Edit
                 </button>
-                <button 
-                  class="btn btn-sm btn-danger" 
-                  @click="deleteProduct(product.id)"
-                >
+                <button class="btn btn-sm btn-danger" @click="deleteProduct(product.id)">
                   <span class="fas fa-trash me-1"></span>Delete
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
-        
+
         <!-- Pagination -->
         <pagination
           v-if="!isLoading && products.length > 0"
@@ -544,13 +537,13 @@ const changePage = async (page) => {
 const getProducts = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-  
+
   try {
     // Build query URL with all filter parameters
     const url = `/api/products?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&brand_id=${selectedBrand.value}&category_id=${selectedCategory.value}`;
-    
+
     console.log("API URL:", url);
-    
+
     const res = await axios.get(url, globalStore.getAxiosHeader());
 
     if (res.data.result) {
@@ -698,10 +691,13 @@ const openCreateModal = () => {
 const editProduct = async (productId) => {
   isLoading.value = true;
   try {
-    const res = await axios.get(`/api/products/${productId}`, globalStore.getAxiosHeader());
+    const res = await axios.get(
+      `/api/products/${productId}`,
+      globalStore.getAxiosHeader()
+    );
     if (res.data.result) {
       const product = res.data.data;
-      
+
       // Set basic info
       currentProductId.value = productId;
       productForm.name = product.name || "";
@@ -710,24 +706,33 @@ const editProduct = async (productId) => {
       productForm.description = product.description || "";
       productForm.price = product.price || "";
       productForm.status = product.status || "draft";
-      
+
       // Handle relations
-      productForm.brand_id = product.brand ? product.brand.id : 
-                           product.brand_id ? product.brand_id : "";
-                           
-      productForm.category_id = product.category ? product.category.id : 
-                              product.category_id ? product.category_id : "";
-                              
-      productForm.product_category_id = product.product_category ? product.product_category.id : 
-                                       product.product_category_id ? product.product_category_id : "";
-      
+      productForm.brand_id = product.brand
+        ? product.brand.id
+        : product.brand_id
+        ? product.brand_id
+        : "";
+
+      productForm.category_id = product.category
+        ? product.category.id
+        : product.category_id
+        ? product.category_id
+        : "";
+
+      productForm.product_category_id = product.product_category
+        ? product.product_category.id
+        : product.product_category_id
+        ? product.product_category_id
+        : "";
+
       // Set thumbnail if exists
-      if (product.thumbnail && typeof product.thumbnail === 'string') {
+      if (product.thumbnail && typeof product.thumbnail === "string") {
         productForm.thumbnail = product.thumbnail;
       } else {
         productForm.thumbnail = null;
       }
-      
+
       isEditMode.value = true;
       showModal.value = true;
     } else {
@@ -825,11 +830,7 @@ const createProduct = async () => {
       formData.append("thumbnail", productForm.thumbnail);
     }
 
-    const res = await axios.post(
-      `/api/products`,
-      formData,
-      globalStore.getAxiosHeader()
-    );
+    const res = await axios.post(`/api/products`, formData, globalStore.getAxiosHeader());
 
     if (res.data.result) {
       await getProducts(paginationData.current_page);
@@ -944,7 +945,7 @@ const performDeleteProduct = async (id) => {
       } else {
         await getProducts(paginationData.current_page);
       }
-      
+
       showNotification("success", "Success", "Product deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete product");
@@ -978,12 +979,8 @@ onMounted(async () => {
 
   try {
     // Load reference data in parallel
-    await Promise.all([
-      fetchBrands(),
-      fetchCategories(),
-      fetchProductCategories()
-    ]);
-    
+    await Promise.all([fetchBrands(), fetchCategories(), fetchProductCategories()]);
+
     // Then load products
     await getProducts(1);
   } catch (err) {
@@ -1012,10 +1009,11 @@ onMounted(async () => {
 }
 
 .modal-content {
-  left: 120px;
+  top: 0;
   width: 90%;
   max-width: 1200px;
-  max-height: unset;
+  max-height: 90vh;
+  left: 0;
   overflow-y: auto;
   padding: 2rem;
   border-radius: 0.5rem;

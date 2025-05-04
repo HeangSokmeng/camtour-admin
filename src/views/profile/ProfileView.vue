@@ -54,7 +54,11 @@
           <div class="border-bottom border-dashed">
             <h4 class="mb-3">
               Contact Information
-              <button class="btn btn-link p-0 address-edit-btn" type="button" @click="toggleEditModal">
+              <button
+                class="btn btn-link p-0 address-edit-btn"
+                type="button"
+                @click="toggleEditModal"
+              >
                 <span class="fas fa-edit fs-9 ms-3 text-body-quaternary"></span>
               </button>
             </h4>
@@ -185,8 +189,19 @@
                 accept="image/*"
               />
               <div class="mt-2" v-if="editForm.imagePreview">
-                <img :src="editForm.imagePreview" alt="Preview" class="img-thumbnail" style="max-height: 100px;" />
-                <button type="button" class="btn btn-sm btn-danger ms-2" @click="removeImage">Remove</button>
+                <img
+                  :src="editForm.imagePreview"
+                  alt="Preview"
+                  class="img-thumbnail"
+                  style="max-height: 100px"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger ms-2"
+                  @click="removeImage"
+                >
+                  Remove
+                </button>
               </div>
               <div class="invalid-feedback" v-if="profileErrors.image">
                 {{ profileErrors.image }}
@@ -337,7 +352,6 @@
     :class="{ show: showPasswordModal || showEditModal }"
     v-if="showPasswordModal || showEditModal"
   ></div>
-
 </template>
 
 <script setup>
@@ -423,7 +437,7 @@ const profileErrors = reactive({
 const togglePasswordModal = () => {
   showPasswordModal.value = !showPasswordModal.value;
   if (showPasswordModal.value) showEditModal.value = false;
-  
+
   if (!showPasswordModal.value) {
     // Reset form when closing modal
     passwordForm.current_password = "";
@@ -469,9 +483,9 @@ const togglePasswordVisibility = (field) => {
 const handleImageChange = (event) => {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   editForm.image = file;
-  
+
   // Create a preview
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -483,7 +497,7 @@ const handleImageChange = (event) => {
 const removeImage = () => {
   editForm.image = null;
   editForm.imagePreview = null;
-  document.getElementById('edit_image').value = '';
+  document.getElementById("edit_image").value = "";
 };
 
 const fetchProfile = async () => {
@@ -505,39 +519,35 @@ const fetchProfile = async () => {
 
 const submitProfileEdit = async () => {
   // Reset errors
-  Object.keys(profileErrors).forEach(key => {
+  Object.keys(profileErrors).forEach((key) => {
     profileErrors[key] = "";
   });
-  
+
   editForm.isSubmitting = true;
-  
+
   try {
     const globalStore = useGlobalStore();
-    
+
     // Create FormData for file upload
     const formData = new FormData();
-    formData.append('first_name', editForm.first_name);
-    formData.append('last_name', editForm.last_name);
-    formData.append('gender', editForm.gender);
-    formData.append('phone', editForm.phone);
-    formData.append('email', editForm.email);
-    
+    formData.append("first_name", editForm.first_name);
+    formData.append("last_name", editForm.last_name);
+    formData.append("gender", editForm.gender);
+    formData.append("phone", editForm.phone);
+    formData.append("email", editForm.email);
+
     if (editForm.image) {
-      formData.append('image', editForm.image);
+      formData.append("image", editForm.image);
     }
-    
-    const res = await axios.post(
-      "/api/profile/info",
-      formData,
-      {
-        ...globalStore.getAxiosHeader(),
-        headers: {
-          ...globalStore.getAxiosHeader().headers,
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-    
+
+    const res = await axios.post("/api/profile/info", formData, {
+      ...globalStore.getAxiosHeader(),
+      headers: {
+        ...globalStore.getAxiosHeader().headers,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
     if (res.data.result) {
       // Update local profile data
       fetchProfile();

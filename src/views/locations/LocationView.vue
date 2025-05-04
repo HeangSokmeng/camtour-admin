@@ -1323,11 +1323,11 @@ onMounted(async () => {
 }
 
 .modal-content {
-  top: 20px;
+  top: 0;
   width: 90%;
   max-width: 1200px;
-  max-height: 80vh;
-  left: 120px;
+  max-height: 90vh;
+  left: 0;
   overflow-y: auto;
   padding: 2rem;
   border-radius: 0.5rem;

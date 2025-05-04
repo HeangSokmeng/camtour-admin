@@ -3,7 +3,7 @@
     <div class="collapse navbar-collapse" id="navbarVerticalCollapse">
       <div class="navbar-vertical-content">
         <ul class="navbar-nav flex-column" id="navbarVerticalNav">
-          <!-- Dashboard -->
+          <!-- Dashboard - Accessible to all logged-in users -->
           <li class="nav-item">
             <div class="nav-item-wrapper">
               <RouterLink
@@ -22,8 +22,8 @@
             </div>
           </li>
 
-          <!-- Location Management -->
-          <li class="nav-item">
+          <!-- Location Management - Accessible to staff and above -->
+          <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">Address Management</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
@@ -130,8 +130,8 @@
             </div>
           </li>
 
-          <!-- Product Management -->
-          <li class="nav-item">
+          <!-- Product Management - Accessible to staff and above -->
+          <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">Product Management</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
@@ -237,8 +237,8 @@
             </div>
           </li>
 
-          <!-- Settings -->
-          <li class="nav-item">
+          <!-- User Management - Only for admin and system admin -->
+          <li class="nav-item" v-if="globalStore.canAccessUserManagement">
             <p class="navbar-vertical-label">User Management</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
@@ -252,10 +252,22 @@
                 </div>
               </RouterLink>
             </div>
-           
+            <!-- Role Management - Only for system admin -->
+            <div class="nav-item-wrapper" v-if="globalStore.isSystemAdmin">
+              <RouterLink to="/roles" class="nav-link dropdown-indicator label-1">
+                <div class="d-flex align-items-center">
+                  <div class="dropdown-indicator-icon-wrapper"></div>
+                  <span class="nav-link-icon">
+                    <span data-feather="shield"></span>
+                  </span>
+                  <span class="nav-link-text">Roles</span>
+                </div>
+              </RouterLink>
+            </div>
           </li>
 
-          <li class="nav-item">
+          <!-- General Settings - Accessible to staff and above -->
+          <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">General Settings</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
@@ -281,6 +293,23 @@
               </RouterLink>
             </div>
           </li>
+
+          <!-- System Settings - Only for system admin -->
+          <li class="nav-item" v-if="globalStore.isSystemAdmin">
+            <p class="navbar-vertical-label">System Settings</p>
+            <hr class="navbar-vertical-line" />
+            <div class="nav-item-wrapper">
+              <RouterLink to="" class="nav-link dropdown-indicator label-1">
+                <div class="d-flex align-items-center">
+                  <div class="dropdown-indicator-icon-wrapper"></div>
+                  <span class="nav-link-icon">
+                    <span data-feather="settings"></span>
+                  </span>
+                  <span class="nav-link-text">System Settings</span>
+                </div>
+              </RouterLink>
+            </div>
+          </li>
         </ul>
       </div>
     </div>
@@ -298,15 +327,42 @@
 <script setup>
 import "@/assets/js/side_menu.js";
 import { replace } from "feather-icons";
-import { onMounted } from "vue";
+import { onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
+import { useGlobalStore } from "@/stores/global";
 
 const route = useRoute();
+const globalStore = useGlobalStore();
 
 onMounted(() => {
+  console.log("=== SIDEBAR DEBUG START ===");
+  console.log("Profile:", globalStore.profile);
+  console.log("Profile Role ID:", globalStore.profile?.role_id);
+  console.log("Is System Admin:", globalStore.isSystemAdmin);
+  console.log("Is Admin:", globalStore.isAdmin);
+  console.log("Is Staff:", globalStore.isStaff);
+  console.log("At Least Staff:", globalStore.atLeastStaff);
+  console.log("Can Access User Management:", globalStore.canAccessUserManagement);
+  console.log("=== SIDEBAR DEBUG END ===");
+
   replace({
     width: 16,
     height: 16,
   });
 });
+
+// Watch for changes in profile
+watch(
+  () => globalStore.profile,
+  (newProfile) => {
+    console.log("Profile changed:", newProfile);
+    console.log("Role ID:", newProfile?.role_id);
+    console.log("Role checks recalculated:", {
+      atLeastStaff: globalStore.atLeastStaff,
+      canAccessUserManagement: globalStore.canAccessUserManagement,
+      isSystemAdmin: globalStore.isSystemAdmin,
+    });
+  },
+  { immediate: true }
+);
 </script>

@@ -10,20 +10,29 @@ const OTPView = () => import('@/views/auth/OTPView.vue')
 const ResetView = () => import('@/views/auth/ResetView.vue')
 const CategoryView = () => import('@/views/categories/CategoryView.vue')
 const TagView = () => import('@/views/tags/TagView.vue')
-const ProvincesView = () => import('@/views/address/ProvinceView.vue');
-const DistrictView = () => import('@/views/address/DistrictView.vue');
-const CommuneView = () => import('@/views/address/CommuneView.vue');
-const VillageVue = () => import('@/views/address/VillageView.vue');
-const ProductColorView = () => import('@/views/products/ProductColorView.vue');
-const ProductSizeView = () => import('@/views/products/ProductSizeView.vue');
-const LocationView = () => import('@/views/locations/LocationView.vue');
-const LocationPhotoView = () => import('@/views/locations/LocationPhotoView.vue');
-const ProfileView = () => import('@/views/profile/ProfileView.vue');
-const ProductBrandView = () => import('@/views/products/ProductBrandView.vue');
-const ProductCategoryView = () => import('@/views/products/ProductCategoryView.vue');
-const ProductView = () => import('@/views/products/ProductView.vue');
-const ProductVariantView = () => import('@/views/products/ProductVariantView.vue');
-const UserView = () => import('@/views/users/UserView.vue');
+const ProvincesView = () => import('@/views/address/ProvinceView.vue')
+const DistrictView = () => import('@/views/address/DistrictView.vue')
+const CommuneView = () => import('@/views/address/CommuneView.vue')
+const VillageVue = () => import('@/views/address/VillageView.vue')
+const ProductColorView = () => import('@/views/products/ProductColorView.vue')
+const ProductSizeView = () => import('@/views/products/ProductSizeView.vue')
+const LocationView = () => import('@/views/locations/LocationView.vue')
+const LocationPhotoView = () => import('@/views/locations/LocationPhotoView.vue')
+const ProfileView = () => import('@/views/profile/ProfileView.vue')
+const ProductBrandView = () => import('@/views/products/ProductBrandView.vue')
+const ProductCategoryView = () => import('@/views/products/ProductCategoryView.vue')
+const ProductView = () => import('@/views/products/ProductView.vue')
+const ProductVariantView = () => import('@/views/products/ProductVariantView.vue')
+const UsersView = () => import('@/views/users/UserView.vue')
+const ForbiddenView = () => import('@/views/error/ForbiddenView.vue')
+
+// Role constants
+const ROLES = {
+    SYSTEM_ADMIN: 1,
+    ADMIN: 2,
+    STAFF: 3,
+    CUSTOMER: 4
+}
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -36,8 +45,10 @@ const router = createRouter({
                 title: 'Admin Adventure . Dashboard',
                 layout: 'board',
                 auth: true
+                // No roles specified - accessible to all authenticated users
             }
-        }, {
+        }, 
+        {
             path: '/login',
             name: 'login',
             component: LoginView,
@@ -46,16 +57,29 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, {
-            path: '/user',
-            name: 'user',
-            component: UserView,
+        }, 
+        {
+            path: '/403',
+            name: 'forbidden',
+            component: ForbiddenView,
             meta: {
-                title: 'Admin Adventure . Login',
-                layout: 'auth',
+                title: 'Admin Adventure . Access Forbidden',
+                layout: 'forbidden',
                 auth: false
             }
-        }, {
+        },
+        {
+            path: '/user',
+            name: 'user',
+            component: UsersView,
+            meta: {
+                title: 'Admin Adventure . User Management',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN] // Only admin and system admin
+            }
+        }, 
+        {
             path: '/forgot-password',
             name: 'forgot.password',
             component: ForgotView,
@@ -64,7 +88,8 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, {
+        }, 
+        {
             path: '/otp/forgot-verify',
             name: 'otp.forgot.verify',
             component: OTPView,
@@ -73,7 +98,8 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, {
+        }, 
+        {
             path: '/reset-password',
             name: 'reset.password',
             component: ResetView,
@@ -82,77 +108,93 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, {
+        }, 
+        {
             path: '/category',
             name: 'category',
             component: CategoryView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Categories',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/location',
             name: 'location',
             component: LocationView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Location Management',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/location/photo',
-            name: 'location photo',
+            name: 'location.photo',
             component: LocationPhotoView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Location Photos',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/color',
-            name: 'product color',
+            name: 'product.color',
             component: ProductColorView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Product Colors',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        },  {
+        },  
+        {
             path: '/product/variant',
-            name: 'product variant',
+            name: 'product.variant',
             component: ProductVariantView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Product Variants',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        },  {
+        },  
+        {
             path: '/product/size',
-            name: 'product size',
+            name: 'product.size',
             component: ProductSizeView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Product Sizes',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/tag',
             name: 'tag',
             component: TagView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Tags',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/province',
             name: 'province',
             component: ProvincesView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Provinces',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
         },
         {
@@ -160,63 +202,76 @@ const router = createRouter({
             name: 'district',
             component: DistrictView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Districts',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/commune',
             name: 'commune',
             component: CommuneView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Communes',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/village',
             name: 'village',
             component: VillageVue,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Villages',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/profile/edit-profile',
-            name: 'edit-profile',
+            name: 'edit.profile',
             component: ProfileView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Profile',
                 layout: 'board',
                 auth: true
+                // No roles specified - accessible to all authenticated users
             }
-        }, {
+        }, 
+        {
             path: '/product/brand',
-            name: 'product brand',
+            name: 'product.brand',
             component: ProductBrandView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Product Brands',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/product/category',
-            name: 'product category',
+            name: 'product.category',
             component: ProductCategoryView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Product Categories',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        }, 
+        {
             path: '/product',
             name: 'product',
             component: ProductView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Adventure . Products',
                 layout: 'board',
-                auth: true
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
         },
     ]
@@ -225,55 +280,90 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
     const gStore = useGlobalStore()
     gStore.ldi_page = true
+
+    // Authentication check
     if (to.meta.auth) {
         try {
             const { is_remember, usr_obj, usr_tk } = loadProfile()
+            
+            // No token or user object - redirect to login
             if (!usr_tk || !usr_obj) {
                 clearToken()
                 return { name: 'login' }
-            } else {
-                gStore.profile = usr_obj
-                gStore.token = usr_tk
-                gStore.is_remember = is_remember
             }
+
+            // Set store data
+            gStore.profile = usr_obj
+            gStore.token = usr_tk
+            gStore.is_remember = is_remember
+
+            // Verify token validity if not already checked
             if (!sessionStorage.getItem('is_check_usr')) {
                 const res = await axios.get('/api/auth/me', gStore.getAxiosHeader())
+                
                 if (!res.data.result) {
                     clearToken()
                     return { name: 'login' }
                 }
+
+                // Store profile
                 if (is_remember) {
                     localStorage.setItem('usr_pr', JSON.stringify(res.data.data))
                 } else {
                     sessionStorage.setItem('usr_pr', JSON.stringify(res.data.data))
                 }
+                
                 gStore.profile = res.data.data
                 sessionStorage.setItem('is_check_usr', '1')
             }
+
+            // Role-based access control (only if roles are specified)
+            if (to.meta.roles && Array.isArray(to.meta.roles)) {
+                const userRole = gStore.profile?.role_id
+                
+                if (!userRole || !to.meta.roles.includes(userRole)) {
+                    return { 
+                        name: 'forbidden',
+                        query: {
+                            roles: to.meta.roles.join(',')
+                        }
+                    }
+                }
+            }
+
         } catch (err) {
+            console.error('Router error:', err)
+            
             if (err.code === 'ERR_NETWORK') {
                 alert('Error connection! Please check internet connection, then try again.')
-            } else if (err.response.status === 401) {
-                alert('No authorization')
-            } else if (err.response.status === 403) {
+            } else if (err.response?.status === 401) {
+                clearToken()
+                return { name: 'login' }
+            } else if (err.response?.status === 403) {
                 clearToken()
                 sessionStorage.removeItem('is_check_usr')
-                if (to.name !== 'login') {
-                    return { name: 'login' }
-                }
+                return { name: 'login' }
+            } else {
+                // Other errors - go to login
+                clearToken()
+                return { name: 'login' }
             }
         }
     } else {
-        if (['login', 'forgot.password', 'otp.forgot.verify'].includes(to.name)) {
+        // Handle public routes
+        if (['login', 'forgot.password', 'otp.forgot.verify', 'reset.password'].includes(to.name)) {
             const { is_remember, usr_obj, usr_tk } = loadProfile()
+            
             if (!usr_tk || !usr_obj) {
                 clearToken()
             } else {
                 gStore.profile = usr_obj
                 gStore.token = usr_tk
                 gStore.is_remember = is_remember
+                
                 try {
                     const res = await axios.get('/api/auth/me', gStore.getAxiosHeader())
+                    
                     if (!res.data.result) {
                         clearToken()
                     } else {
@@ -282,19 +372,13 @@ router.beforeEach(async (to, from) => {
                         } else {
                             sessionStorage.setItem('usr_pr', JSON.stringify(res.data.data))
                         }
+                        
                         gStore.profile = res.data.data
                         sessionStorage.setItem('is_check_usr', '1')
                         return { name: 'home' }
                     }
                 } catch (err) {
-                    if (err.code === 'ERR_NETWORK') {
-                        alert('Error connection! Please check internet connection, then try again.')
-                    } else if (err.response.status === 401) {
-                        alert('No authorization')
-                    } else if (err.response.status === 403) {
-                        clearToken()
-                        sessionStorage.removeItem('is_check_usr')
-                    }
+                    clearToken()
                 }
             }
         }
@@ -302,7 +386,13 @@ router.beforeEach(async (to, from) => {
 })
 
 router.afterEach((to, from, failure) => {
+    const gStore = useGlobalStore()
+    gStore.ldi_page = false
     document.title = to.meta.title
+
+    if (failure) {
+        console.error('Navigation failed:', failure)
+    }
 })
 
 export default router

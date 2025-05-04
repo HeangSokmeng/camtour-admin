@@ -198,8 +198,10 @@ const confirmAction = () => {
 
 const fetchTags = async () => {
   state.isLoading = true;
+  const globalStore = useGlobalStore(); // Import the store
+  
   try {
-    const res = await axios.get("/api/tags");
+    const res = await axios.get("/api/tags", globalStore.getAxiosHeader()); // Add auth headers
     if (res.data.result && Array.isArray(res.data.data)) {
       state.tags = res.data.data;
     } else {
@@ -208,6 +210,8 @@ const fetchTags = async () => {
   } catch (error) {
     state.error = "An error occurred while fetching tags";
     console.error(error);
+    // Handle error properly with the store
+    await globalStore.onCheckError(error, router);
   } finally {
     state.isLoading = false;
   }
