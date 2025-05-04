@@ -295,7 +295,7 @@
           </li>
 
           <!-- System Settings - Only for system admin -->
-          <!-- <li class="nav-item" v-if="globalStore.isSystemAdmin">
+          <li class="nav-item" v-if="globalStore.isSystemAdmin">
             <p class="navbar-vertical-label">System Settings</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
@@ -312,7 +312,7 @@
                 </div>
               </RouterLink>
             </div>
-          </li> -->
+          </li>
         </ul>
       </div>
     </div>
