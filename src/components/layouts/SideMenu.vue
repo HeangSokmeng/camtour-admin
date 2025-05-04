@@ -299,7 +299,10 @@
             <p class="navbar-vertical-label">System Settings</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
-              <RouterLink to="" class="nav-link dropdown-indicator label-1">
+              <RouterLink
+                to="/system/settings"
+                class="nav-link dropdown-indicator label-1"
+              >
                 <div class="d-flex align-items-center">
                   <div class="dropdown-indicator-icon-wrapper"></div>
                   <span class="nav-link-icon">
