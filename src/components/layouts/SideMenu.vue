@@ -22,6 +22,35 @@
             </div>
           </li>
 
+          <!-- User Management - Only for admin and system admin -->
+          <li class="nav-item" v-if="globalStore.canAccessUserManagement">
+            <p class="navbar-vertical-label">Customers Management</p>
+            <hr class="navbar-vertical-line" />
+            <div class="nav-item-wrapper">
+              <RouterLink to="/user" class="nav-link dropdown-indicator label-1">
+                <div class="d-flex align-items-center">
+                  <div class="dropdown-indicator-icon-wrapper"></div>
+                  <span class="nav-link-icon">
+                    <span data-feather="users"></span>
+                  </span>
+                  <span class="nav-link-text">Customers List</span>
+                </div>
+              </RouterLink>
+            </div>
+            <!-- Role Management - Only for system admin -->
+            <div class="nav-item-wrapper" v-if="globalStore.isSystemAdmin">
+              <RouterLink to="/roles" class="nav-link dropdown-indicator label-1">
+                <div class="d-flex align-items-center">
+                  <div class="dropdown-indicator-icon-wrapper"></div>
+                  <span class="nav-link-icon">
+                    <span data-feather="shield"></span>
+                  </span>
+                  <span class="nav-link-text">Customer Comment</span>
+                </div>
+              </RouterLink>
+            </div>
+          </li>
+
           <!-- Location Management - Accessible to staff and above -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">Address Management</p>
@@ -329,10 +358,10 @@
 
 <script setup>
 import "@/assets/js/side_menu.js";
+import { useGlobalStore } from "@/stores/global";
 import { replace } from "feather-icons";
 import { onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { useGlobalStore } from "@/stores/global";
 
 const route = useRoute();
 const globalStore = useGlobalStore();

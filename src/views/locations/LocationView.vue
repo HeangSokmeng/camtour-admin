@@ -501,7 +501,7 @@
         <button class="btn btn-danger" @click="confirmAction">Confirm</button>
       </div>
     </div>
-  </div>
+  </div>s
 </template>
 
 <script setup>
