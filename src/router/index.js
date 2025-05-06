@@ -23,8 +23,10 @@ const ProductBrandView = () => import('@/views/products/ProductBrandView.vue')
 const ProductCategoryView = () => import('@/views/products/ProductCategoryView.vue')
 const ProductView = () => import('@/views/products/ProductView.vue')
 const ProductVariantView = () => import('@/views/products/ProductVariantView.vue')
+const ProductPhotoView = () => import('@/views/products/ProductPhoto.vue')
 const UsersView = () => import('@/views/users/UserView.vue')
 const ForbiddenView = () => import('@/views/error/ForbiddenView.vue')
+const CustomerCommment = () => import('@/views/customers/CommentView.vue')
 
 // Role constants
 const ROLES = {
@@ -168,6 +170,28 @@ const router = createRouter({
             path: '/product/size',
             name: 'product.size',
             component: ProductSizeView,
+            meta: {
+                title: 'Admin Adventure . Product Sizes',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        }, 
+        {
+            path: '/product/photo',
+            name: 'product.photo',
+            component: ProductPhotoView,
+            meta: {
+                title: 'Admin Adventure . Product Sizes',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        }, 
+        {
+            path: '/customer/comment',
+            name: 'customer.comment',
+            component: CustomerCommment,
             meta: {
                 title: 'Admin Adventure . Product Sizes',
                 layout: 'board',

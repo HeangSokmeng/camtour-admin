@@ -3,66 +3,62 @@
     <!-- Hero Section -->
     <div class="uploader-hero">
       <div class="hero-content">
-        <h1 class="display-6 mb-2">Location Image Gallery</h1>
-        <p class="lead text-muted">Upload and manage your location images with ease</p>
+        <h1 class="display-6 mb-2">Product Image Gallery</h1>
+        <p class="lead text-muted">Upload and manage your product images with ease</p>
       </div>
       <div class="hero-illustration">
         <div class="floating-card">
-          <i class="fa fa-image fa-3x text-primary"></i>
+          <i class="fa fa-box fa-3x text-primary"></i>
         </div>
       </div>
     </div>
 
     <!-- Upload Flow -->
     <div class="upload-flow">
-      <!-- Step 1: Location Selection -->
+      <!-- Step 1: Product Selection -->
       <div class="upload-step active">
         <div class="step-indicator">
           <div class="step-number">1</div>
         </div>
 
-        <div class="card location-selector">
+        <div class="card product-selector">
           <div class="card-body">
             <div class="d-flex align-items-center mb-4">
-              <i class="fa fa-map-marker-alt text-primary me-3 fa-2x"></i>
+              <i class="fa fa-box text-primary me-3 fa-2x"></i>
               <div>
-                <h4 class="mb-0">Select Location</h4>
-                <small class="text-muted">Choose the location for your images</small>
+                <h4 class="mb-0">Select Product</h4>
+                <small class="text-muted">Choose the product for your images</small>
               </div>
             </div>
 
-            <div class="location-dropdown">
+            <div class="product-dropdown">
               <select
-                v-model="selectedLocationId"
+                v-model="selectedProductId"
                 class="form-select form-select-lg"
-                @change="handleLocationChange"
+                @change="handleProductChange"
               >
-                <option value="">Choose a location...</option>
-                <option
-                  v-for="location in locations"
-                  :key="location.id"
-                  :value="location.id"
-                >
-                  {{ location.name }}
+                <option value="">Choose a product...</option>
+                <option v-for="product in products" :key="product.id" :value="product.id">
+                  {{ product.name }}
                 </option>
               </select>
             </div>
 
             <transition name="fade">
-              <div v-if="selectedLocation" class="location-preview mt-4">
+              <div v-if="selectedProduct" class="product-preview mt-4">
                 <div class="d-flex align-items-center">
-                  <div class="location-thumbnail-wrapper">
+                  <div class="product-thumbnail-wrapper">
                     <img
-                      :src="selectedLocation.thumbnail || '/placeholder-image.jpg'"
-                      alt="Location thumbnail"
-                      class="location-thumbnail"
+                      :src="selectedProduct.thumbnail || '/placeholder-image.jpg'"
+                      alt="Product thumbnail"
+                      class="product-thumbnail"
                     />
                   </div>
                   <div class="ms-3">
-                    <h5 class="mb-1">{{ selectedLocation.name }}</h5>
+                    <h5 class="mb-1">{{ selectedProduct.name }}</h5>
                     <p class="mb-0 text-muted">
-                      <i class="fa fa-map-pin me-1"></i>
-                      {{ formatLocation(selectedLocation) }}
+                      <i class="fa fa-tag me-1"></i>
+                      {{ formatProduct(selectedProduct) }}
                     </p>
                   </div>
                 </div>
@@ -75,7 +71,7 @@
       <!-- Step 2: Image Upload -->
       <div
         class="upload-step"
-        :class="{ active: selectedLocationId, disabled: !selectedLocationId }"
+        :class="{ active: selectedProductId, disabled: !selectedProductId }"
       >
         <div class="step-indicator">
           <div class="step-number">2</div>
@@ -87,14 +83,14 @@
               <i class="fa fa-cloud-upload-alt text-primary me-3 fa-2x"></i>
               <div>
                 <h4 class="mb-0">Upload Images</h4>
-                <small class="text-muted">Add photos to your location</small>
+                <small class="text-muted">Add photos to your product</small>
               </div>
             </div>
 
-            <template v-if="!selectedLocationId">
+            <template v-if="!selectedProductId">
               <div class="upload-placeholder">
                 <i class="fa fa-arrow-up fa-3x mb-3 text-muted"></i>
-                <p class="mb-0 text-muted">Select a location first</p>
+                <p class="mb-0 text-muted">Select a product first</p>
               </div>
             </template>
 
@@ -213,7 +209,7 @@
     <!-- Gallery Table -->
     <transition name="fade">
       <div
-        v-if="selectedLocationId && (uploadedImages.length > 0 || isLoading)"
+        v-if="selectedProductId && (uploadedImages.length > 0 || isLoading)"
         class="gallery-section"
       >
         <div class="section-header mb-4">
@@ -344,9 +340,9 @@ import axios from "axios";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
 // State
-const locations = ref([]);
-const selectedLocationId = ref("");
-const selectedLocation = ref(null);
+const products = ref([]);
+const selectedProductId = ref("");
+const selectedProduct = ref(null);
 const selectedFiles = ref([]);
 const isUploading = ref(false);
 const isDeleting = ref(false);
@@ -383,66 +379,59 @@ const cleanupObjectURLs = () => {
 };
 
 // Fetch methods
-const fetchLocations = async () => {
+const fetchProducts = async () => {
   try {
-    const response = await axios.get("/api/locations", globalStore.getAxiosHeader());
+    const response = await axios.get("/api/products", globalStore.getAxiosHeader());
     if (response.data.result && Array.isArray(response.data.data)) {
-      locations.value = response.data.data;
+      products.value = response.data.data;
     } else {
-      showNotification("error", "Error", "Failed to fetch locations");
+      showNotification("error", "Error", "Failed to fetch products");
     }
   } catch (error) {
-    console.error("Error fetching locations:", error);
-    showNotification("error", "Error", "An error occurred while fetching locations");
+    console.error("Error fetching products:", error);
+    showNotification("error", "Error", "An error occurred while fetching products");
   }
 };
 
-const fetchLocationDetails = async (locationId) => {
+const fetchProductDetails = async (productId) => {
   isLoading.value = true;
   try {
-    // Fetch location details
-    const locationResponse = await axios.get(
-      `/api/locations/${locationId}`,
+    // Fetch product details
+    const productResponse = await axios.get(
+      `/api/products/${productId}`,
       globalStore.getAxiosHeader()
     );
 
-    if (locationResponse.data.result) {
-      selectedLocation.value = locationResponse.data.data;
+    if (productResponse.data.result) {
+      selectedProduct.value = productResponse.data.data;
 
-      // Fetch images from server using the specific endpoint
-      const imagesResponse = await axios.get(
-        `/api/locations/get/images/${locationId}`,
-        globalStore.getAxiosHeader()
-      );
-
-      if (imagesResponse.data.result) {
+      // Extract images from the product response
+      if (selectedProduct.value.images && Array.isArray(selectedProduct.value.images)) {
         // Transform the data to match your component's expected format
-        uploadedImages.value = imagesResponse.data.data.map((image) => ({
+        uploadedImages.value = selectedProduct.value.images.map((image) => ({
           id: image.id,
-          name: image.photo.split("/").pop(), // Extract filename from path
-          url: image.url,
-          created_at: new Date().toISOString(), // You might want to add this field to your API response
-          size: 0, // You might want to add this field to your API response
+          name: image.image.split("/").pop(), // Extract filename from path
+          url: image.image,
+          created_at: selectedProduct.value.created_at || new Date().toISOString(),
+          size: 0, // Size information not available in the API response
         }));
       } else {
-        // Handle error when fetching images
-        console.error("Failed to fetch images:", imagesResponse.data.message);
         uploadedImages.value = [];
-        showNotification("error", "Error", "Failed to fetch images");
       }
     }
   } catch (error) {
-    console.error("Error fetching location details:", error);
-    showNotification("error", "Error", "Failed to fetch location details");
+    console.error("Error fetching product details:", error);
+    showNotification("error", "Error", "Failed to fetch product details");
   } finally {
     isLoading.value = false;
   }
 };
-// Location and formatting methods
-const formatLocation = (location) => {
+
+// Product and formatting methods
+const formatProduct = (product) => {
   const parts = [];
-  if (location.district?.name) parts.push(location.district.name);
-  if (location.province?.name) parts.push(location.province.name);
+  if (product.brand?.name) parts.push(product.brand.name);
+  if (product.category?.name) parts.push(product.category.name);
   return parts.join(", ");
 };
 
@@ -465,14 +454,14 @@ const formatSize = (bytes) => {
 };
 
 // File handling methods
-const handleLocationChange = () => {
-  if (selectedLocationId.value) {
-    fetchLocationDetails(selectedLocationId.value);
+const handleProductChange = () => {
+  if (selectedProductId.value) {
+    fetchProductDetails(selectedProductId.value);
     selectedFiles.value = [];
     uploadResult.value = "";
     cleanupObjectURLs();
   } else {
-    selectedLocation.value = null;
+    selectedProduct.value = null;
     uploadedImages.value = [];
   }
 };
@@ -528,49 +517,64 @@ const handleDrop = (event) => {
     }
   });
 };
-
-// Upload method
+// Modified uploadImages method to match the server requirements
 const uploadImages = async () => {
-  if (!selectedLocationId.value || !selectedFiles.value.length) return;
+  if (!selectedProductId.value || !selectedFiles.value.length) return;
 
   isUploading.value = true;
   uploadResult.value = "";
 
   try {
-    const formData = new FormData();
-    selectedFiles.value.forEach((file) => {
+    // Process each file individually - the backend expects a single image
+    for (const file of selectedFiles.value) {
       if (file instanceof File) {
-        formData.append("images[]", file);
+        const formData = new FormData();
+        formData.append("product_id", selectedProductId.value);
+        formData.append("image", file); // Changed from "images[]" to "image"
+
+        const response = await axios.post(
+          `/api/product-images`,
+          formData,
+          globalStore.getAxiosHeader()
+        );
+
+        if (!response.data.result) {
+          // If any upload fails, show error and stop
+          uploadSuccess.value = false;
+          uploadResult.value = response.data.message || "Failed to upload images";
+          break;
+        }
       }
-    });
-
-    const response = await axios.post(
-      `/api/locations/images/${selectedLocationId.value}`,
-      formData,
-      globalStore.getAxiosHeader()
-    );
-
-    if (response.data.result) {
-      uploadSuccess.value = true;
-      uploadResult.value = response.data.message || "Images uploaded successfully";
-      showNotification("success", "Success", "Images uploaded successfully");
-      selectedFiles.value = [];
-      cleanupObjectURLs();
-      await fetchLocationDetails(selectedLocationId.value);
-    } else {
-      uploadSuccess.value = false;
-      uploadResult.value = response.data.message || "Failed to upload images";
     }
+
+    // If we got here without breaking, all uploads were successful
+    uploadSuccess.value = true;
+    uploadResult.value = "Images uploaded successfully";
+    showNotification("success", "Success", "Images uploaded successfully");
+    selectedFiles.value = [];
+    cleanupObjectURLs();
+    await fetchProductDetails(selectedProductId.value);
   } catch (error) {
     console.error("Error uploading images:", error);
     uploadSuccess.value = false;
-    uploadResult.value =
-      error.response?.data?.message || "An error occurred while uploading images";
+
+    // Extract validation errors from the 422 response
+    if (error.response && error.response.status === 422) {
+      const errorMsg =
+        error.response.data.message ||
+        "Validation error: " +
+          Object.values(error.response.data.errors || {})
+            .flat()
+            .join(", ");
+      uploadResult.value = errorMsg;
+    } else {
+      uploadResult.value =
+        error.response?.data?.message || "An error occurred while uploading images";
+    }
   } finally {
     isUploading.value = false;
   }
 };
-
 // Image management methods
 const viewImage = (image) => {
   previewImage.value = image;
@@ -596,7 +600,7 @@ const deleteImage = async () => {
   isDeleting.value = true;
   try {
     const response = await axios.delete(
-      `/api/locations/images/${imageToDelete.value}`,
+      `/api/product-images/${imageToDelete.value}`,
       globalStore.getAxiosHeader()
     );
 
@@ -627,7 +631,7 @@ onBeforeUnmount(() => {
 });
 
 onMounted(() => {
-  fetchLocations();
+  fetchProducts();
 });
 </script>
 
@@ -724,14 +728,14 @@ onMounted(() => {
   margin-bottom: 1.5rem;
 }
 
-.location-preview {
+.product-preview {
   background: #f8fafc;
   border-radius: 8px;
   padding: 1rem;
   border-left: 4px solid #3b82f6;
 }
 
-.location-thumbnail-wrapper {
+.product-thumbnail-wrapper {
   width: 60px;
   height: 60px;
   border-radius: 8px;
@@ -739,7 +743,7 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.location-thumbnail {
+.product-thumbnail {
   width: 100%;
   height: 100%;
   object-fit: cover;

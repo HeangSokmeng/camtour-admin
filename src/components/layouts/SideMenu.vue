@@ -39,7 +39,10 @@
             </div>
             <!-- Role Management - Only for system admin -->
             <div class="nav-item-wrapper" v-if="globalStore.isSystemAdmin">
-              <RouterLink to="/roles" class="nav-link dropdown-indicator label-1">
+              <RouterLink
+                to="/customer/comment"
+                class="nav-link dropdown-indicator label-1"
+              >
                 <div class="d-flex align-items-center">
                   <div class="dropdown-indicator-icon-wrapper"></div>
                   <span class="nav-link-icon">
@@ -209,6 +212,18 @@
                             <span data-feather="grid"></span>
                           </span>
                           <span class="nav-link-text">Product Categories</span>
+                        </div>
+                      </a>
+                    </li>
+                  </RouterLink>
+                  <RouterLink to="/product/photo">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">
+                        <div class="d-flex align-items-center">
+                          <span class="nav-link-icon">
+                            <span data-feather="grid"></span>
+                          </span>
+                          <span class="nav-link-text">Product Photo</span>
                         </div>
                       </a>
                     </li>
