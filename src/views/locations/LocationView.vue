@@ -361,16 +361,9 @@
           </select>
         </div>
         <!-- Geographic Information -->
-        <div class="col-md-4">
-          <label class="form-label" for="lat">Latitude</label>
-          <input v-model="locationForm.lat" class="form-control" id="lat" type="text" />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label" for="lot">Longitude</label>
-          <input v-model="locationForm.lot" class="form-control" id="lot" type="text" />
-        </div>
+
         <!-- URL Location -->
-        <div class="col-md-4">
+        <div class="col-md-8">
           <label class="form-label" for="urlLocation">URL Location</label>
           <input
             v-model="locationForm.url_location"
@@ -378,6 +371,14 @@
             id="urlLocation"
             type="url"
           />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="lat">Latitude</label>
+          <input v-model="locationForm.lat" class="form-control" id="lat" type="text" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="lot">Longitude</label>
+          <input v-model="locationForm.lot" class="form-control" id="lot" type="text" />
         </div>
         <!-- Short Description -->
         <div class="col-md-4">
@@ -501,7 +502,8 @@
         <button class="btn btn-danger" @click="confirmAction">Confirm</button>
       </div>
     </div>
-  </div>s
+  </div>
+  s
 </template>
 
 <script setup>

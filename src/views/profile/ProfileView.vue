@@ -540,7 +540,7 @@ const submitProfileEdit = async () => {
       formData.append("image", editForm.image);
     }
 
-    const res = await axios.post("/api/profile/info", formData, {
+    const res = await axios.put("/api/profile/info", formData, {
       ...globalStore.getAxiosHeader(),
       headers: {
         ...globalStore.getAxiosHeader().headers,
