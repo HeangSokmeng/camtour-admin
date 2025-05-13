@@ -41,7 +41,7 @@
               <th class="align-middle">Commenter</th>
               <th class="align-middle">Location</th>
               <th class="align-middle">Comment</th>
-              <th class="align-middle">Photos</th>
+              <!-- <th class="align-middle">Photos</th> -->
               <th class="align-middle text-center">Status</th>
               <th class="align-middle text-end">Action</th>
             </tr>
@@ -57,7 +57,7 @@
               <td class="align-middle">
                 <div class="comment-text">{{ comment.comment }}</div>
               </td>
-              <td class="align-middle">
+              <!-- <td class="align-middle">
                 <div
                   v-if="comment.photos && comment.photos.length > 0"
                   class="photo-thumbnails"
@@ -72,7 +72,7 @@
                   </div>
                 </div>
                 <span v-else class="text-muted">No photos</span>
-              </td>
+              </td> -->
               <td class="align-middle text-center">
                 <span class="badge" :class="comment.status ? 'bg-success' : 'bg-danger'">
                   {{ comment.status ? "Active" : "Inactive" }}
@@ -191,7 +191,7 @@
         </div>
 
         <!-- New Photos Upload -->
-        <div class="mb-3">
+        <!-- <div class="mb-3">
           <label class="form-label" for="photos">
             {{ isEditMode ? "Add More Photos" : "Upload Photos" }}
           </label>
@@ -219,8 +219,6 @@
               <small class="text-muted">Supports JPG, PNG (max 2MB each)</small>
             </div>
           </div>
-
-          <!-- Preview Selected Photos -->
           <div v-if="selectedPhotos.length > 0" class="mt-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <h6>Selected Photos ({{ selectedPhotos.length }})</h6>
@@ -255,7 +253,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </div> -->
 
         <!-- Form Actions -->
         <div class="mt-4 d-flex justify-content-end">

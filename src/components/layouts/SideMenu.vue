@@ -26,7 +26,7 @@
           <li class="nav-item" v-if="globalStore.canAccessUserManagement">
             <p class="navbar-vertical-label">Customers Management</p>
             <hr class="navbar-vertical-line" />
-            <div class="nav-item-wrapper">
+            <!-- <div class="nav-item-wrapper">
               <RouterLink to="/user" class="nav-link dropdown-indicator label-1">
                 <div class="d-flex align-items-center">
                   <div class="dropdown-indicator-icon-wrapper"></div>
@@ -36,9 +36,9 @@
                   <span class="nav-link-text">Customers List</span>
                 </div>
               </RouterLink>
-            </div>
+            </div> -->
             <!-- Role Management - Only for system admin -->
-            <div class="nav-item-wrapper" v-if="globalStore.isSystemAdmin">
+            <div class="nav-item-wrapper">
               <RouterLink
                 to="/customer/comment"
                 class="nav-link dropdown-indicator label-1"

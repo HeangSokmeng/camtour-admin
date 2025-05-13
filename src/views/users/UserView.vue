@@ -53,6 +53,16 @@
                 <option value="2">Female</option>
               </select>
 
+              <select
+                v-model="lockStatus"
+                class="form-select filter-select"
+                @change="handleSearch"
+              >
+                <option value="">All Users</option>
+                <option value="unlock">Active Users</option>
+                <option value="lock">Locked Users</option>
+              </select>
+
               <button
                 v-if="hasFilters"
                 class="btn btn-outline-danger"
@@ -100,7 +110,14 @@
             :key="user.id"
             class="col-12 col-md-6 col-lg-4 mb-4"
           >
-            <div class="user-card">
+            <div
+              :class="[
+                'user-card',
+                user.is_lock === 'lock' || user.is_lock === true || user.is_lock === 1
+                  ? 'card-locked'
+                  : '',
+              ]"
+            >
               <div class="card-body p-0">
                 <div class="user-header">
                   <div class="user-avatar">
@@ -108,9 +125,15 @@
                   </div>
                   <div class="user-info">
                     <h5 class="user-name mb-1">{{ user.full_name }}</h5>
-                    <span :class="['badge', getRoleBadgeClass(user.roles[0])]">
-                      {{ user.roles[0]?.name || "No Role" }}
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                      <span :class="['badge', getRoleBadgeClass(user.roles[0])]">
+                        {{ user.roles[0]?.name || "No Role" }}
+                      </span>
+                      <span :class="['badge', getUserStatusIndicator(user).class]">
+                        <i :class="['fa', getUserStatusIndicator(user).icon, 'me-1']"></i>
+                        {{ getUserStatusIndicator(user).text }}
+                      </span>
+                    </div>
                   </div>
                   <div class="user-actions">
                     <div class="dropdown">
@@ -124,8 +147,25 @@
                           </a>
                         </li>
                         <li>
-                          <a class="dropdown-item" @click.prevent="lockUser(user.id)">
-                            <i class="fa fa-lock text-danger me-2"></i>Lock User
+                          <a class="dropdown-item" @click.prevent="toggleUserLock(user)">
+                            <i
+                              :class="[
+                                'fa',
+                                user.is_lock === 'lock' ||
+                                user.is_lock === true ||
+                                user.is_lock === 1
+                                  ? 'fa-lock text-danger' // Show lock icon when locked
+                                  : 'fa-unlock text-success', // Show unlock icon when unlocked
+                                'me-2',
+                              ]"
+                            ></i>
+                            {{
+                              user.is_lock === "lock" ||
+                              user.is_lock === true ||
+                              user.is_lock === 1
+                                ? "Unlock User"
+                                : "Lock User"
+                            }}
                           </a>
                         </li>
                         <li><hr class="dropdown-divider" /></li>
@@ -394,6 +434,7 @@ const error = ref(null);
 const searchQuery = ref("");
 const selectedRole = ref("");
 const selectedGender = ref("");
+const lockStatus = ref("");
 let searchTimeout = null;
 
 // Modal
@@ -426,7 +467,9 @@ const confirmArgs = ref(null);
 
 // Computed
 const hasFilters = computed(() => {
-  return searchQuery.value || selectedRole.value || selectedGender.value;
+  return (
+    searchQuery.value || selectedRole.value || selectedGender.value || lockStatus.value
+  );
 });
 
 // Methods
@@ -440,6 +483,21 @@ const getRoleBadgeClass = (role) => {
   return ROLE_COLORS[roleName] || ROLE_COLORS.default;
 };
 
+const getUserStatusIndicator = (user) => {
+  if (user.is_lock === "lock" || user.is_lock === true || user.is_lock === 1) {
+    return {
+      icon: "fa-lock",
+      class: "user-locked",
+      text: "Locked",
+    };
+  } else {
+    return {
+      icon: "fa-unlock", // Changed to shield icon matching your image
+      class: "user-active",
+      text: "Active",
+    };
+  }
+};
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -463,6 +521,7 @@ const clearFilters = () => {
   searchQuery.value = "";
   selectedRole.value = "";
   selectedGender.value = "";
+  lockStatus.value = "";
   fetchUsers();
 };
 
@@ -475,6 +534,7 @@ const fetchUsers = async () => {
       search: searchQuery.value,
       role_id: selectedRole.value,
       gender: selectedGender.value,
+      is_lock: lockStatus.value,
     };
 
     Object.keys(params).forEach((key) => {
@@ -594,6 +654,81 @@ const validateForm = () => {
   return true;
 };
 
+const toggleUserLock = (user) => {
+  // Show confirmation dialog before locking/unlocking
+  const isCurrentlyLocked =
+    user.is_lock === "lock" || user.is_lock === true || user.is_lock === 1;
+  const action = isCurrentlyLocked ? "unlock" : "lock";
+
+  showConfirmation(
+    `${action.charAt(0).toUpperCase() + action.slice(1)} User`,
+    `Are you sure you want to ${action} this user?`,
+    () => lockUser(user.id, isCurrentlyLocked),
+    null
+  );
+};
+
+const lockUser = async (userId, isCurrentlyLocked) => {
+  try {
+    // Find user in the array
+    const userIndex = users.value.findIndex((u) => u.id === userId);
+    if (userIndex !== -1) {
+      // Optimistically update the UI before server response
+      const newStatus = isCurrentlyLocked ? "unlock" : "lock";
+      users.value[userIndex].is_lock = newStatus;
+    }
+
+    // Make the API call
+    const res = await axios.put(
+      `/api/users/islock/${userId}`,
+      {},
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      showNotification(
+        "success",
+        "Success",
+        res.data.message || "User status updated successfully!"
+      );
+      // Refresh the user list to ensure all data is in sync
+      await fetchUsers();
+    } else {
+      // If the API call failed, revert the optimistic update
+      if (userIndex !== -1) {
+        users.value[userIndex].is_lock = isCurrentlyLocked ? "lock" : "unlock";
+      }
+      showNotification(
+        "error",
+        "Error",
+        res.data.message || "Failed to change user status"
+      );
+    }
+  } catch (err) {
+    console.error("Error toggling user lock status:", err);
+
+    // Revert the optimistic update if there was an error
+    const userIndex = users.value.findIndex((u) => u.id === userId);
+    if (userIndex !== -1) {
+      users.value[userIndex].is_lock = isCurrentlyLocked ? "lock" : "unlock";
+    }
+
+    // Check if there's an error response from the server
+    const errorMessage =
+      err.response?.data?.message || "An error occurred while changing user status";
+
+    // Check if the error is that the user tried to lock themselves
+    if (
+      err.response?.data?.message?.includes("cannot lock your own account") ||
+      err.response?.data?.message?.includes("Cannot lock yourself")
+    ) {
+      showNotification("error", "Error", "You cannot lock your own account");
+    } else {
+      showNotification("error", "Error", errorMessage);
+    }
+  }
+};
+
 const handleSubmit = async () => {
   if (!validateForm()) return;
 
@@ -621,7 +756,7 @@ const handleSubmit = async () => {
     let res;
     if (isEditMode.value) {
       formData.append("_method", "PUT");
-      res = await axios.post(`/api/users/${currentEditId.value}`, formData, {
+      res = await axios.put(`/api/users/${currentEditId.value}`, formData, {
         ...globalStore.getAxiosHeader(),
         headers: {
           ...globalStore.getAxiosHeader().headers,
@@ -656,33 +791,6 @@ const handleSubmit = async () => {
       err.response?.data?.message || "An error occurred while saving the user";
   } finally {
     isSubmitting.value = false;
-  }
-};
-
-const lockUser = async (userId) => {
-  try {
-    const res = await axios.put(
-      `/api/users/islock/${userId}`,
-      {},
-      globalStore.getAxiosHeader()
-    );
-    if (res.data.result) {
-      showNotification(
-        "success",
-        "Success",
-        res.data.message || "User status updated successfully!"
-      );
-      fetchUsers();
-    } else {
-      showNotification(
-        "error",
-        "Error",
-        res.data.message || "Failed to change user status"
-      );
-    }
-  } catch (err) {
-    showNotification("error", "Error", "An error occurred while changing user status");
-    console.error("Error locking user:", err);
   }
 };
 
@@ -807,19 +915,20 @@ onMounted(async () => {
 .user-card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s, box-shadow 0.3s;
   overflow: hidden;
+  border: 1px solid #edf2f7;
 }
 
 .user-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -5px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 .user-header {
-  padding: 1.5rem;
-  background: linear-gradient(to right, #f8f9fa, #e9ecef);
+  padding: 1.25rem;
+  background: white;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -830,8 +939,8 @@ onMounted(async () => {
   height: 60px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px solid #edf2f7;
+  background-color: #f7fafc;
 }
 
 .user-avatar img {
@@ -851,10 +960,45 @@ onMounted(async () => {
 }
 
 .badge {
-  font-size: 0.875rem;
-  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 9999px;
   font-weight: 500;
+  margin-right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Role badge colors */
+.bg-danger {
+  background-color: #ef4444 !important;
+  color: white;
+}
+
+.bg-warning {
+  background-color: #f59e0b !important;
+  color: white;
+}
+
+.bg-primary {
+  background-color: #3b82f6 !important;
+  color: white;
+}
+
+.bg-secondary {
+  background-color: #6b7280 !important;
+  color: white;
+}
+
+/* Status badges */
+.user-locked {
+  background-color: #f87171;
+  color: white;
+}
+
+.user-active {
+  background-color: #10b981;
+  color: white;
 }
 
 .user-actions .btn-link {
@@ -1072,5 +1216,33 @@ onMounted(async () => {
 .btn-danger:hover {
   background-color: #c82333;
   border-color: #bd2130;
+}
+
+/* Locked user styling */
+.user-locked {
+  background-color: #f87171;
+  color: white;
+}
+
+.user-active {
+  background-color: #10b981;
+  color: white;
+}
+
+/* Card locked visual indicator - more subtle version */
+.card-locked {
+  position: relative;
+  border-color: #fecaca;
+  background-color: #fef2f2;
+}
+
+.card-locked .user-header {
+  background-color: #fef2f2;
+}
+
+/* Remove the original triangle corner fold and icon */
+.card-locked::before,
+.card-locked::after {
+  display: none;
 }
 </style>
