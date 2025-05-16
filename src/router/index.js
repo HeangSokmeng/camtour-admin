@@ -27,6 +27,7 @@ const ProductPhotoView = () => import('@/views/products/ProductPhoto.vue')
 const UsersView = () => import('@/views/users/UserView.vue')
 const ForbiddenView = () => import('@/views/error/ForbiddenView.vue')
 const CustomerCommment = () => import('@/views/customers/CommentView.vue')
+const ProductOrder = () => import('@/views/products/ProductOrderView.vue')
 
 // Role constants
 const ROLES = {
@@ -49,7 +50,7 @@ const router = createRouter({
                 auth: true
                 // No roles specified - accessible to all authenticated users
             }
-        }, 
+        },
         {
             path: '/login',
             name: 'login',
@@ -59,7 +60,7 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, 
+        },
         {
             path: '/403',
             name: 'forbidden',
@@ -80,7 +81,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN] // Only admin and system admin
             }
-        }, 
+        },
         {
             path: '/forgot-password',
             name: 'forgot.password',
@@ -90,7 +91,7 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, 
+        },
         {
             path: '/otp/forgot-verify',
             name: 'otp.forgot.verify',
@@ -100,7 +101,7 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, 
+        },
         {
             path: '/reset-password',
             name: 'reset.password',
@@ -110,7 +111,7 @@ const router = createRouter({
                 layout: 'auth',
                 auth: false
             }
-        }, 
+        },
         {
             path: '/category',
             name: 'category',
@@ -121,7 +122,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/location',
             name: 'location',
@@ -132,7 +133,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/location/photo',
             name: 'location.photo',
@@ -143,7 +144,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/color',
             name: 'product.color',
@@ -154,7 +155,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        },  
+        },
         {
             path: '/product/variant',
             name: 'product.variant',
@@ -165,7 +166,18 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        },  
+        }, 
+        {
+            path: '/product/order',
+            name: 'product.order',
+            component: ProductOrder,
+            meta: {
+                title: 'Admin Adventure . Product Variants',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
         {
             path: '/product/size',
             name: 'product.size',
@@ -176,7 +188,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/product/photo',
             name: 'product.photo',
@@ -187,7 +199,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/customer/comment',
             name: 'customer.comment',
@@ -198,7 +210,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/tag',
             name: 'tag',
@@ -209,7 +221,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/province',
             name: 'province',
@@ -231,7 +243,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/commune',
             name: 'commune',
@@ -242,7 +254,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/village',
             name: 'village',
@@ -253,7 +265,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/profile/edit-profile',
             name: 'edit.profile',
@@ -264,7 +276,7 @@ const router = createRouter({
                 auth: true
                 // No roles specified - accessible to all authenticated users
             }
-        }, 
+        },
         {
             path: '/product/brand',
             name: 'product.brand',
@@ -275,7 +287,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/product/category',
             name: 'product.category',
@@ -286,7 +298,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/product',
             name: 'product',
@@ -309,7 +321,7 @@ router.beforeEach(async (to, from) => {
     if (to.meta.auth) {
         try {
             const { is_remember, usr_obj, usr_tk } = loadProfile()
-            
+
             // No token or user object - redirect to login
             if (!usr_tk || !usr_obj) {
                 clearToken()
@@ -324,7 +336,7 @@ router.beforeEach(async (to, from) => {
             // Verify token validity if not already checked
             if (!sessionStorage.getItem('is_check_usr')) {
                 const res = await axios.get('/api/auth/me', gStore.getAxiosHeader())
-                
+
                 if (!res.data.result) {
                     clearToken()
                     return { name: 'login' }
@@ -336,7 +348,7 @@ router.beforeEach(async (to, from) => {
                 } else {
                     sessionStorage.setItem('usr_pr', JSON.stringify(res.data.data))
                 }
-                
+
                 gStore.profile = res.data.data
                 sessionStorage.setItem('is_check_usr', '1')
             }
@@ -344,9 +356,9 @@ router.beforeEach(async (to, from) => {
             // Role-based access control (only if roles are specified)
             if (to.meta.roles && Array.isArray(to.meta.roles)) {
                 const userRole = gStore.profile?.role_id
-                
+
                 if (!userRole || !to.meta.roles.includes(userRole)) {
-                    return { 
+                    return {
                         name: 'forbidden',
                         query: {
                             roles: to.meta.roles.join(',')
@@ -357,7 +369,7 @@ router.beforeEach(async (to, from) => {
 
         } catch (err) {
             console.error('Router error:', err)
-            
+
             if (err.code === 'ERR_NETWORK') {
                 alert('Error connection! Please check internet connection, then try again.')
             } else if (err.response?.status === 401) {
@@ -377,17 +389,17 @@ router.beforeEach(async (to, from) => {
         // Handle public routes
         if (['login', 'forgot.password', 'otp.forgot.verify', 'reset.password'].includes(to.name)) {
             const { is_remember, usr_obj, usr_tk } = loadProfile()
-            
+
             if (!usr_tk || !usr_obj) {
                 clearToken()
             } else {
                 gStore.profile = usr_obj
                 gStore.token = usr_tk
                 gStore.is_remember = is_remember
-                
+
                 try {
                     const res = await axios.get('/api/auth/me', gStore.getAxiosHeader())
-                    
+
                     if (!res.data.result) {
                         clearToken()
                     } else {
@@ -396,7 +408,7 @@ router.beforeEach(async (to, from) => {
                         } else {
                             sessionStorage.setItem('usr_pr', JSON.stringify(res.data.data))
                         }
-                        
+
                         gStore.profile = res.data.data
                         sessionStorage.setItem('is_check_usr', '1')
                         return { name: 'home' }

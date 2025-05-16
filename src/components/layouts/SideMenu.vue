@@ -165,6 +165,18 @@
           <!-- Product Management - Accessible to staff and above -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">Product Management</p>
+            <RouterLink to="/product/order">
+              <li class="nav-item">
+                <a class="nav-link" href="#">
+                  <div class="d-flex align-items-center">
+                    <span class="nav-link-icon">
+                      <span data-feather="home"></span>
+                    </span>
+                    <span class="nav-link-text">Product Order</span>
+                  </div>
+                </a>
+              </li>
+            </RouterLink>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
               <a
