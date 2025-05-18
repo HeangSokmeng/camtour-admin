@@ -535,6 +535,8 @@ const isProductRouteActive = computed(() => {
     route.path.includes("/product/variant") ||
     route.path.includes("/product/brand") ||
     route.path.includes("/product/category") ||
+    route.path.includes("/customer/comment") ||
+    route.path.includes("/profile/edit-profile") ||
     route.path.includes("/product/photo")
   );
 });

@@ -45,7 +45,7 @@ const router = createRouter({
             name: 'home',
             component: HomeView,
             meta: {
-                title: 'Admin Adventure . Dashboard',
+                title: 'Admin Camtour . Dashboard',
                 layout: 'board',
                 auth: true
                 // No roles specified - accessible to all authenticated users
@@ -56,7 +56,7 @@ const router = createRouter({
             name: 'login',
             component: LoginView,
             meta: {
-                title: 'Admin Adventure . Login',
+                title: 'Admin Camtour . Login',
                 layout: 'auth',
                 auth: false
             }
@@ -66,7 +66,7 @@ const router = createRouter({
             name: 'forbidden',
             component: ForbiddenView,
             meta: {
-                title: 'Admin Adventure . Access Forbidden',
+                title: 'Admin Camtour . Access Forbidden',
                 layout: 'forbidden',
                 auth: false
             }
@@ -76,7 +76,7 @@ const router = createRouter({
             name: 'user',
             component: UsersView,
             meta: {
-                title: 'Admin Adventure . User Management',
+                title: 'Admin Camtour . User Management',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN] // Only admin and system admin
@@ -87,7 +87,7 @@ const router = createRouter({
             name: 'forgot.password',
             component: ForgotView,
             meta: {
-                title: 'Admin Adventure . Forgot Password',
+                title: 'Admin Camtour . Forgot Password',
                 layout: 'auth',
                 auth: false
             }
@@ -97,7 +97,7 @@ const router = createRouter({
             name: 'otp.forgot.verify',
             component: OTPView,
             meta: {
-                title: 'Admin Adventure . Verify OTP',
+                title: 'Admin Camtour . Verify OTP',
                 layout: 'auth',
                 auth: false
             }
@@ -107,7 +107,7 @@ const router = createRouter({
             name: 'reset.password',
             component: ResetView,
             meta: {
-                title: 'Admin Adventure . Reset Password',
+                title: 'Admin Camtour . Reset Password',
                 layout: 'auth',
                 auth: false
             }
@@ -117,7 +117,7 @@ const router = createRouter({
             name: 'category',
             component: CategoryView,
             meta: {
-                title: 'Admin Adventure . Categories',
+                title: 'Admin Camtour . Categories',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -128,7 +128,7 @@ const router = createRouter({
             name: 'location',
             component: LocationView,
             meta: {
-                title: 'Admin Adventure . Location Management',
+                title: 'Admin Camtour . Location Management',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -139,7 +139,7 @@ const router = createRouter({
             name: 'location.photo',
             component: LocationPhotoView,
             meta: {
-                title: 'Admin Adventure . Location Photos',
+                title: 'Admin Camtour . Location Photos',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -150,7 +150,7 @@ const router = createRouter({
             name: 'product.color',
             component: ProductColorView,
             meta: {
-                title: 'Admin Adventure . Product Colors',
+                title: 'Admin Camtour . Product Colors',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -161,7 +161,7 @@ const router = createRouter({
             name: 'product.variant',
             component: ProductVariantView,
             meta: {
-                title: 'Admin Adventure . Product Variants',
+                title: 'Admin Camtour . Product Variants',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -172,7 +172,7 @@ const router = createRouter({
             name: 'product.order',
             component: ProductOrder,
             meta: {
-                title: 'Admin Adventure . Product Variants',
+                title: 'Admin Camtour . Product Variants',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -183,7 +183,7 @@ const router = createRouter({
             name: 'product.size',
             component: ProductSizeView,
             meta: {
-                title: 'Admin Adventure . Product Sizes',
+                title: 'Admin Camtour . Product Sizes',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -194,7 +194,7 @@ const router = createRouter({
             name: 'product.photo',
             component: ProductPhotoView,
             meta: {
-                title: 'Admin Adventure . Product Sizes',
+                title: 'Admin Camtour . Product Sizes',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -205,7 +205,7 @@ const router = createRouter({
             name: 'customer.comment',
             component: CustomerCommment,
             meta: {
-                title: 'Admin Adventure . Product Sizes',
+                title: 'Admin Camtour . Product Sizes',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -216,7 +216,7 @@ const router = createRouter({
             name: 'tag',
             component: TagView,
             meta: {
-                title: 'Admin Adventure . Tags',
+                title: 'Admin Camtour . Tags',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -227,7 +227,7 @@ const router = createRouter({
             name: 'province',
             component: ProvincesView,
             meta: {
-                title: 'Admin Adventure . Provinces',
+                title: 'Admin Camtour . Provinces',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -238,7 +238,7 @@ const router = createRouter({
             name: 'district',
             component: DistrictView,
             meta: {
-                title: 'Admin Adventure . Districts',
+                title: 'Admin Camtour . Districts',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -249,7 +249,7 @@ const router = createRouter({
             name: 'commune',
             component: CommuneView,
             meta: {
-                title: 'Admin Adventure . Communes',
+                title: 'Admin Camtour . Communes',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -260,7 +260,7 @@ const router = createRouter({
             name: 'village',
             component: VillageVue,
             meta: {
-                title: 'Admin Adventure . Villages',
+                title: 'Admin Camtour . Villages',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -271,7 +271,7 @@ const router = createRouter({
             name: 'edit.profile',
             component: ProfileView,
             meta: {
-                title: 'Admin Adventure . Profile',
+                title: 'Admin Camtour . Profile',
                 layout: 'board',
                 auth: true
                 // No roles specified - accessible to all authenticated users
@@ -282,7 +282,7 @@ const router = createRouter({
             name: 'product.brand',
             component: ProductBrandView,
             meta: {
-                title: 'Admin Adventure . Product Brands',
+                title: 'Admin Camtour . Product Brands',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -293,7 +293,7 @@ const router = createRouter({
             name: 'product.category',
             component: ProductCategoryView,
             meta: {
-                title: 'Admin Adventure . Product Categories',
+                title: 'Admin Camtour . Product Categories',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -304,7 +304,7 @@ const router = createRouter({
             name: 'product',
             component: ProductView,
             meta: {
-                title: 'Admin Adventure . Products',
+                title: 'Admin Camtour . Products',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]

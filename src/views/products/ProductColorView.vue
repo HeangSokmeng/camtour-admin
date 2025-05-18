@@ -296,7 +296,7 @@ const fetchColors = async () => {
   try {
     // FIX: Added authorization headers to the GET request
     const res = await axios.get("/api/product-colors", globalStore.getAxiosHeader());
-    
+
     if (res.data.result && Array.isArray(res.data.data)) {
       state.colors = res.data.data;
       console.log("Fetched colors:", state.colors);

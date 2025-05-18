@@ -51,19 +51,25 @@
           <hr />
           <ul class="nav d-flex flex-column mb-0 pb-1">
             <li class="nav-item">
-              <RouterLink to="/profile/edit-profile" class="nav-link px-3 d-block">
+              <a
+                href="#"
+                class="nav-link px-3 d-block"
+                @click.prevent="openEditProfileModal"
+              >
                 <span class="me-2 text-body align-bottom" data-feather="user"></span>
                 <span>Edit Profile</span>
-              </RouterLink>
+              </a>
             </li>
-            <!-- <li class="nav-item">
-                            <RouterLink to="/profile/change-password"
-                                        class="nav-link px-3 d-block">
-                                            <span class="me-2 text-body align-bottom"
-                                                  data-feather="shield"></span>
-                                <span>Change Password</span>
-                            </RouterLink>
-                        </li> -->
+            <li class="nav-item">
+              <a
+                href="#"
+                class="nav-link px-3 d-block"
+                @click.prevent="openPasswordModal"
+              >
+                <span class="me-2 text-body align-bottom" data-feather="shield"></span>
+                <span>Change Password</span>
+              </a>
+            </li>
             <li class="nav-item">
               <RouterLink to="/profile/devices" class="nav-link px-3 d-block">
                 <span class="me-2 text-body align-bottom" data-feather="tablet"></span>
@@ -71,10 +77,14 @@
               </RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink to="/profile/edit-profile" class="nav-link px-3 d-block">
+              <a
+                href="#"
+                class="nav-link px-3 d-block"
+                @click.prevent="openLanguageSettings"
+              >
                 <span class="me-2 text-body align-bottom" data-feather="globe"></span>
                 <span>Language</span>
-              </RouterLink>
+              </a>
             </li>
           </ul>
         </div>
@@ -101,21 +111,864 @@
       </div>
     </div>
   </li>
+
+  <!-- Edit Profile Modal -->
+  <div
+    class="modal fade"
+    :class="{ show: showEditModal }"
+    tabindex="-1"
+    :style="{ display: showEditModal ? 'block' : 'none' }"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Profile Information</h5>
+          <button type="button" class="btn-close" @click="toggleEditModal"></button>
+        </div>
+        <div v-if="isLoading" class="modal-body text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        <div v-else class="modal-body">
+          <form @submit.prevent="submitProfileEdit">
+            <div class="mb-3">
+              <label for="edit_first_name" class="form-label">First Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="edit_first_name"
+                v-model="editForm.first_name"
+                required
+              />
+              <div class="invalid-feedback" v-if="profileErrors.first_name">
+                {{ profileErrors.first_name }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="edit_last_name" class="form-label">Last Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="edit_last_name"
+                v-model="editForm.last_name"
+                required
+              />
+              <div class="invalid-feedback" v-if="profileErrors.last_name">
+                {{ profileErrors.last_name }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="edit_gender" class="form-label">Gender</label>
+              <select class="form-select" id="edit_gender" v-model="editForm.gender">
+                <option value="0">Not specified</option>
+                <option value="1">Male</option>
+                <option value="2">Female</option>
+              </select>
+              <div class="invalid-feedback" v-if="profileErrors.gender">
+                {{ profileErrors.gender }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="edit_phone" class="form-label">Phone</label>
+              <input
+                type="tel"
+                class="form-control"
+                id="edit_phone"
+                v-model="editForm.phone"
+              />
+              <div class="invalid-feedback" v-if="profileErrors.phone">
+                {{ profileErrors.phone }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="edit_email" class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-control"
+                id="edit_email"
+                v-model="editForm.email"
+                required
+              />
+              <div class="invalid-feedback" v-if="profileErrors.email">
+                {{ profileErrors.email }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="edit_image" class="form-label">Profile Image</label>
+              <input
+                type="file"
+                class="form-control"
+                id="edit_image"
+                @change="handleImageChange"
+                accept="image/*"
+              />
+              <div class="mt-2" v-if="profileImagePreview">
+                <img
+                  :src="profileImagePreview"
+                  alt="Preview"
+                  class="img-thumbnail"
+                  style="max-height: 100px"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger ms-2"
+                  @click="removeImage"
+                >
+                  Remove
+                </button>
+              </div>
+              <div class="invalid-feedback" v-if="profileErrors.image">
+                {{ profileErrors.image }}
+              </div>
+            </div>
+            <div v-if="editSuccessMessage" class="alert alert-success">
+              {{ editSuccessMessage }}
+            </div>
+            <div v-if="editErrorMessage" class="alert alert-danger">
+              {{ editErrorMessage }}
+            </div>
+            <div class="d-flex justify-content-end">
+              <button
+                type="button"
+                class="btn btn-secondary me-2"
+                @click="toggleEditModal"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="editForm.isSubmitting"
+              >
+                <span
+                  class="spinner-border spinner-border-sm me-2"
+                  v-if="editForm.isSubmitting"
+                ></span>
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Change Modal -->
+  <div
+    class="modal fade"
+    :class="{ show: showPasswordModal }"
+    tabindex="-1"
+    :style="{ display: showPasswordModal ? 'block' : 'none' }"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Change Password</h5>
+          <button type="button" class="btn-close" @click="togglePasswordModal"></button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="submitPasswordChange">
+            <div class="mb-3">
+              <label for="current_password" class="form-label">Current Password</label>
+              <div class="input-group">
+                <input
+                  :type="passwordVisibility.current ? 'text' : 'password'"
+                  class="form-control"
+                  id="current_password"
+                  v-model="passwordForm.current_password"
+                  required
+                />
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  @click="togglePasswordVisibility('current')"
+                >
+                  <span v-if="passwordVisibility.current" class="fas fa-eye-slash"></span>
+                  <span v-else class="fas fa-eye"></span>
+                </button>
+              </div>
+              <div class="invalid-feedback" v-if="passwordErrors.current_password">
+                {{ passwordErrors.current_password }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="new_password" class="form-label">New Password</label>
+              <div class="input-group">
+                <input
+                  :type="passwordVisibility.new ? 'text' : 'password'"
+                  class="form-control"
+                  id="new_password"
+                  v-model="passwordForm.new_password"
+                  required
+                />
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  @click="togglePasswordVisibility('new')"
+                >
+                  <span v-if="passwordVisibility.new" class="fas fa-eye-slash"></span>
+                  <span v-else class="fas fa-eye"></span>
+                </button>
+              </div>
+              <div class="invalid-feedback" v-if="passwordErrors.new_password">
+                {{ passwordErrors.new_password }}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="new_password_confirmation" class="form-label"
+                >Confirm New Password</label
+              >
+              <div class="input-group">
+                <input
+                  :type="passwordVisibility.confirmation ? 'text' : 'password'"
+                  class="form-control"
+                  id="new_password_confirmation"
+                  v-model="passwordForm.new_password_confirmation"
+                  required
+                />
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  @click="togglePasswordVisibility('confirmation')"
+                >
+                  <span
+                    v-if="passwordVisibility.confirmation"
+                    class="fas fa-eye-slash"
+                  ></span>
+                  <span v-else class="fas fa-eye"></span>
+                </button>
+              </div>
+              <div
+                class="invalid-feedback"
+                v-if="passwordErrors.new_password_confirmation"
+              >
+                {{ passwordErrors.new_password_confirmation }}
+              </div>
+            </div>
+            <div v-if="passwordSuccessMessage" class="alert alert-success">
+              {{ passwordSuccessMessage }}
+            </div>
+            <div v-if="passwordErrorMessage" class="alert alert-danger">
+              {{ passwordErrorMessage }}
+            </div>
+            <div class="d-flex justify-content-end">
+              <button
+                type="button"
+                class="btn btn-secondary me-2"
+                @click="togglePasswordModal"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="passwordForm.isSubmitting"
+              >
+                <span
+                  class="spinner-border spinner-border-sm me-2"
+                  v-if="passwordForm.isSubmitting"
+                ></span>
+                Change Password
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Language Settings Modal -->
+  <div
+    class="modal fade"
+    :class="{ show: showLanguageModal }"
+    tabindex="-1"
+    :style="{ display: showLanguageModal ? 'block' : 'none' }"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Language Settings</h5>
+          <button type="button" class="btn-close" @click="toggleLanguageModal"></button>
+        </div>
+        <div class="modal-body">
+          <form @submit.prevent="submitLanguageSettings">
+            <div class="mb-3">
+              <label class="form-label">Select Language</label>
+              <select class="form-select" v-model="languageForm.language">
+                <option value="en">English</option>
+                <option value="km">Khmer</option>
+                <option value="fr">French</option>
+                <option value="es">Spanish</option>
+                <option value="ar">Arabic</option>
+                <option value="zh">Chinese</option>
+              </select>
+            </div>
+            <div v-if="languageSuccessMessage" class="alert alert-success">
+              {{ languageSuccessMessage }}
+            </div>
+            <div v-if="languageErrorMessage" class="alert alert-danger">
+              {{ languageErrorMessage }}
+            </div>
+            <div class="d-flex justify-content-end">
+              <button
+                type="button"
+                class="btn btn-secondary me-2"
+                @click="toggleLanguageModal"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary"
+                :disabled="languageForm.isSubmitting"
+              >
+                <span
+                  class="spinner-border spinner-border-sm me-2"
+                  v-if="languageForm.isSubmitting"
+                ></span>
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal backdrop for all modals -->
+  <div
+    class="modal-backdrop fade"
+    :class="{ show: showEditModal || showPasswordModal || showLanguageModal }"
+    v-if="showEditModal || showPasswordModal || showLanguageModal"
+  ></div>
 </template>
 
 <script setup>
+import "@/assets/css/main.css";
+import "@/assets/css/toast-styles.css";
 import { useGlobalStore } from "@/stores/global.js";
+import axios from "axios";
 import "bootstrap";
 import { replace } from "feather-icons";
-import { onMounted } from "vue";
+import { onMounted, reactive, ref } from "vue";
 
 const globalStore = useGlobalStore();
 
+// Loading State
+const isLoading = ref(false);
+
+// Profile State
+const profileData = ref(null);
+const profileImagePreview = ref(null);
+
+// Edit Profile Modal Variables
+const showEditModal = ref(false);
+const editForm = reactive({
+  first_name: "",
+  last_name: "",
+  gender: "0",
+  phone: "",
+  email: "",
+  image: null,
+  isSubmitting: false,
+});
+const profileErrors = reactive({
+  first_name: "",
+  last_name: "",
+  gender: "",
+  phone: "",
+  email: "",
+  image: "",
+});
+const editSuccessMessage = ref("");
+const editErrorMessage = ref("");
+
+// Password Modal Variables
+const showPasswordModal = ref(false);
+const passwordForm = reactive({
+  current_password: "",
+  new_password: "",
+  new_password_confirmation: "",
+  isSubmitting: false,
+});
+const passwordVisibility = reactive({
+  current: false,
+  new: false,
+  confirmation: false,
+});
+const passwordErrors = reactive({
+  current_password: "",
+  new_password: "",
+  new_password_confirmation: "",
+});
+const passwordSuccessMessage = ref("");
+const passwordErrorMessage = ref("");
+
+// Language Settings Modal Variables
+const showLanguageModal = ref(false);
+const languageForm = reactive({
+  language: "en",
+  isSubmitting: false,
+});
+const languageSuccessMessage = ref("");
+const languageErrorMessage = ref("");
+
 onMounted(() => {
   replace({ width: 16, height: 16 });
+  fetchProfile();
 });
 
 const onConfirmLogout = () => {
   globalStore.mdl_logout.show();
 };
+// Function to handle password change separately
+async function changePassword() {
+  if (!validatePasswordFields()) return;
+
+  isSubmitting.value = true;
+
+  try {
+    // Create the password data object
+    const passwordPayload = {
+      current_password: passwordData.current_password,
+      password: passwordData.new_password,
+      password_confirmation: passwordData.new_password_confirmation,
+    };
+
+    // Make API call to the separate password endpoint
+    const headers = globalStore.getAxiosHeader();
+    const response = await axios.put("/api/profile/pass", passwordPayload, headers);
+
+    if (response.data.result) {
+      showStatusMessage("success", t("password-updated-successfully"));
+
+      // Reset password section
+      showPasswordSection.value = false;
+      passwordData.current_password = "";
+      passwordData.new_password = "";
+      passwordData.new_password_confirmation = "";
+    } else {
+      showStatusMessage("error", response.data.message || t("password-update-failed"));
+    }
+  } catch (error) {
+    console.error("Password update error:", error);
+
+    // Handle validation errors from API
+    if (error.response && error.response.data && error.response.data.errors) {
+      const apiErrors = error.response.data.errors;
+      Object.keys(apiErrors).forEach((key) => {
+        const errorKey = key === "password" ? "new_password" : key;
+        if (errors[errorKey] !== undefined) {
+          errors[errorKey] = apiErrors[key][0];
+        }
+      });
+    }
+
+    showStatusMessage(
+      "error",
+      error.response?.data?.message || t("password-update-failed")
+    );
+
+    // Use global error handler
+    await globalStore.onCheckError(error);
+  } finally {
+    isSubmitting.value = false;
+  }
+}
+
+// Validate only password fields
+function validatePasswordFields() {
+  let isValid = true;
+
+  // Reset password errors
+  errors.current_password = "";
+  errors.new_password = "";
+  errors.new_password_confirmation = "";
+
+  if (!passwordData.current_password) {
+    errors.current_password = t("current-password-required");
+    isValid = false;
+  }
+
+  if (!passwordData.new_password) {
+    errors.new_password = t("new-password-required");
+    isValid = false;
+  } else if (passwordData.new_password.length < 8) {
+    errors.new_password = t("password-min-length");
+    isValid = false;
+  }
+
+  if (passwordData.new_password !== passwordData.new_password_confirmation) {
+    errors.new_password_confirmation = t("passwords-dont-match");
+    isValid = false;
+  }
+
+  return isValid;
+}
+// Fetch user profile data
+const fetchProfile = async () => {
+  try {
+    isLoading.value = true;
+    const response = await axios.get("/api/auth/me", globalStore.getAxiosHeader());
+
+    if (response.data.result) {
+      profileData.value = response.data.data;
+
+      // Pre-populate the edit form with current data
+      editForm.first_name = profileData.value.first_name || "";
+      editForm.last_name = profileData.value.last_name || "";
+      editForm.gender = profileData.value.gender
+        ? profileData.value.gender.toString()
+        : "0";
+      editForm.phone = profileData.value.phone || "";
+      editForm.email = profileData.value.email || "";
+    }
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Toggle modal functions
+const toggleEditModal = () => {
+  showEditModal.value = !showEditModal.value;
+
+  if (showEditModal.value) {
+    // Close other modals
+    showPasswordModal.value = false;
+    showLanguageModal.value = false;
+
+    // Reset messages
+    editSuccessMessage.value = "";
+    editErrorMessage.value = "";
+
+    // If profile data exists, populate the form
+    if (profileData.value) {
+      editForm.first_name = profileData.value.first_name || "";
+      editForm.last_name = profileData.value.last_name || "";
+      editForm.gender = profileData.value.gender
+        ? profileData.value.gender.toString()
+        : "0";
+      editForm.phone = profileData.value.phone || "";
+      editForm.email = profileData.value.email || "";
+      profileImagePreview.value = null;
+    }
+  } else {
+    // Clear errors when closing modal
+    Object.keys(profileErrors).forEach((key) => {
+      profileErrors[key] = "";
+    });
+  }
+};
+
+const togglePasswordModal = () => {
+  showPasswordModal.value = !showPasswordModal.value;
+
+  if (showPasswordModal.value) {
+    // Close other modals
+    showEditModal.value = false;
+    showLanguageModal.value = false;
+
+    // Reset form and messages
+    passwordForm.current_password = "";
+    passwordForm.new_password = "";
+    passwordForm.new_password_confirmation = "";
+    passwordSuccessMessage.value = "";
+    passwordErrorMessage.value = "";
+
+    // Reset password visibility
+    passwordVisibility.current = false;
+    passwordVisibility.new = false;
+    passwordVisibility.confirmation = false;
+  } else {
+    // Clear errors when closing modal
+    Object.keys(passwordErrors).forEach((key) => {
+      passwordErrors[key] = "";
+    });
+  }
+};
+
+const toggleLanguageModal = () => {
+  showLanguageModal.value = !showLanguageModal.value;
+
+  if (showLanguageModal.value) {
+    // Close other modals
+    showEditModal.value = false;
+    showPasswordModal.value = false;
+
+    // Reset messages
+    languageSuccessMessage.value = "";
+    languageErrorMessage.value = "";
+
+    // Set current language
+    languageForm.language = localStorage.getItem("app_language") || "en";
+  }
+};
+
+// Modal open functions
+const openEditProfileModal = () => {
+  toggleEditModal();
+};
+
+const openPasswordModal = () => {
+  togglePasswordModal();
+};
+
+const openLanguageSettings = () => {
+  toggleLanguageModal();
+};
+
+// Toggle password visibility
+const togglePasswordVisibility = (field) => {
+  passwordVisibility[field] = !passwordVisibility[field];
+};
+
+// Handle image upload
+const handleImageChange = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Check file size (max 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    profileErrors.image = "Image size must be less than 2MB";
+    return;
+  }
+
+  editForm.image = file;
+
+  // Create a preview
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    profileImagePreview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+const removeImage = () => {
+  editForm.image = null;
+  profileImagePreview.value = null;
+  document.getElementById("edit_image").value = "";
+};
+
+// Submit form functions
+const submitProfileEdit = async () => {
+  // Reset errors and messages
+  Object.keys(profileErrors).forEach((key) => {
+    profileErrors[key] = "";
+  });
+  editSuccessMessage.value = "";
+  editErrorMessage.value = "";
+
+  editForm.isSubmitting = true;
+
+  try {
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append("first_name", editForm.first_name);
+    formData.append("last_name", editForm.last_name);
+    formData.append("gender", editForm.gender);
+    formData.append("phone", editForm.phone);
+    formData.append("email", editForm.email);
+
+    if (editForm.image) {
+      formData.append("image", editForm.image);
+    }
+
+    const res = await axios.put("/api/profile/info", formData, {
+      ...globalStore.getAxiosHeader(),
+      headers: {
+        ...globalStore.getAxiosHeader().headers,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (res.data.result) {
+      // Update global store with new profile data
+      await fetchProfile();
+
+      // Show success message
+      editSuccessMessage.value = "Profile updated successfully!";
+
+      // Reset image state
+      editForm.image = null;
+      profileImagePreview.value = null;
+
+      // Auto close after success (optional)
+      setTimeout(() => {
+        toggleEditModal();
+      }, 2000);
+    } else {
+      // Handle validation errors from backend
+      if (res.data.errors) {
+        for (const [key, value] of Object.entries(res.data.errors)) {
+          if (profileErrors.hasOwnProperty(key)) {
+            profileErrors[key] = value[0];
+          }
+        }
+      } else {
+        editErrorMessage.value = res.data.message || "Failed to update profile.";
+      }
+    }
+  } catch (error) {
+    if (error.response && error.response.data.errors) {
+      for (const [key, value] of Object.entries(error.response.data.errors)) {
+        if (profileErrors.hasOwnProperty(key)) {
+          profileErrors[key] = value[0];
+        }
+      }
+    } else {
+      editErrorMessage.value = "An error occurred while updating your profile.";
+    }
+  } finally {
+    editForm.isSubmitting = false;
+  }
+};
+
+const submitPasswordChange = async () => {
+  // Reset errors and messages
+  Object.keys(passwordErrors).forEach((key) => {
+    passwordErrors[key] = "";
+  });
+  passwordSuccessMessage.value = "";
+  passwordErrorMessage.value = "";
+
+  // Validate passwords match
+  if (passwordForm.new_password !== passwordForm.new_password_confirmation) {
+    passwordErrors.new_password_confirmation = "Passwords do not match";
+    return;
+  }
+
+  passwordForm.isSubmitting = true;
+  try {
+    const res = await axios.put(
+      "/api/profile/pass",
+      {
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.new_password,
+        new_password_confirmation: passwordForm.new_password_confirmation,
+      },
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      passwordSuccessMessage.value = "Password changed successfully!";
+
+      // Reset form
+      passwordForm.current_password = "";
+      passwordForm.new_password = "";
+      passwordForm.new_password_confirmation = "";
+
+      // Auto close after success (optional)
+      setTimeout(() => {
+        togglePasswordModal();
+      }, 2000);
+    } else {
+      // Handle validation errors from backend
+      if (res.data.errors) {
+        for (const [key, value] of Object.entries(res.data.errors)) {
+          if (passwordErrors.hasOwnProperty(key)) {
+            passwordErrors[key] = value[0];
+          }
+        }
+      } else {
+        passwordErrorMessage.value = res.data.message || "Failed to change password.";
+      }
+    }
+  } catch (error) {
+    if (error.response && error.response.data.errors) {
+      for (const [key, value] of Object.entries(error.response.data.errors)) {
+        if (passwordErrors.hasOwnProperty(key)) {
+          passwordErrors[key] = value[0];
+        }
+      }
+    } else {
+      passwordErrorMessage.value = "An error occurred while changing your password.";
+    }
+  } finally {
+    passwordForm.isSubmitting = false;
+  }
+};
+
+const submitLanguageSettings = async () => {
+  languageForm.isSubmitting = true;
+  languageSuccessMessage.value = "";
+  languageErrorMessage.value = "";
+
+  try {
+    // Save language preference to localStorage
+    localStorage.setItem("app_language", languageForm.language);
+
+    // If you have a backend API for language preferences
+    // const response = await axios.post('/api/user/settings/language', {
+    //   language: languageForm.language
+    // }, globalStore.getAxiosHeader());
+
+    // Apply language change immediately (if using i18n)
+    // i18n.global.locale.value = languageForm.language;
+
+    languageSuccessMessage.value = "Language settings updated successfully!";
+
+    // Auto close after success (optional)
+    setTimeout(() => {
+      toggleLanguageModal();
+    }, 2000);
+
+    // Optional: reload the page to apply language changes
+    // window.location.reload();
+  } catch (error) {
+    languageErrorMessage.value = "Failed to update language settings";
+    console.error("Language settings error:", error);
+  } finally {
+    languageForm.isSubmitting = false;
+  }
+};
 </script>
+
+<style scoped>
+/* Modal styling */
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.modal.show {
+  display: block;
+}
+.invalid-feedback {
+  display: block;
+}
+
+/* Active state styles for dropdown menu items */
+.nav-link {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: var(--falcon-sidebar-link-hover-bg, rgba(115, 103, 240, 0.08));
+  border-radius: 4px;
+}
+
+.nav-link:active {
+  background-color: var(--falcon-sidebar-link-active-bg, rgba(115, 103, 240, 0.15));
+  color: var(--falcon-sidebar-link-active-color, #7367f0) !important;
+  font-weight: 500;
+  border-radius: 4px;
+}
+
+/* Dropdown item styling */
+.dropdown-menu {
+  min-width: 280px;
+}
+
+.avatar img {
+  object-fit: cover;
+}
+
+/* Alert styling */
+.alert {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+}
+</style>

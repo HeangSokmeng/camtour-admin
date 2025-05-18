@@ -582,20 +582,31 @@ const openAddUserModal = () => {
   showUserModal.value = true;
   modalError.value = "";
 };
-
 const modifyUser = (user) => {
   resetUserForm();
   isEditMode.value = true;
-  userForm.first_name = user.first_name;
-  userForm.last_name = user.last_name;
-  userForm.email = user.email;
-  userForm.phone = user.phone;
-  userForm.gender = user.gender;
-  userForm.role_id = user.roles[0]?.id || "";
+  userForm.first_name = user.first_name || "";
+  userForm.last_name = user.last_name || "";
+  userForm.email = user.email || "";
+  userForm.phone = user.phone || "";
+  userForm.gender = user.gender || "";
+
+  // Make sure we handle role assignment properly
+  // Check if user.roles is an array and has elements
+  if (Array.isArray(user.roles) && user.roles.length > 0 && user.roles[0]?.id) {
+    userForm.role_id = user.roles[0].id;
+  } else {
+    userForm.role_id = "";
+  }
+
+  // Normalize lock status
   userForm.is_lock = user.is_lock || "unlock";
+
   currentEditId.value = user.id;
   showUserModal.value = true;
   modalError.value = "";
+
+  console.log("Editing user:", user.id, userForm);
 };
 
 const closeUserModal = () => {
@@ -726,9 +737,12 @@ const lockUser = async (userId, isCurrentlyLocked) => {
     } else {
       showNotification("error", "Error", errorMessage);
     }
+
+    await globalStore.onCheckError(err, router);
   }
 };
 
+// Fixed handleSubmit function
 const handleSubmit = async () => {
   if (!validateForm()) return;
 
@@ -755,8 +769,10 @@ const handleSubmit = async () => {
 
     let res;
     if (isEditMode.value) {
+      // Fix: Use the correct endpoint format and method
+      // Following the pattern from product colors
       formData.append("_method", "PUT");
-      res = await axios.put(`/api/users/${currentEditId.value}`, formData, {
+      res = await axios.put(`/api/users/update/${currentEditId.value}`, formData, {
         ...globalStore.getAxiosHeader(),
         headers: {
           ...globalStore.getAxiosHeader().headers,
@@ -764,6 +780,7 @@ const handleSubmit = async () => {
         },
       });
     } else {
+      // For new users, continue with the regular POST
       res = await axios.post("/api/users", formData, {
         ...globalStore.getAxiosHeader(),
         headers: {
@@ -789,8 +806,44 @@ const handleSubmit = async () => {
     console.error("Error saving user:", err);
     modalError.value =
       err.response?.data?.message || "An error occurred while saving the user";
+
+    // Add debugging to help identify issues
+    console.log("Error details:", {
+      status: err.response?.status,
+      statusText: err.response?.statusText,
+      data: err.response?.data,
+      headers: err.response?.headers,
+    });
+
+    await globalStore.onCheckError(err, router);
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+// Improved performDeleteUser function
+const performDeleteUser = async (userId) => {
+  try {
+    const res = await axios.delete(`/api/users/${userId}`, globalStore.getAxiosHeader());
+
+    if (res.data.result) {
+      showNotification(
+        "success",
+        "Success",
+        res.data.message || "User deleted successfully!"
+      );
+      await fetchUsers();
+    } else {
+      showNotification("error", "Error", res.data.message || "Failed to delete user");
+    }
+  } catch (err) {
+    console.error("Error deleting user:", err);
+    showNotification(
+      "error",
+      "Error",
+      err.response?.data?.message || "An error occurred while deleting the user"
+    );
+    await globalStore.onCheckError(err, router);
   }
 };
 
@@ -812,29 +865,6 @@ const handleConfirm = () => {
 
 const handleCancel = () => {
   showConfirmDialog.value = false;
-};
-
-const performDeleteUser = async (userId) => {
-  try {
-    const res = await axios.delete(`/api/users/${userId}`, globalStore.getAxiosHeader());
-    if (res.data.result) {
-      showNotification(
-        "success",
-        "Success",
-        res.data.message || "User deleted successfully!"
-      );
-      await fetchUsers();
-    } else {
-      showNotification("error", "Error", res.data.message || "Failed to delete user");
-    }
-  } catch (err) {
-    showNotification(
-      "error",
-      "Error",
-      err.response?.data?.message || "An error occurred while deleting the user"
-    );
-    console.error("Error deleting user:", err);
-  }
 };
 
 const deleteUser = (userId) => {
