@@ -34,7 +34,7 @@
                 <label class="cursor-pointer avatar avatar-5xl" for="avatarFile">
                   <img
                     class="rounded-circle avatar-image"
-                    :src="profile.image || 'https://via.placeholder.com/150'"
+                    :src="profile.value.image || 'https://via.placeholder.com/150'"
                     alt="Profile Image"
                   />
                 </label>
@@ -370,7 +370,7 @@ const profile = computed(
     state.profile || {
       first_name: "",
       last_name: "",
-      image: "https://via.placeholder.com/150", // fallback if no image
+      image: "", // fallback if no image
       phone: "",
       email: "",
       created_at: "",

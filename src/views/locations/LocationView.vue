@@ -406,7 +406,6 @@
             </label>
           </div>
         </div>
-        <!-- Thumbnail -->
         <div class="col-md-4">
           <label class="form-label" for="thumbnail">Thumbnail</label>
           <input
@@ -418,9 +417,7 @@
           />
           <div v-if="locationForm.thumbnail" class="mt-2">
             <img
-              :src="
-                typeof locationForm.thumbnail === 'string' ? locationForm.thumbnail : ''
-              "
+              :src="getImagePreviewUrl(locationForm.thumbnail)"
               alt="Preview"
               class="thumbnail-preview"
               width="100"
@@ -520,7 +517,8 @@ const { toasts, showNotification, removeToast } = useToast();
 // Router and Store
 const router = useRouter();
 const globalStore = useGlobalStore();
-
+const imagePreview = ref(null);
+const objectUrls = ref([]);
 // State Management
 const locations = ref([]);
 const isLoading = ref(false);
@@ -648,7 +646,20 @@ const confirmAction = () => {
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
-
+const getImagePreviewUrl = (file) => {
+  if (file instanceof File) {
+    // If we already have a preview URL, use it
+    if (imagePreview.value) {
+      return imagePreview.value;
+    }
+    // Otherwise create a new one
+    const url = URL.createObjectURL(file);
+    objectUrls.value.push(url);
+    return url;
+  }
+  // Return the string URL if it's not a File
+  return typeof file === "string" ? file : "/placeholder-image.jpg";
+};
 // Handle search input with debounce
 const handleSearchInput = () => {
   if (searchTimeout) {
@@ -902,7 +913,16 @@ const getTags = async () => {
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
+    // Store the file in locationForm
     locationForm.thumbnail = file;
+
+    // Create a preview URL
+    if (imagePreview.value) {
+      URL.revokeObjectURL(imagePreview.value);
+    }
+
+    imagePreview.value = URL.createObjectURL(file);
+    objectUrls.value.push(imagePreview.value);
   }
 };
 
