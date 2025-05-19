@@ -2,102 +2,133 @@
   <div class="mb-9">
     <div class="row g-2 mb-4">
       <div class="col-auto">
-        <h2 class="mb-0">Comments</h2>
+        <h2 class="mb-0">Location Ratings</h2>
       </div>
     </div>
-    <div id="comments">
+    <div id="location-ratings">
       <div class="mb-4">
         <div class="row g-3 justify-content-between">
-          <div class="col-auto">
-            <div class="search-box">
-              <input
-                v-model="searchQuery"
-                class="form-control search-input search"
-                type="search"
-                placeholder="Search comments"
-              />
+          <!-- Filters Section -->
+          <div class="col-md-8">
+            <div class="d-flex flex-wrap gap-2">
+              <!-- Location Filter -->
+              <div class="search-box">
+                <input
+                  v-model="filters.location_name"
+                  class="form-control search-input"
+                  type="search"
+                  placeholder="Search by location name"
+                  @input="onFilterInput"
+                />
+              </div>
+
+              <!-- Status Filter -->
+              <select
+                v-model="filters.status"
+                class="form-select"
+                style="width: 150px"
+                @change="applyFilters"
+              >
+                <option value="">All Statuses</option>
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+
+              <!-- Reset Filters Button -->
+              <button
+                class="btn btn-outline-secondary"
+                @click="resetFilters"
+                v-if="isFiltered"
+              >
+                <span class="fas fa-times me-1"></span>Clear Filters
+              </button>
             </div>
           </div>
+
+          <!-- Add Rating Button -->
           <div class="col-auto">
             <button class="btn btn-primary" @click="openModal">
-              <span class="fas fa-plus me-2"></span>Add Comment
+              <span class="fas fa-plus me-2"></span>Add Rating
             </button>
           </div>
         </div>
       </div>
+
+      <!-- Loading State -->
       <div v-if="state.isLoading" class="text-center">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
+
+      <!-- Error State -->
       <div v-else-if="state.error" class="text-center text-danger">
         {{ state.error }}
       </div>
+
+      <!-- Data Table -->
       <div v-else class="table-responsive">
         <table class="table table-sm fs-9 mb-0">
           <thead>
             <tr>
               <th class="align-middle ps-0">#</th>
-              <th class="align-middle">Commenter</th>
+              <th class="align-middle">Rater</th>
               <th class="align-middle">Location</th>
+              <th class="align-middle">Rating</th>
               <th class="align-middle">Comment</th>
-              <!-- <th class="align-middle">Photos</th> -->
               <th class="align-middle text-center">Status</th>
+              <th class="align-middle">Date</th>
               <th class="align-middle text-end">Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filteredComments.length === 0">
-              <td colspan="7" class="text-center">No comments found</td>
+            <tr v-if="ratings.length === 0">
+              <td colspan="8" class="text-center">No ratings found</td>
             </tr>
-            <tr v-else v-for="(comment, index) in filteredComments" :key="comment.id">
+            <tr v-else v-for="(rating, index) in ratings" :key="rating.id">
               <td class="align-middle ps-0">{{ index + 1 }}</td>
-              <td class="align-middle">{{ comment.commender }}</td>
-              <td class="align-middle">{{ comment.location_name }}</td>
+              <td class="align-middle">{{ rating.rater_name }}</td>
+              <td class="align-middle">{{ rating.location_name }}</td>
               <td class="align-middle">
-                <div class="comment-text">{{ comment.comment }}</div>
-              </td>
-              <!-- <td class="align-middle">
-                <div
-                  v-if="comment.photos && comment.photos.length > 0"
-                  class="photo-thumbnails"
-                >
-                  <div
-                    v-for="(photo, photoIndex) in comment.photos"
-                    :key="photoIndex"
-                    class="photo-thumbnail"
-                    @click="viewPhoto(photo)"
-                  >
-                    <img :src="getPhotoUrl(photo)" alt="Comment photo" />
-                  </div>
+                <div class="rating-stars">
+                  <i
+                    v-for="i in 5"
+                    :key="i"
+                    class="fas fa-star"
+                    :class="i <= rating.star ? 'text-warning' : 'text-muted'"
+                  ></i>
+                  <span class="ms-1">{{ rating.star }}/5</span>
                 </div>
-                <span v-else class="text-muted">No photos</span>
-              </td> -->
+              </td>
+              <td class="align-middle">
+                <div class="comment-text">{{ truncateText(rating.comment, 100) }}</div>
+              </td>
               <td class="align-middle text-center">
-                <span class="badge" :class="comment.status ? 'bg-success' : 'bg-danger'">
-                  {{ comment.status ? "Active" : "Inactive" }}
+                <span class="badge" :class="rating.status ? 'bg-success' : 'bg-danger'">
+                  {{ rating.status ? "Active" : "Inactive" }}
                 </span>
               </td>
+              <td class="align-middle">{{ formatDate(rating.created_at) }}</td>
               <td class="align-middle text-end">
                 <button
                   class="btn btn-sm btn-primary me-2"
-                  @click="editComment(comment.id)"
+                  @click="editRating(rating.id)"
                 >
                   <span class="fas fa-edit me-1"></span>Edit
                 </button>
                 <button
                   class="btn btn-sm"
-                  :class="comment.status ? 'btn-warning' : 'btn-success'"
-                  @click="toggleCommentStatus(comment.id, comment.status)"
+                  :class="rating.status ? 'btn-warning' : 'btn-success'"
+                  @click="toggleRatingStatus(rating.id, rating.status)"
                 >
                   <span
                     class="fas"
-                    :class="comment.status ? 'fa-lock' : 'fa-unlock'"
+                    :class="rating.status ? 'fa-lock' : 'fa-unlock'"
                   ></span>
                 </button>
                 <button
                   class="btn btn-sm btn-danger ms-2"
-                  @click="deleteComment(comment.id)"
+                  @click="deleteRating(rating.id)"
                 >
                   <span class="fas fa-trash"></span>
                 </button>
@@ -109,10 +140,10 @@
     </div>
   </div>
 
-  <!-- Comment Modal -->
+  <!-- Rating Modal -->
   <div v-if="showModal" class="modal-overlay">
-    <div class="modal-content comment-modal">
-      <h4>{{ isEditMode ? "Edit" : "Create" }} Comment</h4>
+    <div class="modal-content rating-modal">
+      <h4>{{ isEditMode ? "Edit" : "Create" }} Rating</h4>
       <div v-if="modalMessage" class="alert alert-danger">
         {{ modalMessage }}
       </div>
@@ -121,7 +152,7 @@
         <div class="mb-3">
           <label class="form-label" for="locationId">Location</label>
           <select
-            v-model="newComment.location_id"
+            v-model="newRating.location_id"
             class="form-select"
             id="locationId"
             required
@@ -138,15 +169,13 @@
         <div class="mb-3">
           <label class="form-label" for="commentText">Comment</label>
           <textarea
-            v-model="newComment.comment"
+            v-model="newRating.comment"
             class="form-control"
             id="commentText"
             rows="4"
-            required
           ></textarea>
-          <div class="invalid-feedback">Comment text is required</div>
           <div class="text-muted small mt-1">
-            {{ newComment.comment ? newComment.comment.length : 0 }}/5000 characters
+            {{ newRating.comment ? newRating.comment.length : 0 }}/5000 characters
           </div>
         </div>
 
@@ -154,106 +183,16 @@
         <div class="mb-3">
           <div class="form-check form-switch">
             <input
-              v-model="newComment.status"
+              v-model="newRating.status"
               class="form-check-input"
               type="checkbox"
               id="statusSwitch"
             />
             <label class="form-check-label" for="statusSwitch">
-              {{ newComment.status ? "Active" : "Inactive" }}
+              {{ newRating.status ? "Active" : "Inactive" }}
             </label>
           </div>
         </div>
-
-        <!-- Existing Photos (Edit Mode) -->
-        <div v-if="isEditMode && existingPhotos.length > 0" class="mb-3">
-          <label class="form-label">Existing Photos</label>
-          <div class="existing-photos">
-            <div
-              v-for="(photo, index) in existingPhotos"
-              :key="index"
-              class="existing-photo-item"
-            >
-              <div class="photo-preview">
-                <img :src="getPhotoUrl(photo)" alt="Comment photo" />
-                <div class="photo-overlay">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-danger remove-photo"
-                    @click="markPhotoForRemoval(photo, index)"
-                  >
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- New Photos Upload -->
-        <!-- <div class="mb-3">
-          <label class="form-label" for="photos">
-            {{ isEditMode ? "Add More Photos" : "Upload Photos" }}
-          </label>
-          <div
-            class="photo-dropzone"
-            :class="{ 'is-dragover': isDragging }"
-            @dragover.prevent="handleDragOver"
-            @dragleave.prevent="handleDragLeave"
-            @drop.prevent="handleDrop"
-            @click="triggerFileInput"
-          >
-            <input
-              type="file"
-              id="photos"
-              ref="photoInput"
-              multiple
-              accept="image/jpeg,image/png"
-              class="d-none"
-              @change="handlePhotoSelect"
-            />
-
-            <div class="dropzone-content">
-              <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
-              <p>Drag and drop photos here or click to browse</p>
-              <small class="text-muted">Supports JPG, PNG (max 2MB each)</small>
-            </div>
-          </div>
-          <div v-if="selectedPhotos.length > 0" class="mt-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6>Selected Photos ({{ selectedPhotos.length }})</h6>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-danger"
-                @click="clearSelectedPhotos"
-              >
-                Clear All
-              </button>
-            </div>
-
-            <div class="selected-photos-grid">
-              <div
-                v-for="(photo, index) in selectedPhotos"
-                :key="index"
-                class="selected-photo-item"
-              >
-                <div class="photo-preview">
-                  <img :src="getPhotoPreviewUrl(photo)" alt="Photo preview" />
-                  <div class="photo-overlay">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-danger remove-photo"
-                      @click="removeSelectedPhoto(index)"
-                    >
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
-                </div>
-                <small class="photo-name">{{ getPhotoName(photo) }}</small>
-              </div>
-            </div>
-          </div>
-        </div> -->
 
         <!-- Form Actions -->
         <div class="mt-4 d-flex justify-content-end">
@@ -265,23 +204,6 @@
           </button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Photo Preview Modal -->
-  <div
-    v-if="previewPhoto"
-    class="modal-overlay photo-preview-modal"
-    @click="closePhotoPreview"
-  >
-    <div class="modal-content preview-content" @click.stop>
-      <div class="modal-header">
-        <h5 class="modal-title">Photo Preview</h5>
-        <button class="close-btn" @click="closePhotoPreview">&times;</button>
-      </div>
-      <div class="modal-body p-0">
-        <img :src="getPhotoUrl(previewPhoto)" alt="Comment photo" class="img-fluid" />
-      </div>
     </div>
   </div>
 
@@ -330,35 +252,54 @@
 </template>
 
 <script setup>
-import "@/assets/css/toast-styles.css";
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
 // Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
+const globalStore = useGlobalStore();
 
+// Main state
 const state = reactive({
-  comments: [],
+  ratings: [],
   isLoading: false,
   error: null,
 });
 
+// Data collections
 const locations = ref([]);
-const searchQuery = ref("");
+const users = ref([]);
+const ratings = ref([]);
+
+// Filters
+const filters = reactive({
+  location_name: "",
+  status: "",
+});
+
+// UI state
 const showModal = ref(false);
 const isEditMode = ref(false);
-const currentCommentId = ref(null);
+const currentRatingId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
-const previewPhoto = ref(null);
-const photoInput = ref(null);
-const isDragging = ref(false);
-const objectUrls = ref([]);
-const selectedPhotos = ref([]);
-const existingPhotos = ref([]);
-const photosToRemove = ref([]);
+const filterTimer = ref(null);
+
+// Computed for checking if filters are applied
+const isFiltered = computed(() => {
+  return filters.location_name.trim() !== "" || filters.status !== "";
+});
+
+// Form data
+const newRating = reactive({
+  location_id: "",
+  rater_id: "",
+  star: 1,
+  comment: "",
+  status: true,
+});
 
 // Confirmation modal state
 const confirmationModal = reactive({
@@ -369,14 +310,381 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Comment form data
-const newComment = reactive({
-  location_id: "",
-  comment: "",
-  status: true,
-});
+// Text utilities
+const truncateText = (text, maxLength) => {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + "...";
+};
 
-// Show confirmation modal
+// Format date utility function
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+// Fetch ratings from API
+const fetchRatings = async () => {
+  state.isLoading = true;
+  state.error = null;
+
+  try {
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (filters.location_name) params.append("location_name", filters.location_name);
+    if (filters.status !== "") params.append("status", filters.status);
+
+    const res = await axios.get(
+      `/api/web/comment?${params.toString()}`,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result && Array.isArray(res.data.data)) {
+      ratings.value = res.data.data;
+    } else {
+      state.error = res.data.message || "Failed to fetch ratings";
+      showNotification("error", "Error", state.error);
+    }
+  } catch (error) {
+    console.error("Error fetching ratings:", error);
+    state.error = "An error occurred while fetching ratings.";
+    showNotification("error", "Error", state.error);
+    await globalStore.onCheckError(error);
+  } finally {
+    state.isLoading = false;
+  }
+};
+
+// Fetch locations for dropdown
+const fetchLocations = async () => {
+  try {
+    const res = await axios.get("/api/locations", globalStore.getAxiosHeader());
+
+    if (res.data.result && Array.isArray(res.data.data)) {
+      locations.value = res.data.data;
+    } else {
+      console.error("Failed to fetch locations:", res.data);
+    }
+  } catch (error) {
+    console.error("Error fetching locations:", error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+// Fetch users for rater dropdown
+const fetchUsers = async () => {
+  try {
+    const res = await axios.get("/api/users", globalStore.getAxiosHeader());
+
+    if (res.data.result && Array.isArray(res.data.data)) {
+      users.value = res.data.data;
+    } else {
+      console.error("Failed to fetch users:", res.data);
+    }
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+// Filter handling
+const onFilterInput = () => {
+  // Debounce search input
+  clearTimeout(filterTimer.value);
+  filterTimer.value = setTimeout(() => {
+    applyFilters();
+  }, 500);
+};
+
+const applyFilters = () => {
+  fetchRatings();
+};
+
+const resetFilters = () => {
+  filters.location_name = "";
+  filters.status = "";
+  fetchRatings();
+};
+
+// CRUD operations
+const createRating = async () => {
+  isSubmitting.value = true;
+  modalMessage.value = "";
+
+  try {
+    const ratingData = {
+      location_id: newRating.location_id,
+      rater_id: newRating.rater_id,
+      star: newRating.star,
+      comment: newRating.comment,
+      status: newRating.status ? 1 : 0,
+    };
+
+    const res = await axios.post(
+      "/api/web/comment",
+      ratingData,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      await fetchRatings();
+      closeModal();
+      resetRatingForm();
+      showNotification("success", "Success", "Rating created successfully!");
+    } else {
+      modalMessage.value = res.data.message || "Failed to create rating";
+    }
+  } catch (error) {
+    console.error("Error creating rating:", error);
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        modalMessage.value = error.response.data.message;
+      } else if (error.response.data.errors) {
+        // Format validation errors
+        const errors = Object.values(error.response.data.errors).flat();
+        modalMessage.value = errors.join("\n");
+      } else {
+        modalMessage.value = "An error occurred while creating the rating.";
+      }
+    } else {
+      modalMessage.value = "An error occurred while creating the rating.";
+    }
+
+    await globalStore.onCheckError(error);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const updateRating = async () => {
+  isSubmitting.value = true;
+  modalMessage.value = "";
+
+  try {
+    const ratingData = {
+      location_id: newRating.location_id,
+      rater_id: newRating.rater_id,
+      star: newRating.star,
+      comment: newRating.comment,
+      status: newRating.status ? 1 : 0,
+    };
+
+    const res = await axios.put(
+      `/api/web/comment/update/${currentRatingId.value}`,
+      ratingData,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      await fetchRatings();
+      closeModal();
+      resetRatingForm();
+      showNotification("success", "Success", "Rating updated successfully!");
+    } else {
+      modalMessage.value = res.data.message || "Failed to update rating";
+    }
+  } catch (error) {
+    console.error("Error updating rating:", error);
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        modalMessage.value = error.response.data.message;
+      } else if (error.response.data.errors) {
+        // Format validation errors
+        const errors = Object.values(error.response.data.errors).flat();
+        modalMessage.value = errors.join("\n");
+      } else {
+        modalMessage.value = "An error occurred while updating the rating.";
+      }
+    } else {
+      modalMessage.value = "An error occurred while updating the rating.";
+    }
+
+    await globalStore.onCheckError(error);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Toggle rating status
+const performToggleStatus = async (ratingId) => {
+  try {
+    const rating = ratings.value.find((r) => r.id === ratingId);
+    if (!rating) return;
+
+    const newStatus = !rating.status;
+
+    const res = await axios.put(
+      `/api/web/comment/update/status/${ratingId}`,
+      { status: newStatus ? 1 : 0 },
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      // Update local state
+      rating.status = newStatus;
+
+      showNotification(
+        "success",
+        "Success",
+        `Rating has been ${newStatus ? "activated" : "deactivated"}`
+      );
+    } else {
+      showNotification(
+        "error",
+        "Error",
+        res.data.message || "Failed to update rating status"
+      );
+    }
+  } catch (error) {
+    console.error("Error toggling rating status:", error);
+    showNotification(
+      "error",
+      "Error",
+      "An error occurred while updating the rating status."
+    );
+    await globalStore.onCheckError(error);
+  }
+};
+
+// Prompt for status toggle
+const toggleRatingStatus = (ratingId, currentStatus) => {
+  const action = currentStatus ? "deactivate" : "activate";
+  showConfirmation(
+    `${action.charAt(0).toUpperCase() + action.slice(1)} Rating`,
+    `Are you sure you want to ${action} this rating?`,
+    performToggleStatus,
+    ratingId
+  );
+};
+
+// Delete rating implementation
+const performDeleteRating = async (ratingId) => {
+  try {
+    const res = await axios.delete(
+      `/api/web/comment/${ratingId}`,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.result) {
+      ratings.value = ratings.value.filter((r) => r.id !== ratingId);
+      showNotification("success", "Success", "Rating deleted successfully!");
+    } else {
+      showNotification("error", "Error", res.data.message || "Failed to delete rating");
+    }
+  } catch (error) {
+    console.error("Error deleting rating:", error);
+    showNotification("error", "Error", "An error occurred while deleting the rating.");
+    await globalStore.onCheckError(error);
+  }
+};
+
+// Show confirmation for delete
+const deleteRating = (ratingId) => {
+  showConfirmation(
+    "Delete Rating",
+    "Are you sure you want to delete this rating?",
+    performDeleteRating,
+    ratingId
+  );
+};
+
+// Modal controls and form handling
+const openModal = () => {
+  resetRatingForm();
+  isEditMode.value = false;
+  showModal.value = true;
+};
+
+const editRating = async (ratingId) => {
+  resetRatingForm();
+
+  try {
+    state.isLoading = true;
+
+    // Find rating in existing data
+    const rating = ratings.value.find((r) => r.id === ratingId);
+
+    if (rating) {
+      newRating.location_id = rating.location_id;
+      newRating.rater_id = rating.rater_id;
+      newRating.star = rating.star;
+      newRating.comment = rating.comment;
+      newRating.status = rating.status;
+
+      currentRatingId.value = ratingId;
+      isEditMode.value = true;
+      showModal.value = true;
+    } else {
+      // Rating not in local state, fetch from API
+      const res = await axios.get(
+        `/api/web/comment/${ratingId}`,
+        globalStore.getAxiosHeader()
+      );
+
+      if (res.data.result) {
+        const rating = res.data.data;
+        newRating.location_id = rating.location_id;
+        newRating.rater_id = rating.rater_id;
+        newRating.star = rating.star;
+        newRating.comment = rating.comment;
+        newRating.status = rating.status;
+
+        currentRatingId.value = ratingId;
+        isEditMode.value = true;
+        showModal.value = true;
+      } else {
+        showNotification(
+          "error",
+          "Error",
+          res.data.message || "Failed to fetch rating details"
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching rating details:", error);
+    showNotification(
+      "error",
+      "Error",
+      "An error occurred while fetching the rating details."
+    );
+    await globalStore.onCheckError(error);
+  } finally {
+    state.isLoading = false;
+  }
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  resetRatingForm();
+  modalMessage.value = "";
+};
+
+const resetRatingForm = () => {
+  newRating.location_id = "";
+  newRating.rater_id = "";
+  newRating.star = 1;
+  newRating.comment = "";
+  newRating.status = true;
+  currentRatingId.value = null;
+};
+
+// Form submission handler
+const handleSubmit = async (event) => {
+  event.preventDefault();
+
+  if (isEditMode.value) {
+    await updateRating();
+  } else {
+    await createRating();
+  }
+};
+
+// Confirmation modal controls
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -385,14 +693,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -400,432 +706,16 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Format date utility function
-const formatDate = (dateString) => {
-  if (!dateString) return "";
-  return new Date(dateString).toLocaleDateString();
-};
-
-// Fetch comments from API
-const fetchComments = async () => {
-  state.isLoading = true;
-  state.error = null;
-  const globalStore = useGlobalStore();
+// Initialize data on component mount
+onMounted(async () => {
   try {
-    const res = await axios.get("/api/web/comment", globalStore.getAxiosHeader());
-    if (res.data.result && Array.isArray(res.data.data)) {
-      state.comments = res.data.data;
-    } else {
-      state.error = res.data.message || "Failed to fetch comments";
-      showNotification("error", "Error", state.error);
-    }
+    // Load all required data
+    await Promise.all([fetchRatings(), fetchLocations(), fetchUsers()]);
   } catch (error) {
-    state.error = "An error occurred while fetching comments.";
-    showNotification("error", "Error", state.error);
-  } finally {
-    state.isLoading = false;
+    console.error("Error initializing component:", error);
+    showNotification("error", "Error", "Failed to initialize component data");
+    await globalStore.onCheckError(error);
   }
-};
-
-// Fetch locations for dropdown
-const fetchLocations = async () => {
-  const globalStore = useGlobalStore();
-  try {
-    const res = await axios.get("/api/locations", globalStore.getAxiosHeader());
-    if (res.data.result && Array.isArray(res.data.data)) {
-      locations.value = res.data.data;
-    }
-  } catch (error) {
-    console.error("Error fetching locations:", error);
-    modalMessage.value = "Failed to load locations.";
-  }
-};
-
-// Handle comment creation
-const createComment = async () => {
-  const globalStore = useGlobalStore();
-  isSubmitting.value = true;
-  modalMessage.value = "";
-
-  try {
-    const formData = new FormData();
-    formData.append("location_id", newComment.location_id);
-    formData.append("comment", newComment.comment);
-    formData.append("status", newComment.status ? 1 : 0);
-
-    selectedPhotos.value.forEach((photo, index) => {
-      formData.append(`photos[${index}]`, photo);
-    });
-
-    const res = await axios.post(
-      "/api/web/comment",
-      formData,
-      globalStore.getAxiosHeader()
-    );
-
-    if (res.data.result) {
-      await fetchComments();
-      closeModal();
-      resetCommentForm();
-      showNotification("success", "Success", "Comment created successfully!");
-    } else {
-      modalMessage.value = res.data.message || "Failed to create comment";
-    }
-  } catch (error) {
-    console.error("Error creating comment:", error);
-    if (error.response && error.response.data && error.response.data.message) {
-      modalMessage.value = error.response.data.message;
-    } else if (error.response && error.response.data && error.response.data.errors) {
-      // Handle validation errors
-      const errors = error.response.data.errors;
-      const firstError = Object.values(errors)[0][0];
-      modalMessage.value = firstError || "Invalid data provided.";
-    } else {
-      modalMessage.value = "An error occurred while creating the comment.";
-    }
-  } finally {
-    isSubmitting.value = false;
-  }
-};
-
-// Handle comment update
-const updateComment = async () => {
-  const globalStore = useGlobalStore();
-  isSubmitting.value = true;
-  modalMessage.value = "";
-
-  try {
-    const formData = new FormData();
-    formData.append("location_id", newComment.location_id);
-    formData.append("comment", newComment.comment);
-    formData.append("status", newComment.status ? 1 : 0);
-
-    // Add photos to remove
-    photosToRemove.value.forEach((photo, index) => {
-      formData.append(`remove_photos[${index}]`, photo);
-    });
-
-    // Add new photos
-    selectedPhotos.value.forEach((photo, index) => {
-      formData.append(`photos[${index}]`, photo);
-    });
-
-    const res = await axios.put(
-      `/api/web/comment/update/${currentCommentId.value}`,
-      formData,
-      globalStore.getAxiosHeader()
-    );
-
-    if (res.data.result) {
-      await fetchComments();
-      closeModal();
-      resetCommentForm();
-      showNotification("success", "Success", "Comment updated successfully!");
-    } else {
-      modalMessage.value = res.data.message || "Failed to update comment";
-    }
-  } catch (error) {
-    console.error("Error updating comment:", error);
-    if (error.response && error.response.data && error.response.data.message) {
-      modalMessage.value = error.response.data.message;
-    } else if (error.response && error.response.data && error.response.data.errors) {
-      // Handle validation errors
-      const errors = error.response.data.errors;
-      const firstError = Object.values(errors)[0][0];
-      modalMessage.value = firstError || "Invalid data provided.";
-    } else {
-      modalMessage.value = "An error occurred while updating the comment.";
-    }
-  } finally {
-    isSubmitting.value = false;
-  }
-};
-
-// Toggle comment status
-const performToggleStatus = async (commentId) => {
-  const globalStore = useGlobalStore();
-  try {
-    const res = await axios.put(
-      `/api/web/comment/update/status/${commentId}`,
-      {},
-      globalStore.getAxiosHeader()
-    );
-    if (res.data.result) {
-      // Update the comment status in the local state
-      const comment = state.comments.find((c) => c.id === commentId);
-      if (comment) {
-        comment.status = !comment.status;
-      }
-
-      // Use the server's response message
-      showNotification(
-        "success",
-        "Success",
-        res.data.message ||
-          (comment.status ? "Comment has been unlocked" : "Comment has been locked")
-      );
-    } else {
-      showNotification(
-        "error",
-        "Error",
-        res.data.message || "Failed to update comment status"
-      );
-    }
-  } catch (error) {
-    showNotification(
-      "error",
-      "Error",
-      "An error occurred while updating the comment status."
-    );
-  }
-};
-
-// Prompt for status toggle
-const toggleCommentStatus = (commentId, currentStatus) => {
-  const action = currentStatus ? "lock" : "unlock";
-  showConfirmation(
-    `${action.charAt(0).toUpperCase() + action.slice(1)} Comment`,
-    `Are you sure you want to ${action} this comment?`,
-    performToggleStatus,
-    commentId
-  );
-};
-
-// Delete comment implementation
-const performDeleteComment = async (commentId) => {
-  const globalStore = useGlobalStore();
-  try {
-    const res = await axios.delete(
-      `/api/web/comment/${commentId}`,
-      globalStore.getAxiosHeader()
-    );
-    if (res.data.result) {
-      state.comments = state.comments.filter((c) => c.id !== commentId);
-      showNotification("success", "Success", "Comment deleted successfully!");
-    } else {
-      showNotification("error", "Error", res.data.message || "Failed to delete comment");
-    }
-  } catch (error) {
-    showNotification("error", "Error", "An error occurred while deleting the comment.");
-  }
-};
-
-// Show confirmation for delete
-const deleteComment = (commentId) => {
-  showConfirmation(
-    "Delete Comment",
-    "Are you sure you want to delete this comment?",
-    performDeleteComment,
-    commentId
-  );
-};
-
-// Get the full URL for a photo path
-const getPhotoUrl = (photoPath) => {
-  // Adjust this based on your storage configuration
-  if (photoPath.startsWith("http")) {
-    return photoPath;
-  }
-  return `${import.meta.env.VITE_APP_API_URL}/storage/${photoPath}`;
-};
-
-// View photo in preview modal
-const viewPhoto = (photo) => {
-  previewPhoto.value = photo;
-};
-
-// Close photo preview modal
-const closePhotoPreview = () => {
-  previewPhoto.value = null;
-};
-
-// Open comment modal for creation
-const openModal = () => {
-  resetCommentForm();
-  isEditMode.value = false;
-  showModal.value = true;
-};
-
-// Open comment modal for editing
-const editComment = async (commentId) => {
-  resetCommentForm();
-
-  const globalStore = useGlobalStore();
-  try {
-    const res = await axios.get(
-      `/api/web/comment/${commentId}`,
-      globalStore.getAxiosHeader()
-    );
-
-    if (res.data.result) {
-      const comment = res.data.data;
-      newComment.location_id = comment.location_id;
-      newComment.comment = comment.comment;
-      newComment.status = comment.status;
-
-      if (comment.photos && Array.isArray(comment.photos)) {
-        existingPhotos.value = [...comment.photos];
-      }
-
-      currentCommentId.value = commentId;
-      isEditMode.value = true;
-      showModal.value = true;
-    } else {
-      showNotification(
-        "error",
-        "Error",
-        res.data.message || "Failed to fetch comment details"
-      );
-    }
-  } catch (error) {
-    showNotification(
-      "error",
-      "Error",
-      "An error occurred while fetching the comment details."
-    );
-  }
-};
-
-// Close comment modal
-const closeModal = () => {
-  showModal.value = false;
-  resetCommentForm();
-  modalMessage.value = "";
-};
-
-// Reset comment form
-const resetCommentForm = () => {
-  newComment.location_id = "";
-  newComment.comment = "";
-  newComment.status = true;
-  currentCommentId.value = null;
-  selectedPhotos.value = [];
-  existingPhotos.value = [];
-  photosToRemove.value = [];
-  clearObjectUrls();
-};
-
-// Form submission handler
-const handleSubmit = async (event) => {
-  event.preventDefault();
-
-  if (!newComment.location_id || !newComment.comment.trim()) {
-    modalMessage.value = "Location and comment text are required";
-    return;
-  }
-
-  if (isEditMode.value) {
-    await updateComment();
-  } else {
-    await createComment();
-  }
-};
-
-// File handling methods
-const triggerFileInput = () => {
-  photoInput.value?.click();
-};
-
-const handlePhotoSelect = (event) => {
-  const files = event.target.files;
-  if (files) {
-    Array.from(files).forEach((file) => {
-      if (file.type.match(/image\/(jpeg|png)/) && file.size <= 2 * 1024 * 1024) {
-        selectedPhotos.value.push(file);
-      } else {
-        showNotification(
-          "error",
-          "Invalid File",
-          "Only JPEG or PNG images under 2MB are allowed."
-        );
-      }
-    });
-  }
-  event.target.value = null;
-};
-
-const handleDragOver = () => {
-  isDragging.value = true;
-};
-
-const handleDragLeave = () => {
-  isDragging.value = false;
-};
-
-const handleDrop = (event) => {
-  isDragging.value = false;
-  const files = Array.from(event.dataTransfer.files);
-  files.forEach((file) => {
-    if (file.type.match(/image\/(jpeg|png)/) && file.size <= 2 * 1024 * 1024) {
-      selectedPhotos.value.push(file);
-    } else {
-      showNotification(
-        "error",
-        "Invalid File",
-        "Only JPEG or PNG images under 2MB are allowed."
-      );
-    }
-  });
-};
-
-const getPhotoPreviewUrl = (file) => {
-  if (file instanceof File) {
-    const url = URL.createObjectURL(file);
-    objectUrls.value.push(url);
-    return url;
-  }
-  return null;
-};
-
-const getPhotoName = (file) => {
-  if (file instanceof File) {
-    return file.name.length > 20 ? file.name.substring(0, 17) + "..." : file.name;
-  }
-  return "";
-};
-
-const removeSelectedPhoto = (index) => {
-  selectedPhotos.value.splice(index, 1);
-};
-
-const clearSelectedPhotos = () => {
-  selectedPhotos.value = [];
-  clearObjectUrls();
-};
-
-const clearObjectUrls = () => {
-  objectUrls.value.forEach((url) => URL.revokeObjectURL(url));
-  objectUrls.value = [];
-};
-
-const markPhotoForRemoval = (photo, index) => {
-  photosToRemove.value.push(photo);
-  existingPhotos.value.splice(index, 1);
-};
-
-// Filter comments based on search query
-const filteredComments = computed(() => {
-  if (!searchQuery.value) return state.comments;
-
-  const query = searchQuery.value.toLowerCase();
-  return state.comments.filter((comment) => {
-    return (
-      (comment.commender && comment.commender.toLowerCase().includes(query)) ||
-      (comment.location_name && comment.location_name.toLowerCase().includes(query)) ||
-      (comment.comment && comment.comment.toLowerCase().includes(query))
-    );
-  });
-});
-
-// Fetch data on component mount
-onMounted(() => {
-  fetchComments();
-  fetchLocations();
-});
-
-// Clean up object URLs when component is unmounted
-onBeforeUnmount(() => {
-  clearObjectUrls();
 });
 </script>
 <style scoped>
