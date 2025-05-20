@@ -272,6 +272,25 @@
           />
           <div class="invalid-feedback">Local name is required</div>
         </div>
+        <div class="col-md-4">
+          <label class="form-label" for="minMoney">Min Money</label>
+          <input
+            v-model="locationForm.min_money"
+            class="form-control"
+            id="minMoney"
+            type="text"
+            required
+          />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="maxMoney">Max Money</label>
+          <input
+            v-model="locationForm.max_money"
+            class="form-control"
+            id="maxMoney"
+            type="text"
+          />
+        </div>
 
         <!-- Category -->
         <div class="col-md-4">
@@ -606,6 +625,8 @@ const locationForm = reactive({
   thumbnail: null,
   url_location: "",
   short_description: "",
+  min_money: "",
+  max_money: "",
   description: "",
   lat: "",
   lot: "",
@@ -694,30 +715,165 @@ const changePage = async (page) => {
   await getLocations(page);
 };
 
-// Filter handlers
-const handleProvinceChange = () => {
+// Filter handlers - Updated to use new API structure
+const handleProvinceChange = async () => {
+  // Reset dependent filters
   selectedDistrict.value = "";
   selectedCommune.value = "";
   selectedVillage.value = "";
+
+  // If province is selected, fetch districts
+  if (selectedProvince.value) {
+    try {
+      const res = await axios.get(
+        `/api/locations/districts/${selectedProvince.value}`,
+        globalStore.getAxiosHeader()
+      );
+      if (res.data.result) {
+        districts.value = res.data.data;
+      }
+    } catch (err) {
+      console.error("Failed to fetch districts", err);
+    }
+  }
+
   handleSearch();
 };
 
-const handleDistrictChange = () => {
+const handleDistrictChange = async () => {
+  // Reset dependent filters
   selectedCommune.value = "";
   selectedVillage.value = "";
+
+  // If district is selected, fetch communes
+  if (selectedDistrict.value) {
+    try {
+      const res = await axios.get(
+        `/api/locations/communes/${selectedDistrict.value}`,
+        globalStore.getAxiosHeader()
+      );
+      if (res.data.result) {
+        communes.value = res.data.data;
+      }
+    } catch (err) {
+      console.error("Failed to fetch communes", err);
+    }
+  }
+
   handleSearch();
 };
 
-const handleCommuneChange = () => {
+const handleCommuneChange = async () => {
+  // Reset dependent filter
   selectedVillage.value = "";
+
+  // If commune is selected, fetch villages
+  if (selectedCommune.value) {
+    try {
+      const res = await axios.get(
+        `/api/locations/villages/${selectedCommune.value}`,
+        globalStore.getAxiosHeader()
+      );
+      if (res.data.result) {
+        villages.value = res.data.data;
+      }
+    } catch (err) {
+      console.error("Failed to fetch villages", err);
+    }
+  }
+
   handleSearch();
 };
+// Fetch options data
+const getCategories = async () => {
+  try {
+    const res = await axios.get("/api/categories", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      categories.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch categories", err);
+    showNotification("error", "Error", "Failed to fetch categories");
+    return false;
+  }
+};
 
-// Form dropdown handlers for modal
+// Updated to use new API structure
+const getProvinces = async () => {
+  try {
+    const res = await axios.get("/api/locations/provinces", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      provinces.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch provinces", err);
+    showNotification("error", "Error", "Failed to fetch provinces");
+    return false;
+  }
+};
+
+// Updated to fetch all districts initially
+const getDistricts = async () => {
+  try {
+    // This could be optional if you prefer to load only when needed
+    const res = await axios.get("/api/districts", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      districts.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch districts", err);
+    showNotification("error", "Error", "Failed to fetch districts");
+    return false;
+  }
+};
+
+// Updated to fetch all communes initially
+const getCommunes = async () => {
+  try {
+    // This could be optional if you prefer to load only when needed
+    const res = await axios.get("/api/communes", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      communes.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch communes", err);
+    showNotification("error", "Error", "Failed to fetch communes");
+    return false;
+  }
+};
+
+// Updated to fetch all villages initially
+const getVillages = async () => {
+  try {
+    // This could be optional if you prefer to load only when needed
+    const res = await axios.get("/api/villages", globalStore.getAxiosHeader());
+    if (res.data.result) {
+      villages.value = res.data.data;
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("Failed to fetch villages", err);
+    showNotification("error", "Error", "Failed to fetch villages");
+    return false;
+  }
+};
+
+// Form dropdown handlers for modal - Updated to use new API structure
 const updateFormDistricts = async () => {
   locationForm.district_id = "";
   locationForm.commune_id = "";
   locationForm.village_id = "";
+  formCommunes.value = [];
+  formVillages.value = [];
 
   if (!locationForm.province_id) {
     formDistricts.value = [];
@@ -726,7 +882,7 @@ const updateFormDistricts = async () => {
 
   try {
     const res = await axios.get(
-      `/api/districts?province_id=${locationForm.province_id}`,
+      `/api/locations/districts/${locationForm.province_id}`,
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
@@ -741,6 +897,7 @@ const updateFormDistricts = async () => {
 const updateFormCommunes = async () => {
   locationForm.commune_id = "";
   locationForm.village_id = "";
+  formVillages.value = [];
 
   if (!locationForm.district_id) {
     formCommunes.value = [];
@@ -749,7 +906,7 @@ const updateFormCommunes = async () => {
 
   try {
     const res = await axios.get(
-      `/api/communes?district_id=${locationForm.district_id}`,
+      `/api/locations/communes/${locationForm.district_id}`,
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
@@ -771,7 +928,7 @@ const updateFormVillages = async () => {
 
   try {
     const res = await axios.get(
-      `/api/villages?commune_id=${locationForm.commune_id}`,
+      `/api/locations/villages/${locationForm.commune_id}`,
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
@@ -815,82 +972,6 @@ const getLocations = async (page = 1) => {
     return false;
   } finally {
     isLoading.value = false;
-  }
-};
-
-// Fetch options data
-const getCategories = async () => {
-  try {
-    const res = await axios.get("/api/categories", globalStore.getAxiosHeader());
-    if (res.data.result) {
-      categories.value = res.data.data;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error("Failed to fetch categories", err);
-    showNotification("error", "Error", "Failed to fetch categories");
-    return false;
-  }
-};
-
-const getProvinces = async () => {
-  try {
-    const res = await axios.get("/api/provinces", globalStore.getAxiosHeader());
-    if (res.data.result) {
-      provinces.value = res.data.data;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error("Failed to fetch provinces", err);
-    showNotification("error", "Error", "Failed to fetch provinces");
-    return false;
-  }
-};
-
-const getDistricts = async () => {
-  try {
-    const res = await axios.get("/api/districts", globalStore.getAxiosHeader());
-    if (res.data.result) {
-      districts.value = res.data.data;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error("Failed to fetch districts", err);
-    showNotification("error", "Error", "Failed to fetch districts");
-    return false;
-  }
-};
-
-const getCommunes = async () => {
-  try {
-    const res = await axios.get("/api/communes", globalStore.getAxiosHeader());
-    if (res.data.result) {
-      communes.value = res.data.data;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error("Failed to fetch communes", err);
-    showNotification("error", "Error", "Failed to fetch communes");
-    return false;
-  }
-};
-
-const getVillages = async () => {
-  try {
-    const res = await axios.get("/api/villages", globalStore.getAxiosHeader());
-    if (res.data.result) {
-      villages.value = res.data.data;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error("Failed to fetch villages", err);
-    showNotification("error", "Error", "Failed to fetch villages");
-    return false;
   }
 };
 
@@ -950,6 +1031,8 @@ const editLocation = async (locationId) => {
       locationForm.name = location.name || "";
       locationForm.name_local = location.name_local || "";
       locationForm.short_description = location.short_description || "";
+      locationForm.min_money = location.min_money || "";
+      locationForm.max_money = location.max_money || "";
       locationForm.description = location.description || "";
       locationForm.url_location = location.url_location || "";
       locationForm.lat = location.lat || "";
@@ -1007,6 +1090,8 @@ const resetLocationForm = () => {
   locationForm.thumbnail = null;
   locationForm.url_location = "";
   locationForm.short_description = "";
+  locationForm.max_money = "";
+  locationForm.min_money = "";
   locationForm.description = "";
   locationForm.lat = "";
   locationForm.lot = "";
@@ -1074,6 +1159,8 @@ const createLocation = async () => {
     formData.append("name", locationForm.name);
     formData.append("name_local", locationForm.name_local);
     formData.append("short_description", locationForm.short_description);
+    formData.append("min_money", locationForm.min_money);
+    formData.append("max_money", locationForm.max_money);
     formData.append("description", locationForm.description || "");
 
     // Add geographical information
@@ -1173,6 +1260,8 @@ const updateLocation = async () => {
     formData.append("name", locationForm.name);
     formData.append("name_local", locationForm.name_local);
     formData.append("short_description", locationForm.short_description);
+    formData.append("min_money", locationForm.min_money);
+    formData.append("max_money", locationForm.max_money);
     formData.append("description", locationForm.description || "");
 
     // Add geographical information
@@ -1299,20 +1388,16 @@ const deleteLocation = (id) => {
     id
   );
 };
-
-// Lifecycle Hook
+// Lifecycle Hook - Updated to use new API structure
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    // Load reference data in parallel
+    // Load only essential reference data initially
     await Promise.all([
       getCategories(),
-      getProvinces(),
-      getDistricts(),
-      getCommunes(),
-      getVillages(),
+      getProvinces(), // Only load provinces initially
       getTags(),
     ]);
 

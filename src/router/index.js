@@ -62,13 +62,13 @@ const router = createRouter({
             }
         },
         {
-            path: '/403',
+            path: '/forbidden',
             name: 'forbidden',
             component: ForbiddenView,
             meta: {
                 title: 'Admin Camtour . Access Forbidden',
-                layout: 'forbidden',
-                auth: false
+                layout: 'auth',
+                auth: true
             }
         },
         {
