@@ -552,9 +552,6 @@ async function changePassword() {
       showStatusMessage("error", response.data.message || t("password-update-failed"));
     }
   } catch (error) {
-    console.error("Password update error:", error);
-
-    // Handle validation errors from API
     if (error.response && error.response.data && error.response.data.errors) {
       const apiErrors = error.response.data.errors;
       Object.keys(apiErrors).forEach((key) => {
@@ -625,7 +622,6 @@ const fetchProfile = async () => {
       editForm.email = profileData.value.email || "";
     }
   } catch (error) {
-    console.error("Error fetching profile:", error);
   } finally {
     isLoading.value = false;
   }

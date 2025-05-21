@@ -28,6 +28,7 @@ const UsersView = () => import('@/views/users/UserView.vue')
 const ForbiddenView = () => import('@/views/error/ForbiddenView.vue')
 const CustomerCommment = () => import('@/views/customers/CommentView.vue')
 const ProductOrder = () => import('@/views/products/ProductOrderView.vue')
+const LocationGuide = () => import('@/views/locations/LocationGuideView.vue')
 
 // Role constants
 const ROLES = {
@@ -116,6 +117,16 @@ const router = createRouter({
             path: '/category',
             name: 'category',
             component: CategoryView,
+            meta: {
+                title: 'Admin Camtour . Categories',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        }, {
+            path: '/location/guide',
+            name: 'location guide',
+            component: LocationGuide,
             meta: {
                 title: 'Admin Camtour . Categories',
                 layout: 'board',
@@ -369,7 +380,6 @@ router.beforeEach(async (to, from) => {
 
         } catch (err) {
             console.error('Router error:', err)
-
             if (err.code === 'ERR_NETWORK') {
                 alert('Error connection! Please check internet connection, then try again.')
             } else if (err.response?.status === 401) {
