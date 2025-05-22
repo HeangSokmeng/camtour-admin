@@ -587,8 +587,6 @@ function initializeBootstrapCollapse() {
 watch(
   () => globalStore.profile,
   (newProfile) => {
-    console.log("Profile changed:", newProfile);
-    console.log("Role ID:", newProfile?.role_id);
     console.log("Role checks recalculated:", {
       atLeastStaff: globalStore.atLeastStaff,
       canAccessUserManagement: globalStore.canAccessUserManagement,
@@ -602,8 +600,6 @@ watch(
 watch(
   () => route.path,
   (newPath) => {
-    console.log("Route changed:", newPath);
-    // This might be needed if Bootstrap collapse doesn't respond to class changes
     initializeBootstrapCollapse();
   }
 );
