@@ -330,10 +330,7 @@ import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
-
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
-
 const state = reactive({
   users: [],
   isLoading: false,
@@ -343,7 +340,6 @@ const state = reactive({
   statusModalError: null,
   isSubmitting: false,
 });
-
 const searchQuery = ref("");
 const showOrderModal = ref(false);
 const showStatusModal = ref(false);
@@ -352,7 +348,6 @@ const currentOrderId = ref(null);
 const newStatus = ref("pending");
 const selectedUserId = ref(null);
 
-// Format date utility function
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const options = {
@@ -365,23 +360,19 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString("en-US", options);
 };
 
-// Format payment method
 const formatPaymentMethod = (method) => {
   if (!method) return "";
-
   return method
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
 
-// Capitalize first letter
 const capitalizeFirstLetter = (string) => {
   if (!string) return "";
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
 
-// Get status badge class
 const getStatusClass = (status) => {
   switch (status) {
     case "pending":
@@ -401,36 +392,30 @@ const getStatusClass = (status) => {
   }
 };
 
-// Toggle user orders display
 const toggleUserOrders = (userId) => {
   if (selectedUserId.value === userId) {
-    selectedUserId.value = null; // Hide orders if already showing
+    selectedUserId.value = null;
   } else {
-    selectedUserId.value = userId; // Show orders for this user
+    selectedUserId.value = userId;
   }
 };
 
-// Get selected user's orders
 const selectedUserOrders = computed(() => {
   if (!selectedUserId.value) return [];
   const user = state.users.find((u) => u.user_id === selectedUserId.value);
   return user ? user.orders : [];
 });
 
-// Get selected user's name
 const selectedUserName = computed(() => {
   if (!selectedUserId.value) return "";
-
   const user = state.users.find((u) => u.user_id === selectedUserId.value);
   return user ? `${user.first_name} ${user.last_name}` : "";
 });
 
-// Fetch orders from API
 const fetchOrders = async () => {
   state.isLoading = true;
   state.error = null;
   const globalStore = useGlobalStore();
-
   try {
     const res = await axios.get("/api/web/product/order", globalStore.getAxiosHeader());
     if (res.data.error === false && Array.isArray(res.data.data)) {
@@ -447,10 +432,8 @@ const fetchOrders = async () => {
   }
 };
 
-// Filter users based on search query
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return state.users;
-
   const query = searchQuery.value.toLowerCase();
   return state.users.filter((user) => {
     return (
@@ -462,15 +445,12 @@ const filteredUsers = computed(() => {
   });
 });
 
-// View order details
 const viewOrderDetails = async (orderId) => {
   currentOrderId.value = orderId;
   showOrderModal.value = true;
   state.modalLoading = true;
   state.modalError = null;
-
   const globalStore = useGlobalStore();
-
   try {
     const res = await axios.get(
       `/api/web/product/order/${orderId}`,
@@ -488,20 +468,15 @@ const viewOrderDetails = async (orderId) => {
   }
 };
 
-// Close order details modal
 const closeOrderModal = () => {
   showOrderModal.value = false;
   currentOrder.value = null;
   currentOrderId.value = null;
 };
 
-// Update order status
 const updateOrderStatus = (orderId) => {
   currentOrderId.value = orderId;
-
-  // Find the current status of the order
   let currentStatus = "pending";
-
   for (const user of state.users) {
     const order = user.orders.find((o) => o.order_id === orderId);
     if (order) {
@@ -509,39 +484,31 @@ const updateOrderStatus = (orderId) => {
       break;
     }
   }
-
   newStatus.value = currentStatus;
   showStatusModal.value = true;
 };
 
-// Close status update modal
 const closeStatusModal = () => {
   showStatusModal.value = false;
   currentOrderId.value = null;
   state.statusModalError = null;
 };
 
-// Submit status update
 const submitStatusUpdate = async () => {
   if (!currentOrderId.value || !newStatus.value) {
     state.statusModalError = "Order ID and status are required";
     return;
   }
-
   state.isSubmitting = true;
   state.statusModalError = null;
-
   const globalStore = useGlobalStore();
-
   try {
     const res = await axios.put(
       `/api/web/product/order/update/status/${currentOrderId.value}`,
       { status: newStatus.value },
       globalStore.getAxiosHeader()
     );
-
     if (res.data.error === false) {
-      // Update the status in the local state
       for (const user of state.users) {
         const order = user.orders.find((o) => o.order_id === currentOrderId.value);
         if (order) {
@@ -549,7 +516,6 @@ const submitStatusUpdate = async () => {
           break;
         }
       }
-
       closeStatusModal();
       showNotification("success", "Success", "Order status updated successfully!");
     } else {
@@ -562,18 +528,13 @@ const submitStatusUpdate = async () => {
   }
 };
 
-// Calculate subtotal
 const calculateSubtotal = () => {
   if (!currentOrder.value || !currentOrder.value.items) return "0.00";
-
   const subtotal = currentOrder.value.items.reduce((total, item) => {
     return total + parseFloat(item.subtotal || 0);
   }, 0);
-
   return `${currentOrder.value.currency} ${subtotal.toFixed(2)}`;
 };
-
-// Fetch data on component mount
 onMounted(() => {
   fetchOrders();
 });

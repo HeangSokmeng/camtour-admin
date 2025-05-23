@@ -78,13 +78,13 @@
         <hr class="bg-body-secondary mt-5 mb-4" />
         <div class="divider-content-center bg-body-emphasis">or use email</div>
       </div>
-      <button
+      <!-- <button
         type="button"
         :disabled="state.ldi_login || true"
         class="btn btn-phoenix-secondary w-100 mb-3"
       >
         <span class="fab fa-google text-danger me-2 fs-9"></span>Sign in with google
-      </button>
+      </button> -->
       <!-- <button type="button"
                 :disabled="state.ldi_login || true"
                 class="btn btn-phoenix-secondary w-100">
@@ -172,3 +172,51 @@ const onSubmitLogin = async () => {
   }
 };
 </script>
+
+<style scoped>
+.logo-responsive {
+  width: 60px;
+  height: auto;
+}
+
+@media (min-width: 576px) {
+  .logo-responsive {
+    width: 70px;
+  }
+}
+
+@media (min-width: 768px) {
+  .logo-responsive {
+    width: 80px;
+  }
+}
+
+/* Enhanced touch targets for mobile */
+@media (max-width: 767.98px) {
+  .btn {
+    min-height: 44px;
+  }
+
+  .form-control {
+    min-height: 44px;
+  }
+
+  .form-check-input {
+    width: 1.25em;
+    height: 1.25em;
+  }
+}
+
+/* Better spacing on smaller screens */
+@media (max-width: 575.98px) {
+  .auth-form-box {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (min-width: 576px) {
+  .auth-form-box {
+    padding: 2rem;
+  }
+}
+</style>

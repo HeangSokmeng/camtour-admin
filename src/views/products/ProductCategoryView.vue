@@ -148,14 +148,12 @@ import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 
-// State for categories
 const state = reactive({
   productCategories: [],
   isCategoryLoading: false,
   categoryError: null,
 });
 
-// Form + Modal States
 const searchQuery = ref("");
 const showModal = ref(false);
 const isEditMode = ref(false);
@@ -163,11 +161,9 @@ const currentCategoryId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 
-// Toast notifications state
 const toasts = ref([]);
 let toastIdCounter = 0;
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -180,12 +176,9 @@ const newCategory = reactive({
   name: "",
 });
 
-// Show toast notification
 const showNotification = (type, title, message) => {
   const id = toastIdCounter++;
   let icon = "fas fa-bell";
-
-  // Set appropriate icon based on notification type
   switch (type) {
     case "success":
       icon = "fas fa-check-circle";
@@ -200,8 +193,6 @@ const showNotification = (type, title, message) => {
       icon = "fas fa-info-circle";
       break;
   }
-
-  // Add toast to the array
   toasts.value.push({
     id,
     type,
@@ -209,14 +200,11 @@ const showNotification = (type, title, message) => {
     message,
     icon,
   });
-
-  // Auto-remove toast after 3 seconds
   setTimeout(() => {
     removeToast(id);
   }, 3000);
 };
 
-// Remove a specific toast by ID
 const removeToast = (id) => {
   const index = toasts.value.findIndex((toast) => toast.id === id);
   if (index !== -1) {
@@ -224,7 +212,6 @@ const removeToast = (id) => {
   }
 };
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -233,14 +220,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -248,20 +233,18 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Fetch product categories (same style as fetchBrands)
 const fetchProductCategories = async () => {
   state.isCategoryLoading = true;
   state.categoryError = null;
   const globalStore = useGlobalStore();
 
   try {
-    const res = await axios.get("/api/product-categories",  globalStore.getAxiosHeader());
+    const res = await axios.get("/api/product-categories", globalStore.getAxiosHeader());
     if (res.data.result && Array.isArray(res.data.data)) {
-      // Store only `name` and `id` for each category
       state.productCategories = res.data.data.map((category) => ({
         id: category.id,
         name: category.name,
-        created_at: category.created_at
+        created_at: category.created_at,
       }));
     } else {
       state.categoryError = res.data.message || "Failed to fetch categories.";
@@ -272,14 +255,12 @@ const fetchProductCategories = async () => {
   state.isCategoryLoading = false;
 };
 
-// Open modal to add or edit category
 const openModal = () => {
   resetCategoryForm();
   isEditMode.value = false;
   showModal.value = true;
 };
 
-// Edit category function
 const editCategory = (categoryId) => {
   const category = state.productCategories.find((p) => p.id === categoryId);
   if (category) {
@@ -290,7 +271,6 @@ const editCategory = (categoryId) => {
   }
 };
 
-// Delete category function
 const performDeleteCategory = async (categoryId) => {
   const globalStore = useGlobalStore();
   try {
@@ -322,20 +302,17 @@ const deleteCategory = (categoryId) => {
   );
 };
 
-// Close modal
 const closeModal = () => {
   showModal.value = false;
   resetCategoryForm();
   modalMessage.value = "";
 };
 
-// Reset category form
 const resetCategoryForm = () => {
   newCategory.name = "";
   currentCategoryId.value = null;
 };
 
-// Handle submit for creating/updating categories
 const handleSubmit = async (event) => {
   event.preventDefault();
   if (!newCategory.name.trim()) {
@@ -349,7 +326,6 @@ const handleSubmit = async (event) => {
   }
 };
 
-// Create new category
 const createCategory = async () => {
   const globalStore = useGlobalStore();
   isSubmitting.value = true;
@@ -375,7 +351,6 @@ const createCategory = async () => {
   isSubmitting.value = false;
 };
 
-// Update category
 const updateCategory = async () => {
   const globalStore = useGlobalStore();
   isSubmitting.value = true;
@@ -403,15 +378,13 @@ const updateCategory = async () => {
   isSubmitting.value = false;
 };
 
-// Filter categories based on search query
 const filteredCategories = computed(() => {
   return state.productCategories.filter((category) => {
-    const categoryName = category.name || ""; // Default to empty string
+    const categoryName = category.name || "";
     return categoryName.toLowerCase().includes(searchQuery.value.toLowerCase());
   });
 });
 
-// Fetch categories on component mount
 onMounted(fetchProductCategories);
 </script>
 

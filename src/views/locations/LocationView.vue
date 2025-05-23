@@ -530,20 +530,14 @@ import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
-
-// Router and Store
 const router = useRouter();
 const globalStore = useGlobalStore();
 const imagePreview = ref(null);
 const objectUrls = ref([]);
-// State Management
 const locations = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
-
-// Filter and Search Options
 const categories = ref([]);
 const provinces = ref([]);
 const districts = ref([]);
@@ -551,12 +545,10 @@ const communes = ref([]);
 const villages = ref([]);
 const tags = ref([]);
 
-// Form State
 const formDistricts = ref([]);
 const formCommunes = ref([]);
 const formVillages = ref([]);
 
-// Pagination settings
 const perPage = ref(10);
 const sortCol = ref("id");
 const sortDir = ref("desc");
@@ -571,7 +563,6 @@ const paginationData = reactive({
   last_page: 1,
 });
 
-// Search and Filter
 const searchQuery = ref("");
 const selectedCategory = ref("");
 const selectedProvince = ref("");
@@ -580,7 +571,6 @@ const selectedCommune = ref("");
 const selectedVillage = ref("");
 let searchTimeout = null;
 
-// Computed filter options
 const filteredDistrictOptions = computed(() => {
   if (!selectedProvince.value) return [];
   return districts.value.filter(
@@ -602,14 +592,12 @@ const filteredVillageOptions = computed(() => {
   );
 });
 
-// Modal Management
 const showModal = ref(false);
 const isEditMode = ref(false);
 const isSubmitting = ref(false);
 const modalError = ref("");
 const currentLocationId = ref(null);
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -639,7 +627,6 @@ const locationForm = reactive({
   published: false,
 });
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -648,14 +635,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -663,42 +648,36 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Utility Functions
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
+
 const getImagePreviewUrl = (file) => {
   if (file instanceof File) {
-    // If we already have a preview URL, use it
     if (imagePreview.value) {
       return imagePreview.value;
     }
-    // Otherwise create a new one
     const url = URL.createObjectURL(file);
     objectUrls.value.push(url);
     return url;
   }
-  // Return the string URL if it's not a File
   return typeof file === "string" ? file : "/placeholder-image.jpg";
 };
-// Handle search input with debounce
+
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
-
   searchTimeout = setTimeout(() => {
     handleSearch();
   }, 500);
 };
 
-// Handle search when user submits the search
 const handleSearch = async () => {
   paginationData.current_page = 1;
   await getLocations(1);
 };
 
-// Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
     sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
@@ -706,23 +685,18 @@ const toggleSort = async (column) => {
     sortCol.value = column;
     sortDir.value = "asc";
   }
-
   await getLocations(1);
 };
 
-// Handle pagination
 const changePage = async (page) => {
   await getLocations(page);
 };
 
-// Filter handlers - Updated to use new API structure
 const handleProvinceChange = async () => {
   // Reset dependent filters
   selectedDistrict.value = "";
   selectedCommune.value = "";
   selectedVillage.value = "";
-
-  // If province is selected, fetch districts
   if (selectedProvince.value) {
     try {
       const res = await axios.get(
@@ -736,16 +710,12 @@ const handleProvinceChange = async () => {
       console.error("Failed to fetch districts", err);
     }
   }
-
   handleSearch();
 };
 
 const handleDistrictChange = async () => {
-  // Reset dependent filters
   selectedCommune.value = "";
   selectedVillage.value = "";
-
-  // If district is selected, fetch communes
   if (selectedDistrict.value) {
     try {
       const res = await axios.get(
@@ -759,15 +729,11 @@ const handleDistrictChange = async () => {
       console.error("Failed to fetch communes", err);
     }
   }
-
   handleSearch();
 };
 
 const handleCommuneChange = async () => {
-  // Reset dependent filter
   selectedVillage.value = "";
-
-  // If commune is selected, fetch villages
   if (selectedCommune.value) {
     try {
       const res = await axios.get(
@@ -781,10 +747,9 @@ const handleCommuneChange = async () => {
       console.error("Failed to fetch villages", err);
     }
   }
-
   handleSearch();
 };
-// Fetch options data
+
 const getCategories = async () => {
   try {
     const res = await axios.get("/api/categories", globalStore.getAxiosHeader());
@@ -800,7 +765,6 @@ const getCategories = async () => {
   }
 };
 
-// Updated to use new API structure
 const getProvinces = async () => {
   try {
     const res = await axios.get("/api/locations/provinces", globalStore.getAxiosHeader());
@@ -816,10 +780,8 @@ const getProvinces = async () => {
   }
 };
 
-// Updated to fetch all districts initially
 const getDistricts = async () => {
   try {
-    // This could be optional if you prefer to load only when needed
     const res = await axios.get("/api/districts", globalStore.getAxiosHeader());
     if (res.data.result) {
       districts.value = res.data.data;
@@ -833,10 +795,8 @@ const getDistricts = async () => {
   }
 };
 
-// Updated to fetch all communes initially
 const getCommunes = async () => {
   try {
-    // This could be optional if you prefer to load only when needed
     const res = await axios.get("/api/communes", globalStore.getAxiosHeader());
     if (res.data.result) {
       communes.value = res.data.data;
@@ -850,10 +810,8 @@ const getCommunes = async () => {
   }
 };
 
-// Updated to fetch all villages initially
 const getVillages = async () => {
   try {
-    // This could be optional if you prefer to load only when needed
     const res = await axios.get("/api/villages", globalStore.getAxiosHeader());
     if (res.data.result) {
       villages.value = res.data.data;
@@ -867,19 +825,16 @@ const getVillages = async () => {
   }
 };
 
-// Form dropdown handlers for modal - Updated to use new API structure
 const updateFormDistricts = async () => {
   locationForm.district_id = "";
   locationForm.commune_id = "";
   locationForm.village_id = "";
   formCommunes.value = [];
   formVillages.value = [];
-
   if (!locationForm.province_id) {
     formDistricts.value = [];
     return;
   }
-
   try {
     const res = await axios.get(
       `/api/locations/districts/${locationForm.province_id}`,
@@ -898,12 +853,10 @@ const updateFormCommunes = async () => {
   locationForm.commune_id = "";
   locationForm.village_id = "";
   formVillages.value = [];
-
   if (!locationForm.district_id) {
     formCommunes.value = [];
     return;
   }
-
   try {
     const res = await axios.get(
       `/api/locations/communes/${locationForm.district_id}`,
@@ -920,12 +873,10 @@ const updateFormCommunes = async () => {
 
 const updateFormVillages = async () => {
   locationForm.village_id = "";
-
   if (!locationForm.commune_id) {
     formVillages.value = [];
     return;
   }
-
   try {
     const res = await axios.get(
       `/api/locations/villages/${locationForm.commune_id}`,
@@ -940,27 +891,18 @@ const updateFormVillages = async () => {
   }
 };
 
-// Fetch locations data
 const getLocations = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    // Build query URL with all filter parameters
     const url = `/api/locations?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&category=${selectedCategory.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}&commune=${selectedCommune.value}&village=${selectedVillage.value}`;
-
-    console.log("API URL:", url);
-
     const res = await axios.get(url, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       locations.value = res.data.data;
-
-      // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch locations";
@@ -990,24 +932,18 @@ const getTags = async () => {
   }
 };
 
-// File upload handling
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    // Store the file in locationForm
     locationForm.thumbnail = file;
-
-    // Create a preview URL
     if (imagePreview.value) {
       URL.revokeObjectURL(imagePreview.value);
     }
-
     imagePreview.value = URL.createObjectURL(file);
     objectUrls.value.push(imagePreview.value);
   }
 };
 
-// Modal Methods
 const openCreateModal = () => {
   isEditMode.value = false;
   currentLocationId.value = null;
@@ -1025,8 +961,6 @@ const editLocation = async (locationId) => {
     );
     if (res.data.result) {
       const location = res.data.data;
-
-      // Set basic info
       currentLocationId.value = locationId;
       locationForm.name = location.name || "";
       locationForm.name_local = location.name_local || "";
@@ -1039,33 +973,21 @@ const editLocation = async (locationId) => {
       locationForm.lot = location.lot || "";
       locationForm.category_id = location.category ? location.category.id : "";
       locationForm.published = !!location.published_at;
-
-      // Set thumbnail if exists
       if (location.thumbnail && typeof location.thumbnail === "string") {
         locationForm.thumbnail = location.thumbnail;
       } else {
         locationForm.thumbnail = null;
       }
-
-      // Set tags
       if (location.tags && Array.isArray(location.tags)) {
         locationForm.tag_ids = location.tags.map((tag) => tag.id);
       }
-      // Handle location hierarchy in sequence
       locationForm.province_id = location.province ? location.province.id : "";
-
-      // We need to fetch districts before setting district_id
       await updateFormDistricts();
       locationForm.district_id = location.district ? location.district.id : "";
-
-      // We need to fetch communes before setting commune_id
       await updateFormCommunes();
       locationForm.commune_id = location.commune ? location.commune.id : "";
-
-      // We need to fetch villages before setting village_id
       await updateFormVillages();
       locationForm.village_id = location.village ? location.village.id : "";
-
       isEditMode.value = true;
       showModal.value = true;
     } else {
@@ -1104,41 +1026,32 @@ const resetLocationForm = () => {
   locationForm.published = false;
 };
 
-// Form submission
 const handleSubmit = async (event) => {
   event.preventDefault();
-
-  // Validate required fields
   if (!locationForm.name.trim()) {
     modalError.value = "Location name is required";
     return;
   }
-
   if (!locationForm.name_local.trim()) {
     modalError.value = "Local name is required";
     return;
   }
-
   if (!locationForm.short_description.trim()) {
     modalError.value = "Short description is required";
     return;
   }
-
   if (!locationForm.category_id) {
     modalError.value = "Category is required";
     return;
   }
-
   if (!locationForm.province_id) {
     modalError.value = "Province is required";
     return;
   }
-
   if (!locationForm.district_id) {
     modalError.value = "District is required";
     return;
   }
-
   if (isEditMode.value) {
     await updateLocation();
   } else {
@@ -1146,47 +1059,32 @@ const handleSubmit = async (event) => {
   }
 };
 
-// Create location
 const createLocation = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
-    // Create form data for submission
     const formData = new FormData();
-
-    // Add basic location fields
     formData.append("name", locationForm.name);
     formData.append("name_local", locationForm.name_local);
     formData.append("short_description", locationForm.short_description);
     formData.append("min_money", locationForm.min_money);
     formData.append("max_money", locationForm.max_money);
     formData.append("description", locationForm.description || "");
-
-    // Add geographical information
     formData.append("lat", locationForm.lat || "");
     formData.append("lot", locationForm.lot || "");
     formData.append("url_location", locationForm.url_location || "");
-
-    // Add category and administrative areas
     formData.append("category_id", locationForm.category_id);
     formData.append("province_id", locationForm.province_id);
     formData.append("district_id", locationForm.district_id);
-
     if (locationForm.commune_id) {
       formData.append("commune_id", locationForm.commune_id);
     }
-
     if (locationForm.village_id) {
       formData.append("village_id", locationForm.village_id);
     }
-
-    // Add tags if selected
     if (locationForm.tag_ids && locationForm.tag_ids.length > 0) {
       formData.append("tag_ids", JSON.stringify(locationForm.tag_ids));
     }
-
-    // Add publication status with the correct format (Y-m-d H:i:s)
     if (locationForm.published) {
       const now = new Date();
       const formattedDate =
@@ -1203,18 +1101,14 @@ const createLocation = async () => {
         String(now.getSeconds()).padStart(2, "0");
       formData.append("published_at", formattedDate);
     }
-
-    // Add thumbnail if selected
     if (locationForm.thumbnail instanceof File) {
       formData.append("thumbnail", locationForm.thumbnail);
     }
-
     const res = await axios.post(
       `/api/locations`,
       formData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await getLocations(paginationData.current_page);
       closeModal();
@@ -1228,7 +1122,6 @@ const createLocation = async () => {
       if (error.response.data.message) {
         modalError.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalError.value = errors.join("\n");
       } else {
@@ -1237,64 +1130,44 @@ const createLocation = async () => {
     } else {
       modalError.value = "An error occurred while creating the location.";
     }
-
     await globalStore.onCheckError(error, router);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Update location
 const updateLocation = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
-    // Create form data for submission
     const formData = new FormData();
-
-    // Add method override for Laravel
     formData.append("_method", "PUT");
-
-    // Add basic location fields
     formData.append("name", locationForm.name);
     formData.append("name_local", locationForm.name_local);
     formData.append("short_description", locationForm.short_description);
     formData.append("min_money", locationForm.min_money);
     formData.append("max_money", locationForm.max_money);
     formData.append("description", locationForm.description || "");
-
-    // Add geographical information
     formData.append("lat", locationForm.lat || "");
     formData.append("lot", locationForm.lot || "");
     formData.append("url_location", locationForm.url_location || "");
-
-    // Add category and administrative areas
     formData.append("category_id", locationForm.category_id);
     formData.append("province_id", locationForm.province_id);
     formData.append("district_id", locationForm.district_id);
-
     if (locationForm.commune_id) {
       formData.append("commune_id", locationForm.commune_id);
     }
-
     if (locationForm.village_id) {
       formData.append("village_id", locationForm.village_id);
     }
-
-    // Add tags if selected
     if (locationForm.tag_ids && locationForm.tag_ids.length > 0) {
-      // Convert numeric strings to numbers if needed
       const tagIds = locationForm.tag_ids.map((id) =>
         typeof id === "string" ? parseInt(id, 10) : id
       );
       formData.append("tag_ids", JSON.stringify(tagIds));
     } else {
-      // Send empty array if no tags selected
       formData.append("tag_ids", JSON.stringify([]));
     }
-
-    // Add publication status with the correct format (Y-m-d H:i:s)
     if (locationForm.published) {
       const now = new Date();
       const formattedDate =
@@ -1313,19 +1186,14 @@ const updateLocation = async () => {
     } else {
       formData.append("published_at", "");
     }
-
-    // Add thumbnail if selected
     if (locationForm.thumbnail instanceof File) {
       formData.append("thumbnail", locationForm.thumbnail);
     }
-
-    // Use POST with _method=PUT for FormData
     const res = await axios.post(
       `/api/locations/${currentLocationId.value}`,
       formData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await getLocations(paginationData.current_page);
       closeModal();
@@ -1339,7 +1207,6 @@ const updateLocation = async () => {
       if (error.response.data.message) {
         modalError.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalError.value = errors.join("\n");
       } else {
@@ -1348,26 +1215,21 @@ const updateLocation = async () => {
     } else {
       modalError.value = "An error occurred while updating the location.";
     }
-
     await globalStore.onCheckError(error, router);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Delete location
 const performDeleteLocation = async (id) => {
   try {
     const res = await axios.delete(`/api/locations/${id}`, globalStore.getAxiosHeader());
-
     if (res.data.result) {
-      // If there was only one item on the current page and it's not the first page
       if (locations.value.length === 1 && paginationData.current_page > 1) {
         await getLocations(paginationData.current_page - 1);
       } else {
         await getLocations(paginationData.current_page);
       }
-
       showNotification("success", "Success", "Location deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete location");
@@ -1379,7 +1241,6 @@ const performDeleteLocation = async (id) => {
   }
 };
 
-// Show delete confirmation
 const deleteLocation = (id) => {
   showConfirmation(
     "Delete Location",
@@ -1388,20 +1249,11 @@ const deleteLocation = (id) => {
     id
   );
 };
-// Lifecycle Hook - Updated to use new API structure
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
-
   try {
-    // Load only essential reference data initially
-    await Promise.all([
-      getCategories(),
-      getProvinces(), // Only load provinces initially
-      getTags(),
-    ]);
-
-    // Then load locations
+    await Promise.all([getCategories(), getProvinces(), getTags()]);
     await getLocations(1);
   } catch (err) {
     error.value = "Failed to load initial data";

@@ -310,27 +310,22 @@ import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
 
-// Router and Store
 const router = useRouter();
 const globalStore = useGlobalStore();
 
-// State Management
 const communes = ref([]);
 const provinces = ref([]);
 const districts = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
 
-// Search and Filter
 const searchQuery = ref("");
 const selectedProvince = ref("");
 const selectedDistrict = ref("");
 let searchTimeout = null;
 
-// Pagination settings
 const perPage = ref(10);
 const sortCol = ref("name");
 const sortDir = ref("asc");
@@ -345,13 +340,11 @@ const paginationData = reactive({
   last_page: 1,
 });
 
-// Modal Management
 const showModal = ref(false);
 const isEditMode = ref(false);
 const isSubmitting = ref(false);
 const modalError = ref("");
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -360,7 +353,6 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Form Data
 const communeForm = reactive({
   id: null,
   name: "",
@@ -369,10 +361,8 @@ const communeForm = reactive({
   district_id: "",
 });
 
-// Modal District Options
 const modalDistrictOptions = ref([]);
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -381,14 +371,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -396,7 +384,6 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Computed Properties
 const filteredDistricts = computed(() => {
   return selectedProvince.value
     ? districts.value.filter(
@@ -405,29 +392,24 @@ const filteredDistricts = computed(() => {
     : districts.value;
 });
 
-// Utility Functions
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-// Handle search input with debounce
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
-
   searchTimeout = setTimeout(() => {
     handleSearch();
   }, 500);
 };
 
-// Handle search when user submits the search
 const handleSearch = async () => {
   paginationData.current_page = 1;
   await getCommunes(1);
 };
 
-// Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
     sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
@@ -439,12 +421,10 @@ const toggleSort = async (column) => {
   await getCommunes(1);
 };
 
-// Handle pagination
 const changePage = async (page) => {
   await getCommunes(page);
 };
 
-// Data Fetching
 const fetchData = async (url, setData) => {
   isLoading.value = true;
   error.value = null;
@@ -469,20 +449,14 @@ const fetchData = async (url, setData) => {
 const getCommunes = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-
   try {
     const url = `/api/communes?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}`;
-
     const res = await axios.get(url, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       communes.value = res.data.data;
-
-      // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch data";
@@ -509,7 +483,6 @@ const getDistricts = async () => {
   });
 };
 
-// Filter Methods
 const filterDistricts = async () => {
   selectedDistrict.value = "";
   await handleSearch();
@@ -522,7 +495,6 @@ const filterDistrictsForModal = () => {
   );
 };
 
-// Modal Methods
 const openCreateModal = () => {
   isEditMode.value = false;
   communeForm.id = null;
@@ -542,8 +514,6 @@ const openEditModal = (commune) => {
   communeForm.local_name = commune.local_name;
   communeForm.province_id = commune.province.id;
   communeForm.district_id = commune.district.id;
-
-  // Populate district options for the selected province
   modalDistrictOptions.value = districts.value.filter(
     (district) => String(district.province.id) === String(commune.province.id)
   );
@@ -557,11 +527,9 @@ const closeModal = () => {
   modalError.value = "";
 };
 
-// CRUD Methods
 const submitCommune = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
     const payload = {
       name: communeForm.name,
@@ -569,7 +537,6 @@ const submitCommune = async () => {
       province_id: communeForm.province_id,
       district_id: communeForm.district_id,
     };
-
     const res = isEditMode.value
       ? await axios.put(
           `/api/communes/${communeForm.id}`,
@@ -577,12 +544,9 @@ const submitCommune = async () => {
           globalStore.getAxiosHeader()
         )
       : await axios.post("/api/communes", payload, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       await getCommunes(paginationData.current_page);
       closeModal();
-
-      // Show success notification
       const message = isEditMode.value
         ? "Commune updated successfully!"
         : "Commune created successfully!";
@@ -597,7 +561,6 @@ const submitCommune = async () => {
   }
 };
 
-// Perform delete operation
 const performDeleteCommune = async (communeId) => {
   try {
     const res = await axios.delete(
@@ -605,19 +568,14 @@ const performDeleteCommune = async (communeId) => {
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
-      // Refresh the current page or go to the previous page if no items left
       const page = paginationData.current_page;
       const lastItemOnPage =
         (paginationData.current_page - 1) * perPage.value + communes.value.length;
-
       if (communes.value.length === 1 && paginationData.current_page > 1) {
-        // If deleting the last item on a page (not the first page), go to the previous page
         await getCommunes(page - 1);
       } else {
-        // Otherwise refresh the current page
         await getCommunes(page);
       }
-
       showNotification("success", "Success", "Commune deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete commune");
@@ -628,7 +586,6 @@ const performDeleteCommune = async (communeId) => {
   }
 };
 
-// Show delete confirmation
 const deleteCommune = (communeId) => {
   showConfirmation(
     "Delete Commune",
@@ -637,26 +594,20 @@ const deleteCommune = (communeId) => {
     communeId
   );
 };
-
-// Lifecycle Hook
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
-
   try {
-    // Load data sequentially to ensure proper relationships
     const provincesLoaded = await getProvinces();
     if (!provincesLoaded) {
       showNotification("error", "Error", "Failed to load provinces");
       return;
     }
-
     const districtsLoaded = await getDistricts();
     if (!districtsLoaded) {
       showNotification("error", "Error", "Failed to load districts");
       return;
     }
-
     const communesLoaded = await getCommunes(1);
     if (!communesLoaded) {
       showNotification("error", "Error", "Failed to load communes");

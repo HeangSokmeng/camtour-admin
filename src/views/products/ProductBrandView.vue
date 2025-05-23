@@ -190,7 +190,6 @@ const newBrand = reactive({
   name_km: "",
 });
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -199,14 +198,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -214,7 +211,6 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Format date utility function
 const formatDate = (dateString) => {
   if (!dateString) return "";
   return new Date(dateString).toLocaleDateString();
@@ -294,7 +290,6 @@ const updateBrand = async () => {
   }
 };
 
-// Delete brand implementation
 const performDeleteBrand = async (brandId) => {
   const globalStore = useGlobalStore();
   try {
@@ -368,8 +363,8 @@ const handleSubmit = async (event) => {
 
 const filteredBrands = computed(() => {
   return state.brands.filter((brand) => {
-    const brandName = brand.name || ""; // Default to empty string
-    const brandLocalName = brand.name_km || ""; // Default to empty string
+    const brandName = brand.name || "";
+    const brandLocalName = brand.name_km || "";
     return (
       brandName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       brandLocalName.toLowerCase().includes(searchQuery.value.toLowerCase())

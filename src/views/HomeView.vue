@@ -326,13 +326,9 @@ const upcomingTrips = ref([
   },
 ]);
 
-// Generate calendar days
 const calendarDays = computed(() => {
-  // This is a simplified version for demo
   const days = [];
-  const totalDays = 30; // Assuming June has 30 days
-
-  // Add a few days from previous month
+  const totalDays = 30;
   for (let i = 29; i <= 31; i++) {
     days.push({
       value: i,
@@ -347,12 +343,11 @@ const calendarDays = computed(() => {
     days.push({
       value: i,
       isCurrentMonth: true,
-      isCurrentDay: i === 16, // Highlight day 16 as current day
-      hasEvent: [10, 17, 23, 28].includes(i), // Some days with events
+      isCurrentDay: i === 16,
+      hasEvent: [10, 17, 23, 28].includes(i),
     });
   }
 
-  // Add a few days from next month
   for (let i = 1; i <= 9; i++) {
     days.push({
       value: i,

@@ -329,22 +329,15 @@ import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
-
-// Router and Store
 const router = useRouter();
 const globalStore = useGlobalStore();
-
-// State Management
 const villages = ref([]);
 const provinces = ref([]);
 const districts = ref([]);
 const communes = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
-
-// Pagination settings
 const perPage = ref(10);
 const sortCol = ref("name");
 const sortDir = ref("asc");
@@ -359,14 +352,12 @@ const paginationData = reactive({
   last_page: 1,
 });
 
-// Search and Filter
 const searchQuery = ref("");
 const selectedProvince = ref("");
 const selectedDistrict = ref("");
 const selectedCommune = ref("");
 let searchTimeout = null;
 
-// Computed filter options
 const filteredDistrictOptions = computed(() => {
   if (!selectedProvince.value) return [];
   return districts.value.filter(
@@ -381,13 +372,11 @@ const filteredCommuneOptions = computed(() => {
   );
 });
 
-// Modal Management
 const showModal = ref(false);
 const isEditMode = ref(false);
 const isSubmitting = ref(false);
 const modalError = ref("");
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -396,7 +385,6 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Form Data
 const villageForm = reactive({
   id: null,
   name: "",
@@ -406,7 +394,6 @@ const villageForm = reactive({
   commune_id: "",
 });
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -415,14 +402,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -430,12 +415,10 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Utility Functions
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-// Handle search input with debounce
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -446,13 +429,11 @@ const handleSearchInput = () => {
   }, 500);
 };
 
-// Handle search when user submits the search
 const handleSearch = async () => {
   paginationData.current_page = 1;
   await getVillages(1);
 };
 
-// Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
     sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
@@ -464,12 +445,10 @@ const toggleSort = async (column) => {
   await getVillages(1);
 };
 
-// Handle pagination
 const changePage = async (page) => {
   await getVillages(page);
 };
 
-// Filter handlers
 const handleProvinceChange = () => {
   selectedDistrict.value = "";
   selectedCommune.value = "";
@@ -481,7 +460,6 @@ const handleDistrictChange = () => {
   handleSearch();
 };
 
-// Modal dropdown handlers
 const updateModalDistrictOptions = () => {
   villageForm.district_id = "";
   villageForm.commune_id = "";
@@ -491,7 +469,6 @@ const updateModalCommuneOptions = () => {
   villageForm.commune_id = "";
 };
 
-// Computed for filtered form options
 const filteredDistricts = computed(() => {
   if (!villageForm.province_id) return [];
   return districts.value.filter(
@@ -506,30 +483,17 @@ const filteredCommunes = computed(() => {
   );
 });
 
-// Fetch villages data
 const getVillages = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-
   try {
-    // Build query URL with all filter parameters
     const url = `/api/villages?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}&district=${selectedDistrict.value}&commune=${selectedCommune.value}`;
-
-    console.log("API URL:", url);
-    console.log("Selected province:", selectedProvince.value);
-    console.log("Selected district:", selectedDistrict.value);
-    console.log("Selected commune:", selectedCommune.value);
-
     const res = await axios.get(url, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       villages.value = res.data.data;
-
-      // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch villages";
@@ -544,7 +508,6 @@ const getVillages = async (page = 1) => {
   }
 };
 
-// Fetch additional data
 const getProvinces = async () => {
   try {
     const res = await axios.get("/api/provinces", globalStore.getAxiosHeader());
@@ -590,7 +553,6 @@ const getCommunes = async () => {
   }
 };
 
-// Modal Methods
 const openCreateModal = () => {
   isEditMode.value = false;
   villageForm.id = null;
@@ -609,16 +571,12 @@ const editVillage = (village) => {
   villageForm.name = village.name;
   villageForm.local_name = village.local_name;
   villageForm.province_id = village.province.id;
-
-  // Set district and commune values after a brief delay to ensure computed properties update
   setTimeout(() => {
     villageForm.district_id = village.district.id;
-
     setTimeout(() => {
       villageForm.commune_id = village.commune.id;
     }, 10);
   }, 10);
-
   modalError.value = "";
   showModal.value = true;
 };
@@ -628,11 +586,8 @@ const closeModal = () => {
   modalError.value = "";
 };
 
-// Form submission
 const submitVillage = async () => {
   if (isSubmitting.value) return;
-
-  // Form validation
   if (!villageForm.name.trim()) {
     modalError.value = "Village name is required";
     return;
@@ -653,10 +608,8 @@ const submitVillage = async () => {
     modalError.value = "Commune is required";
     return;
   }
-
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
     const data = {
       name: villageForm.name,
@@ -665,7 +618,6 @@ const submitVillage = async () => {
       district_id: villageForm.district_id,
       commune_id: villageForm.commune_id,
     };
-
     const res = isEditMode.value
       ? await axios.put(
           `/api/villages/${villageForm.id}`,
@@ -673,11 +625,9 @@ const submitVillage = async () => {
           globalStore.getAxiosHeader()
         )
       : await axios.post("/api/villages", data, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       await getVillages(paginationData.current_page);
       closeModal();
-
       const successMsg = isEditMode.value
         ? "Village updated successfully!"
         : "Village created successfully!";
@@ -693,23 +643,16 @@ const submitVillage = async () => {
   }
 };
 
-// Delete village
 const performDeleteVillage = async (id) => {
   try {
     const res = await axios.delete(`/api/villages/${id}`, globalStore.getAxiosHeader());
-
     if (res.data.result) {
-      // Refresh the current page or go to the previous page if no items left
       const page = paginationData.current_page;
-
       if (villages.value.length === 1 && paginationData.current_page > 1) {
-        // If deleting the last item on a page (not the first page), go to the previous page
         await getVillages(page - 1);
       } else {
-        // Otherwise refresh the current page
         await getVillages(page);
       }
-
       showNotification("success", "Success", "Village deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete village");
@@ -720,7 +663,6 @@ const performDeleteVillage = async (id) => {
   }
 };
 
-// Show delete confirmation
 const deleteVillage = (id) => {
   showConfirmation(
     "Delete Village",
@@ -730,18 +672,13 @@ const deleteVillage = (id) => {
   );
 };
 
-// Lifecycle Hook
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
-
   try {
-    // Load data in sequence to ensure proper initialization
     await getProvinces();
     await getDistricts();
     await getCommunes();
-
-    // Then load villages after dependencies are loaded
     await getVillages(1);
   } catch (err) {
     error.value = "Failed to load initial data";
@@ -754,7 +691,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Additional styling for sortable columns */
 th a {
   color: inherit;
   text-decoration: none;

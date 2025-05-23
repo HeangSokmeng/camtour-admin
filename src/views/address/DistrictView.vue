@@ -78,8 +78,8 @@
               <th class="align-middle">
                 <a href="#" @click.prevent="toggleSort('name')">
                   District Name
-                  <i 
-                    v-if="sortCol === 'name'" 
+                  <i
+                    v-if="sortCol === 'name'"
                     :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
@@ -87,8 +87,8 @@
               <th class="align-middle">
                 <a href="#" @click.prevent="toggleSort('local_name')">
                   District Local Name
-                  <i 
-                    v-if="sortCol === 'local_name'" 
+                  <i
+                    v-if="sortCol === 'local_name'"
                     :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
@@ -97,8 +97,8 @@
               <th class="align-middle text-end">
                 <a href="#" @click.prevent="toggleSort('created_at')">
                   Created At
-                  <i 
-                    v-if="sortCol === 'created_at'" 
+                  <i
+                    v-if="sortCol === 'created_at'"
                     :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
@@ -112,7 +112,7 @@
             </tr>
             <tr v-else v-for="(district, index) in districts" :key="district.id">
               <td class="align-middle ps-0">
-                {{ ((paginationData.current_page - 1) * perPage) + index + 1 }}
+                {{ (paginationData.current_page - 1) * perPage + index + 1 }}
               </td>
               <td class="align-middle">{{ district.name }}</td>
               <td class="align-middle">{{ district.local_name }}</td>
@@ -268,7 +268,7 @@
 
 <script setup>
 import "@/assets/css/toast-styles.css";
-import Pagination from '@/components/layouts/Pagination.vue';
+import Pagination from "@/components/layouts/Pagination.vue";
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
@@ -290,8 +290,8 @@ const provinces = ref([]);
 
 // Pagination settings
 const perPage = ref(10);
-const sortCol = ref('name');
-const sortDir = ref('asc');
+const sortCol = ref("name");
+const sortDir = ref("asc");
 const paginationData = reactive({
   has_page: false,
   on_first_page: true,
@@ -300,7 +300,7 @@ const paginationData = reactive({
   last_item: 0,
   total: 0,
   current_page: 1,
-  last_page: 1
+  last_page: 1,
 });
 
 // Search and Filter
@@ -365,7 +365,7 @@ const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
-  
+
   searchTimeout = setTimeout(() => {
     handleSearch();
   }, 500);
@@ -380,12 +380,12 @@ const handleSearch = async () => {
 // Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
-    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+    sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
   } else {
     sortCol.value = column;
-    sortDir.value = 'asc';
+    sortDir.value = "asc";
   }
-  
+
   await getDistricts(1);
 };
 
@@ -398,20 +398,20 @@ const changePage = async (page) => {
 const getDistricts = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-  
+
   try {
     const url = `/api/districts?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&province=${selectedProvince.value}`;
-    
+
     const res = await axios.get(url, globalStore.getAxiosHeader());
-    
+
     if (res.data.result) {
       districts.value = res.data.data;
-      
+
       // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-      
+
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch data";
@@ -513,7 +513,7 @@ const performDeleteDistrict = async (id) => {
     if (res.data.result) {
       // Refresh the current page or go to the previous page if no items left
       const page = paginationData.current_page;
-      
+
       if (districts.value.length === 1 && paginationData.current_page > 1) {
         // If deleting the last item on a page (not the first page), go to the previous page
         await getDistricts(page - 1);
@@ -521,7 +521,7 @@ const performDeleteDistrict = async (id) => {
         // Otherwise refresh the current page
         await getDistricts(page);
       }
-      
+
       showNotification("success", "Success", "District deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete district");

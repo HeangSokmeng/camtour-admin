@@ -427,10 +427,10 @@
             </div>
             <!-- Role Management - Only for system admin -->
             <div class="nav-item-wrapper" v-if="globalStore.isSystemAdmin">
-              <RouterLink to="/roles" custom v-slot="{ navigate, isActive }">
+              <RouterLink to="/" custom v-slot="{ navigate, isActive }">
                 <a
                   class="nav-link dropdown-indicator label-1"
-                  :class="{ active: isActive || route.path === '/roles' }"
+                  :class="{ active: isActive || route.path === '/' }"
                   @click="navigate"
                   href="#"
                 >
@@ -493,7 +493,7 @@
             <p class="navbar-vertical-label">System Settings</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">
-              <RouterLink to="/system/settings" custom v-slot="{ navigate, isActive }">
+              <RouterLink to="/" custom v-slot="{ navigate, isActive }">
                 <a
                   class="nav-link dropdown-indicator label-1"
                   :class="{ active: isActive || route.path.startsWith('/system') }"
@@ -531,11 +531,8 @@ import { useGlobalStore } from "@/stores/global";
 import { replace } from "feather-icons";
 import { computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-
 const route = useRoute();
 const globalStore = useGlobalStore();
-
-// Computed properties to determine active states
 const isAddressRouteActive = computed(() => {
   const addressRoutes = ["/province", "/district", "/commune", "/village"];
   return addressRoutes.some((path) => route.path.startsWith(path));
@@ -568,50 +565,33 @@ onMounted(() => {
     width: 16,
     height: 16,
   });
-
-  // Initialize Bootstrap collapse elements if needed
   initializeBootstrapCollapse();
 });
 
 function initializeBootstrapCollapse() {
   const addressCollapse = document.getElementById("nv-address");
   const productCollapse = document.getElementById("nv-product");
-
   if (isAddressMenuExpanded.value && addressCollapse) {
   }
-
   if (isProductMenuExpanded.value && productCollapse) {
-    // Same for product collapse
   }
 }
-watch(
-  () => globalStore.profile,
-  (newProfile) => {
-    console.log("Role checks recalculated:", {
-      atLeastStaff: globalStore.atLeastStaff,
-      canAccessUserManagement: globalStore.canAccessUserManagement,
-      isSystemAdmin: globalStore.isSystemAdmin,
-    });
-  },
-  { immediate: true }
-);
 
-// Watch for route changes to update active states
 watch(
   () => route.path,
-  (newPath) => {
+  () => {
     initializeBootstrapCollapse();
-  }
+  },
+  () => globalStore.profile,
+  { immediate: true }
 );
 </script>
 
 <style scoped>
-/* Base styles for nav links */
 .nav-link {
   transition: all 0.2s ease;
 }
 
-/* Active state styles */
 .nav-link.active {
   background-color: var(
     --falcon-sidebar-link-active-bg,
@@ -622,7 +602,6 @@ watch(
   border-radius: 4px;
 }
 
-/* Active parent with dropdown */
 .dropdown-indicator.active {
   background-color: var(
     --falcon-sidebar-link-active-bg,
@@ -632,35 +611,28 @@ watch(
   border-radius: 4px;
 }
 
-/* Hover effects */
 .nav-item .nav-link:hover {
   background-color: var(--falcon-sidebar-link-hover-bg, rgba(115, 103, 240, 0.08));
   color: var(--falcon-sidebar-link-hover-color, #5e50ee);
   border-radius: 4px;
 }
 
-/* Dropdown indicator icon when menu is expanded */
 .parent.show + .nav-link .dropdown-indicator-icon {
   transform: rotate(90deg);
 }
 
-/* Ensure transition for dropdown indicator */
 .dropdown-indicator-icon {
   transition: transform 0.2s ease;
 }
 
-/* Submenu indentation */
 .parent .nav-item .nav-link {
   padding-left: 2.5rem;
 }
-
-/* Additional visual cue for active items */
 .nav-link.active .nav-link-icon,
 .dropdown-indicator.active .nav-link-icon {
   color: var(--falcon-sidebar-link-active-color, #7367f0) !important;
 }
 
-/* Visual indicator for parent items with active children */
 .parent.show {
   background-color: var(--falcon-sidebar-submenu-bg, rgba(115, 103, 240, 0.05));
   border-radius: 4px;

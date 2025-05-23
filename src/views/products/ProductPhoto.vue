@@ -339,7 +339,6 @@ import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-// State
 const products = ref([]);
 const selectedProductId = ref("");
 const selectedProduct = ref(null);
@@ -356,12 +355,8 @@ const fileInput = ref(null);
 const objectUrls = ref([]);
 const isDragging = ref(false);
 const previewImage = ref(null);
-
-// Toast notifications
 const { showNotification } = useToast();
 const globalStore = useGlobalStore();
-
-// Image preview methods
 const getImagePreviewUrl = (file) => {
   if (file instanceof File || file instanceof Blob) {
     const url = URL.createObjectURL(file);
@@ -378,7 +373,6 @@ const cleanupObjectURLs = () => {
   objectUrls.value = [];
 };
 
-// Fetch methods
 const fetchProducts = async () => {
   try {
     const response = await axios.get("/api/products", globalStore.getAxiosHeader());
@@ -396,24 +390,19 @@ const fetchProducts = async () => {
 const fetchProductDetails = async (productId) => {
   isLoading.value = true;
   try {
-    // Fetch product details
     const productResponse = await axios.get(
       `/api/products/${productId}`,
       globalStore.getAxiosHeader()
     );
-
     if (productResponse.data.result) {
       selectedProduct.value = productResponse.data.data;
-
-      // Extract images from the product response
       if (selectedProduct.value.images && Array.isArray(selectedProduct.value.images)) {
-        // Transform the data to match your component's expected format
         uploadedImages.value = selectedProduct.value.images.map((image) => ({
           id: image.id,
-          name: image.image.split("/").pop(), // Extract filename from path
+          name: image.image.split("/").pop(),
           url: image.image,
           created_at: selectedProduct.value.created_at || new Date().toISOString(),
-          size: 0, // Size information not available in the API response
+          size: 0,
         }));
       } else {
         uploadedImages.value = [];
@@ -427,7 +416,6 @@ const fetchProductDetails = async (productId) => {
   }
 };
 
-// Product and formatting methods
 const formatProduct = (product) => {
   const parts = [];
   if (product.brand?.name) parts.push(product.brand.name);
@@ -453,7 +441,6 @@ const formatSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-// File handling methods
 const handleProductChange = () => {
   if (selectedProductId.value) {
     fetchProductDetails(selectedProductId.value);
@@ -499,7 +486,6 @@ const shortenFileName = (name) => {
   return name;
 };
 
-// Drag and drop methods
 const handleDragOver = () => {
   isDragging.value = true;
 };
@@ -517,37 +503,29 @@ const handleDrop = (event) => {
     }
   });
 };
-// Modified uploadImages method to match the server requirements
+
 const uploadImages = async () => {
   if (!selectedProductId.value || !selectedFiles.value.length) return;
-
   isUploading.value = true;
   uploadResult.value = "";
-
   try {
-    // Process each file individually - the backend expects a single image
     for (const file of selectedFiles.value) {
       if (file instanceof File) {
         const formData = new FormData();
         formData.append("product_id", selectedProductId.value);
-        formData.append("image", file); // Changed from "images[]" to "image"
-
+        formData.append("image", file);
         const response = await axios.post(
           `/api/product-images`,
           formData,
           globalStore.getAxiosHeader()
         );
-
         if (!response.data.result) {
-          // If any upload fails, show error and stop
           uploadSuccess.value = false;
           uploadResult.value = response.data.message || "Failed to upload images";
           break;
         }
       }
     }
-
-    // If we got here without breaking, all uploads were successful
     uploadSuccess.value = true;
     uploadResult.value = "Images uploaded successfully";
     showNotification("success", "Success", "Images uploaded successfully");
@@ -557,8 +535,6 @@ const uploadImages = async () => {
   } catch (error) {
     console.error("Error uploading images:", error);
     uploadSuccess.value = false;
-
-    // Extract validation errors from the 422 response
     if (error.response && error.response.status === 422) {
       const errorMsg =
         error.response.data.message ||
@@ -575,7 +551,7 @@ const uploadImages = async () => {
     isUploading.value = false;
   }
 };
-// Image management methods
+
 const viewImage = (image) => {
   previewImage.value = image;
 };
@@ -596,14 +572,12 @@ const closeConfirmModal = () => {
 
 const deleteImage = async () => {
   if (!imageToDelete.value) return;
-
   isDeleting.value = true;
   try {
     const response = await axios.delete(
       `/api/product-images/${imageToDelete.value}`,
       globalStore.getAxiosHeader()
     );
-
     if (response.data.result) {
       showNotification("success", "Success", "Image deleted successfully");
       uploadedImages.value = uploadedImages.value.filter(
@@ -625,7 +599,6 @@ const deleteImage = async () => {
   }
 };
 
-// Lifecycle hooks
 onBeforeUnmount(() => {
   cleanupObjectURLs();
 });

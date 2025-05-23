@@ -71,7 +71,7 @@
               </a>
             </li>
             <li class="nav-item">
-              <RouterLink to="/profile/devices" class="nav-link px-3 d-block">
+              <RouterLink to="/" class="nav-link px-3 d-block">
                 <span class="me-2 text-body align-bottom" data-feather="tablet"></span>
                 <span>Devices</span>
               </RouterLink>
@@ -278,6 +278,7 @@
                   id="current_password"
                   v-model="passwordForm.current_password"
                   required
+                  autocomplete="current-password"
                 />
                 <button
                   class="btn btn-outline-secondary"
@@ -292,6 +293,7 @@
                 {{ passwordErrors.current_password }}
               </div>
             </div>
+
             <div class="mb-3">
               <label for="new_password" class="form-label">New Password</label>
               <div class="input-group">
@@ -301,6 +303,7 @@
                   id="new_password"
                   v-model="passwordForm.new_password"
                   required
+                  autocomplete="new-password"
                 />
                 <button
                   class="btn btn-outline-secondary"
@@ -315,6 +318,7 @@
                 {{ passwordErrors.new_password }}
               </div>
             </div>
+
             <div class="mb-3">
               <label for="new_password_confirmation" class="form-label"
                 >Confirm New Password</label
@@ -326,6 +330,7 @@
                   id="new_password_confirmation"
                   v-model="passwordForm.new_password_confirmation"
                   required
+                  autocomplete="new-password"
                 />
                 <button
                   class="btn btn-outline-secondary"
@@ -346,12 +351,15 @@
                 {{ passwordErrors.new_password_confirmation }}
               </div>
             </div>
+
             <div v-if="passwordSuccessMessage" class="alert alert-success">
               {{ passwordSuccessMessage }}
             </div>
+
             <div v-if="passwordErrorMessage" class="alert alert-danger">
               {{ passwordErrorMessage }}
             </div>
+
             <div class="d-flex justify-content-end">
               <button
                 type="button"
@@ -435,8 +443,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Modal backdrop for all modals -->
   <div
     class="modal-backdrop fade"
     :class="{ show: showEditModal || showPasswordModal || showLanguageModal }"
@@ -452,17 +458,10 @@ import axios from "axios";
 import "bootstrap";
 import { replace } from "feather-icons";
 import { onMounted, reactive, ref } from "vue";
-
 const globalStore = useGlobalStore();
-
-// Loading State
 const isLoading = ref(false);
-
-// Profile State
 const profileData = ref(null);
 const profileImagePreview = ref(null);
-
-// Edit Profile Modal Variables
 const showEditModal = ref(false);
 const editForm = reactive({
   first_name: "",
@@ -483,8 +482,6 @@ const profileErrors = reactive({
 });
 const editSuccessMessage = ref("");
 const editErrorMessage = ref("");
-
-// Password Modal Variables
 const showPasswordModal = ref(false);
 const passwordForm = reactive({
   current_password: "",
@@ -504,8 +501,6 @@ const passwordErrors = reactive({
 });
 const passwordSuccessMessage = ref("");
 const passwordErrorMessage = ref("");
-
-// Language Settings Modal Variables
 const showLanguageModal = ref(false);
 const languageForm = reactive({
   language: "en",
@@ -522,28 +517,19 @@ onMounted(() => {
 const onConfirmLogout = () => {
   globalStore.mdl_logout.show();
 };
-// Function to handle password change separately
 async function changePassword() {
   if (!validatePasswordFields()) return;
-
   isSubmitting.value = true;
-
   try {
-    // Create the password data object
     const passwordPayload = {
       current_password: passwordData.current_password,
       password: passwordData.new_password,
       password_confirmation: passwordData.new_password_confirmation,
     };
-
-    // Make API call to the separate password endpoint
     const headers = globalStore.getAxiosHeader();
     const response = await axios.put("/api/profile/pass", passwordPayload, headers);
-
     if (response.data.result) {
       showStatusMessage("success", t("password-updated-successfully"));
-
-      // Reset password section
       showPasswordSection.value = false;
       passwordData.current_password = "";
       passwordData.new_password = "";
@@ -561,33 +547,25 @@ async function changePassword() {
         }
       });
     }
-
     showStatusMessage(
       "error",
       error.response?.data?.message || t("password-update-failed")
     );
-
-    // Use global error handler
     await globalStore.onCheckError(error);
   } finally {
     isSubmitting.value = false;
   }
 }
 
-// Validate only password fields
 function validatePasswordFields() {
   let isValid = true;
-
-  // Reset password errors
   errors.current_password = "";
   errors.new_password = "";
   errors.new_password_confirmation = "";
-
   if (!passwordData.current_password) {
     errors.current_password = t("current-password-required");
     isValid = false;
   }
-
   if (!passwordData.new_password) {
     errors.new_password = t("new-password-required");
     isValid = false;
@@ -595,24 +573,19 @@ function validatePasswordFields() {
     errors.new_password = t("password-min-length");
     isValid = false;
   }
-
   if (passwordData.new_password !== passwordData.new_password_confirmation) {
     errors.new_password_confirmation = t("passwords-dont-match");
     isValid = false;
   }
-
   return isValid;
 }
-// Fetch user profile data
+
 const fetchProfile = async () => {
   try {
     isLoading.value = true;
     const response = await axios.get("/api/auth/me", globalStore.getAxiosHeader());
-
     if (response.data.result) {
       profileData.value = response.data.data;
-
-      // Pre-populate the edit form with current data
       editForm.first_name = profileData.value.first_name || "";
       editForm.last_name = profileData.value.last_name || "";
       editForm.gender = profileData.value.gender
@@ -627,20 +600,13 @@ const fetchProfile = async () => {
   }
 };
 
-// Toggle modal functions
 const toggleEditModal = () => {
   showEditModal.value = !showEditModal.value;
-
   if (showEditModal.value) {
-    // Close other modals
     showPasswordModal.value = false;
     showLanguageModal.value = false;
-
-    // Reset messages
     editSuccessMessage.value = "";
     editErrorMessage.value = "";
-
-    // If profile data exists, populate the form
     if (profileData.value) {
       editForm.first_name = profileData.value.first_name || "";
       editForm.last_name = profileData.value.last_name || "";
@@ -652,7 +618,6 @@ const toggleEditModal = () => {
       profileImagePreview.value = null;
     }
   } else {
-    // Clear errors when closing modal
     Object.keys(profileErrors).forEach((key) => {
       profileErrors[key] = "";
     });
@@ -661,25 +626,18 @@ const toggleEditModal = () => {
 
 const togglePasswordModal = () => {
   showPasswordModal.value = !showPasswordModal.value;
-
   if (showPasswordModal.value) {
-    // Close other modals
     showEditModal.value = false;
     showLanguageModal.value = false;
-
-    // Reset form and messages
     passwordForm.current_password = "";
     passwordForm.new_password = "";
     passwordForm.new_password_confirmation = "";
     passwordSuccessMessage.value = "";
     passwordErrorMessage.value = "";
-
-    // Reset password visibility
     passwordVisibility.current = false;
     passwordVisibility.new = false;
     passwordVisibility.confirmation = false;
   } else {
-    // Clear errors when closing modal
     Object.keys(passwordErrors).forEach((key) => {
       passwordErrors[key] = "";
     });
@@ -688,22 +646,15 @@ const togglePasswordModal = () => {
 
 const toggleLanguageModal = () => {
   showLanguageModal.value = !showLanguageModal.value;
-
   if (showLanguageModal.value) {
-    // Close other modals
     showEditModal.value = false;
     showPasswordModal.value = false;
-
-    // Reset messages
     languageSuccessMessage.value = "";
     languageErrorMessage.value = "";
-
-    // Set current language
     languageForm.language = localStorage.getItem("app_language") || "en";
   }
 };
 
-// Modal open functions
 const openEditProfileModal = () => {
   toggleEditModal();
 };
@@ -716,25 +667,18 @@ const openLanguageSettings = () => {
   toggleLanguageModal();
 };
 
-// Toggle password visibility
 const togglePasswordVisibility = (field) => {
   passwordVisibility[field] = !passwordVisibility[field];
 };
 
-// Handle image upload
 const handleImageChange = (event) => {
   const file = event.target.files[0];
   if (!file) return;
-
-  // Check file size (max 2MB)
   if (file.size > 2 * 1024 * 1024) {
     profileErrors.image = "Image size must be less than 2MB";
     return;
   }
-
   editForm.image = file;
-
-  // Create a preview
   const reader = new FileReader();
   reader.onload = (e) => {
     profileImagePreview.value = e.target.result;
@@ -748,30 +692,23 @@ const removeImage = () => {
   document.getElementById("edit_image").value = "";
 };
 
-// Submit form functions
 const submitProfileEdit = async () => {
-  // Reset errors and messages
   Object.keys(profileErrors).forEach((key) => {
     profileErrors[key] = "";
   });
   editSuccessMessage.value = "";
   editErrorMessage.value = "";
-
   editForm.isSubmitting = true;
-
   try {
-    // Create FormData for file upload
     const formData = new FormData();
     formData.append("first_name", editForm.first_name);
     formData.append("last_name", editForm.last_name);
     formData.append("gender", editForm.gender);
     formData.append("phone", editForm.phone);
     formData.append("email", editForm.email);
-
     if (editForm.image) {
       formData.append("image", editForm.image);
     }
-
     const res = await axios.put("/api/profile/info", formData, {
       ...globalStore.getAxiosHeader(),
       headers: {
@@ -779,24 +716,15 @@ const submitProfileEdit = async () => {
         "Content-Type": "multipart/form-data",
       },
     });
-
     if (res.data.result) {
-      // Update global store with new profile data
       await fetchProfile();
-
-      // Show success message
       editSuccessMessage.value = "Profile updated successfully!";
-
-      // Reset image state
       editForm.image = null;
       profileImagePreview.value = null;
-
-      // Auto close after success (optional)
       setTimeout(() => {
         toggleEditModal();
       }, 2000);
     } else {
-      // Handle validation errors from backend
       if (res.data.errors) {
         for (const [key, value] of Object.entries(res.data.errors)) {
           if (profileErrors.hasOwnProperty(key)) {
@@ -823,19 +751,15 @@ const submitProfileEdit = async () => {
 };
 
 const submitPasswordChange = async () => {
-  // Reset errors and messages
   Object.keys(passwordErrors).forEach((key) => {
     passwordErrors[key] = "";
   });
   passwordSuccessMessage.value = "";
   passwordErrorMessage.value = "";
-
-  // Validate passwords match
   if (passwordForm.new_password !== passwordForm.new_password_confirmation) {
     passwordErrors.new_password_confirmation = "Passwords do not match";
     return;
   }
-
   passwordForm.isSubmitting = true;
   try {
     const res = await axios.put(
@@ -847,21 +771,15 @@ const submitPasswordChange = async () => {
       },
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       passwordSuccessMessage.value = "Password changed successfully!";
-
-      // Reset form
       passwordForm.current_password = "";
       passwordForm.new_password = "";
       passwordForm.new_password_confirmation = "";
-
-      // Auto close after success (optional)
       setTimeout(() => {
         togglePasswordModal();
       }, 2000);
     } else {
-      // Handle validation errors from backend
       if (res.data.errors) {
         for (const [key, value] of Object.entries(res.data.errors)) {
           if (passwordErrors.hasOwnProperty(key)) {
@@ -893,26 +811,11 @@ const submitLanguageSettings = async () => {
   languageErrorMessage.value = "";
 
   try {
-    // Save language preference to localStorage
     localStorage.setItem("app_language", languageForm.language);
-
-    // If you have a backend API for language preferences
-    // const response = await axios.post('/api/user/settings/language', {
-    //   language: languageForm.language
-    // }, globalStore.getAxiosHeader());
-
-    // Apply language change immediately (if using i18n)
-    // i18n.global.locale.value = languageForm.language;
-
     languageSuccessMessage.value = "Language settings updated successfully!";
-
-    // Auto close after success (optional)
     setTimeout(() => {
       toggleLanguageModal();
     }, 2000);
-
-    // Optional: reload the page to apply language changes
-    // window.location.reload();
   } catch (error) {
     languageErrorMessage.value = "Failed to update language settings";
     console.error("Language settings error:", error);
@@ -923,7 +826,6 @@ const submitLanguageSettings = async () => {
 </script>
 
 <style scoped>
-/* Modal styling */
 .modal {
   background-color: rgba(0, 0, 0, 0.5);
 }

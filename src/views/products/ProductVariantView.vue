@@ -26,11 +26,7 @@
                 @change="handleSearch"
               >
                 <option value="">Filter Product</option>
-                <option
-                  v-for="product in products"
-                  :key="product.id"
-                  :value="product.id"
-                >
+                <option v-for="product in products" :key="product.id" :value="product.id">
                   {{ product.name }}
                 </option>
               </select>
@@ -43,11 +39,7 @@
                 @change="handleSearch"
               >
                 <option value="">Filter Brand</option>
-                <option
-                  v-for="brand in brands"
-                  :key="brand.id"
-                  :value="brand.id"
-                >
+                <option v-for="brand in brands" :key="brand.id" :value="brand.id">
                   {{ brand.name }}
                 </option>
               </select>
@@ -60,11 +52,7 @@
                 @change="handleSearch"
               >
                 <option value="">Filter Color</option>
-                <option
-                  v-for="color in colors"
-                  :key="color.id"
-                  :value="color.id"
-                >
+                <option v-for="color in colors" :key="color.id" :value="color.id">
                   {{ color.name }}
                 </option>
               </select>
@@ -108,9 +96,7 @@
                   Product
                   <i
                     v-if="sortCol === 'product'"
-                    :class="
-                      sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-                    "
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
               </th>
@@ -119,9 +105,7 @@
                   Color
                   <i
                     v-if="sortCol === 'color'"
-                    :class="
-                      sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-                    "
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
               </th>
@@ -130,9 +114,7 @@
                   Size
                   <i
                     v-if="sortCol === 'size'"
-                    :class="
-                      sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-                    "
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
               </th>
@@ -141,9 +123,7 @@
                   Quantity
                   <i
                     v-if="sortCol === 'qty'"
-                    :class="
-                      sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-                    "
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
               </th>
@@ -152,9 +132,7 @@
                   Price
                   <i
                     v-if="sortCol === 'price'"
-                    :class="
-                      sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-                    "
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
               </th>
@@ -163,9 +141,7 @@
                   Brand
                   <i
                     v-if="sortCol === 'brand'"
-                    :class="
-                      sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'
-                    "
+                    :class="sortDir === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down'"
                   ></i>
                 </a>
               </th>
@@ -186,24 +162,15 @@
               <td class="align-middle">
                 <div class="d-flex align-items-center">
                   <div
-                    v-if="
-                      variant.color_code ||
-                      getColorCode(variant.product_color_id)
-                    "
+                    v-if="variant.color_code || getColorCode(variant.product_color_id)"
                     class="color-swatch me-2"
                     :style="{
                       backgroundColor:
-                        variant.color_code ||
-                        getColorCode(variant.product_color_id),
+                        variant.color_code || getColorCode(variant.product_color_id),
                     }"
-                    :title="
-                      variant.color_name ||
-                      getColorName(variant.product_color_id)
-                    "
+                    :title="variant.color_name || getColorName(variant.product_color_id)"
                   ></div>
-                  {{
-                    variant.color_name || getColorName(variant.product_color_id)
-                  }}
+                  {{ variant.color_name || getColorName(variant.product_color_id) }}
                 </div>
               </td>
               <td class="align-middle">
@@ -223,10 +190,7 @@
                 >
                   <span class="fas fa-edit me-1"></span>Edit
                 </button>
-                <button
-                  class="btn btn-sm btn-danger"
-                  @click="deleteVariant(variant.id)"
-                >
+                <button class="btn btn-sm btn-danger" @click="deleteVariant(variant.id)">
                   <span class="fas fa-trash me-1"></span>Delete
                 </button>
               </td>
@@ -254,11 +218,7 @@
       <div v-if="modalError" class="alert alert-danger">
         {{ modalError }}
       </div>
-      <form
-        class="row g-3 needs-validation"
-        novalidate
-        @submit.prevent="handleSubmit"
-      >
+      <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
         <!-- Product Selection -->
         <div class="col-md-12">
           <label class="form-label" for="productId">Product</label>
@@ -270,11 +230,7 @@
             @change="handleProductChange"
           >
             <option value="" disabled>Select a product</option>
-            <option
-              v-for="product in products"
-              :key="product.id"
-              :value="product.id"
-            >
+            <option v-for="product in products" :key="product.id" :value="product.id">
               {{ product.name }}
             </option>
           </select>
@@ -291,11 +247,7 @@
             required
           >
             <option value="" disabled>Select a color</option>
-            <option
-              v-for="color in filteredColors"
-              :key="color.id"
-              :value="color.id"
-            >
+            <option v-for="color in filteredColors" :key="color.id" :value="color.id">
               {{ color.name }}
             </option>
           </select>
@@ -312,11 +264,7 @@
             required
           >
             <option value="" disabled>Select a size</option>
-            <option
-              v-for="size in filteredSizes"
-              :key="size.id"
-              :value="size.id"
-            >
+            <option v-for="size in filteredSizes" :key="size.id" :value="size.id">
               {{ size.size }}
             </option>
           </select>
@@ -375,21 +323,11 @@
 
         <!-- Form Buttons -->
         <div class="col-12 d-flex justify-content-end">
-          <button
-            class="btn btn-secondary me-2"
-            type="button"
-            @click="closeModal"
-          >
+          <button class="btn btn-secondary me-2" type="button" @click="closeModal">
             Cancel
           </button>
-          <button
-            class="btn btn-primary"
-            type="submit"
-            :disabled="isSubmitting"
-          >
-            {{
-              isSubmitting ? "Processing..." : isEditMode ? "Update" : "Save"
-            }}
+          <button class="btn btn-primary" type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? "Processing..." : isEditMode ? "Update" : "Save" }}
           </button>
         </div>
       </form>
@@ -412,9 +350,7 @@
           <div class="toast-title">{{ toast.title }}</div>
           <div class="toast-message">{{ toast.message }}</div>
         </div>
-        <button class="toast-close" @click="removeToast(toast.id)">
-          &times;
-        </button>
+        <button class="toast-close" @click="removeToast(toast.id)">&times;</button>
       </div>
     </transition-group>
   </div>
@@ -426,9 +362,7 @@
         <span class="confirmation-icon warning">
           <i class="fas fa-exclamation-triangle"></i>
         </span>
-        <button class="close-btn" @click="closeConfirmationModal">
-          &times;
-        </button>
+        <button class="close-btn" @click="closeConfirmationModal">&times;</button>
       </div>
       <div class="confirmation-body">
         <h5>{{ confirmationModal.title }}</h5>
@@ -453,14 +387,9 @@ import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
-
-// Router and Store
 const router = useRouter();
 const globalStore = useGlobalStore();
-
-// Data collections
 const variants = ref([]);
 const products = ref([]);
 const colors = ref([]);
@@ -468,8 +397,6 @@ const sizes = ref([]);
 const brands = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
-
-// Pagination settings
 const perPage = ref(15);
 const sortCol = ref("id");
 const sortDir = ref("desc");
@@ -484,21 +411,17 @@ const paginationData = reactive({
   last_page: 1,
 });
 
-// Search and Filter
 const searchQuery = ref("");
 const selectedProduct = ref("");
 const selectedBrand = ref("");
 const selectedColor = ref("");
 let searchTimeout = null;
-
-// UI state
 const showModal = ref(false);
 const isEditMode = ref(false);
 const currentVariantId = ref(null);
 const isSubmitting = ref(false);
 const modalError = ref("");
 
-// Variant form data
 const variantForm = reactive({
   product_id: "",
   product_color_id: "",
@@ -508,14 +431,12 @@ const variantForm = reactive({
   price: 0,
 });
 
-// Filtered collections based on selected product
 const filteredColors = computed(() => {
   if (!variantForm.product_id) return colors.value;
   return colors.value.filter(
     (color) => String(color.product_id) === String(variantForm.product_id)
   );
 });
-
 const filteredSizes = computed(() => {
   if (!variantForm.product_id) return sizes.value;
   return sizes.value.filter(
@@ -523,7 +444,6 @@ const filteredSizes = computed(() => {
   );
 });
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -532,12 +452,10 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Format price for display
 const formatPrice = (price) => {
   return `$${parseFloat(price).toFixed(2)}`;
 };
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -546,42 +464,33 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
-  if (
-    confirmationModal.action &&
-    typeof confirmationModal.action === "function"
-  ) {
+  if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
   }
   closeConfirmationModal();
 };
 
-// Handle search input with debounce
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
-
   searchTimeout = setTimeout(() => {
     handleSearch();
   }, 500);
 };
 
-// Handle search when user submits the search
 const handleSearch = async () => {
   paginationData.current_page = 1;
   await getVariants(1);
 };
 
-// Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
     sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
@@ -589,25 +498,18 @@ const toggleSort = async (column) => {
     sortCol.value = column;
     sortDir.value = "asc";
   }
-
   await getVariants(1);
 };
 
-// Handle pagination
 const changePage = async (page) => {
   await getVariants(page);
 };
-
-// Helper function to find an item by ID with type-safe comparison
 const findById = (collection, id) => {
   if (!id || !collection || !collection.length) return null;
-
-  // Convert both to strings for comparison to handle string/number mismatches
   const stringId = String(id);
   return collection.find((item) => String(item.id) === stringId);
 };
 
-// Helper functions to get reference data
 const getProductName = (productId) => {
   if (!productId) return "Unknown";
   const product = findById(products.value, productId);
@@ -638,42 +540,29 @@ const getBrandName = (brandId) => {
   return brand ? brand.name : "Unknown";
 };
 
-// Handle product change in form
 const handleProductChange = () => {
-  // Reset color and size when product changes
   variantForm.product_color_id = "";
   variantForm.product_size_id = "";
 };
 
-// Fetch variants data
 const getVariants = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
-
   try {
-    // Build query URL with all filter parameters
     const url = `/api/product-variants?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&product_id=${selectedProduct.value}&brand_id=${selectedBrand.value}&color_id=${selectedColor.value}`;
-
-    console.log("API URL:", url);
-
     const res = await axios.get(url, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       variants.value = res.data.data;
-
-      // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch product variants";
       return false;
     }
   } catch (err) {
-    error.value =
-      err.message || "An error occurred while fetching product variants";
+    error.value = err.message || "An error occurred while fetching product variants";
     await globalStore.onCheckError(err, router);
     return false;
   } finally {
@@ -681,7 +570,6 @@ const getVariants = async (page = 1) => {
   }
 };
 
-// Data fetching functions
 const fetchProducts = async () => {
   try {
     const res = await axios.get("/api/products", globalStore.getAxiosHeader());
@@ -699,10 +587,7 @@ const fetchProducts = async () => {
 
 const fetchColors = async () => {
   try {
-    const res = await axios.get(
-      "/api/product-colors",
-      globalStore.getAxiosHeader()
-    );
+    const res = await axios.get("/api/product-colors", globalStore.getAxiosHeader());
     if (res.data.result) {
       colors.value = res.data.data;
       return true;
@@ -717,10 +602,7 @@ const fetchColors = async () => {
 
 const fetchSizes = async () => {
   try {
-    const res = await axios.get(
-      "/api/product-sizes",
-      globalStore.getAxiosHeader()
-    );
+    const res = await axios.get("/api/product-sizes", globalStore.getAxiosHeader());
     if (res.data.result) {
       sizes.value = res.data.data;
       return true;
@@ -766,58 +648,33 @@ const editVariant = async (variantId) => {
     );
     if (res.data.result) {
       const variant = res.data.data;
-
-      // Set basic info
       currentVariantId.value = variantId;
-
-      // Handle product selection
       if (variant.product) {
-        const matchingProduct = products.value.find(
-          (p) => p.name === variant.product
-        );
-        variantForm.product_id = matchingProduct
-          ? String(matchingProduct.id)
-          : "";
+        const matchingProduct = products.value.find((p) => p.name === variant.product);
+        variantForm.product_id = matchingProduct ? String(matchingProduct.id) : "";
       } else {
         variantForm.product_id = String(variant.product_id || "");
       }
-
-      // Handle color selection
       if (variant.color_name) {
-        const matchingColor = colors.value.find(
-          (c) => c.name === variant.color_name
-        );
-        variantForm.product_color_id = matchingColor
-          ? String(matchingColor.id)
-          : "";
+        const matchingColor = colors.value.find((c) => c.name === variant.color_name);
+        variantForm.product_color_id = matchingColor ? String(matchingColor.id) : "";
       } else {
         variantForm.product_color_id = String(variant.product_color_id || "");
       }
-
-      // Handle size selection
       if (variant.size) {
         const matchingSize = sizes.value.find((s) => s.size === variant.size);
-        variantForm.product_size_id = matchingSize
-          ? String(matchingSize.id)
-          : "";
+        variantForm.product_size_id = matchingSize ? String(matchingSize.id) : "";
       } else {
         variantForm.product_size_id = String(variant.product_size_id || "");
       }
-
-      // Handle brand selection
       if (variant.brand) {
-        const matchingBrand = brands.value.find(
-          (b) => b.name === variant.brand
-        );
+        const matchingBrand = brands.value.find((b) => b.name === variant.brand);
         variantForm.brand_id = matchingBrand ? String(matchingBrand.id) : "";
       } else {
         variantForm.brand_id = String(variant.brand_id || "");
       }
-
-      // Set numeric values
       variantForm.qty = variant.qty || 0;
       variantForm.price = parseFloat(variant.price) || 0;
-
       isEditMode.value = true;
       showModal.value = true;
     } else {
@@ -845,48 +702,37 @@ const resetVariantForm = () => {
   variantForm.price = 0;
 };
 
-// Form submission
 const handleSubmit = async (event) => {
   event.preventDefault();
-
-  // Check form validity
   if (!event.target.checkValidity()) {
     event.stopPropagation();
     event.target.classList.add("was-validated");
     return;
   }
-
-  // Validate required fields
   if (!variantForm.product_id) {
     modalError.value = "Product is required";
     return;
   }
-
   if (!variantForm.product_color_id) {
     modalError.value = "Color is required";
     return;
   }
-
   if (!variantForm.product_size_id) {
     modalError.value = "Size is required";
     return;
   }
-
   if (!variantForm.brand_id) {
     modalError.value = "Brand is required";
     return;
   }
-
   if (variantForm.qty < 0 || isNaN(variantForm.qty)) {
     modalError.value = "Quantity must be a valid number";
     return;
   }
-
   if (variantForm.price <= 0 || isNaN(variantForm.price)) {
     modalError.value = "Price must be greater than zero";
     return;
   }
-
   if (isEditMode.value) {
     await updateVariant();
   } else {
@@ -894,11 +740,9 @@ const handleSubmit = async (event) => {
   }
 };
 
-// Create variant
 const createVariant = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
     const variantData = {
       product_id: variantForm.product_id,
@@ -908,13 +752,11 @@ const createVariant = async () => {
       qty: variantForm.qty,
       price: variantForm.price,
     };
-
     const res = await axios.post(
       "/api/product-variants",
       variantData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await getVariants(paginationData.current_page);
       closeModal();
@@ -928,7 +770,6 @@ const createVariant = async () => {
       if (error.response.data.message) {
         modalError.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalError.value = errors.join("\n");
       } else {
@@ -937,18 +778,15 @@ const createVariant = async () => {
     } else {
       modalError.value = "An error occurred while creating the variant.";
     }
-
     await globalStore.onCheckError(error, router);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Update variant
 const updateVariant = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
     const variantData = {
       product_id: variantForm.product_id,
@@ -958,13 +796,11 @@ const updateVariant = async () => {
       qty: variantForm.qty,
       price: variantForm.price,
     };
-
     const res = await axios.put(
       `/api/product-variants/${currentVariantId.value}`,
       variantData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await getVariants(paginationData.current_page);
       closeModal();
@@ -986,49 +822,35 @@ const updateVariant = async () => {
     } else {
       modalError.value = "An error occurred while updating the variant.";
     }
-
     await globalStore.onCheckError(error, router);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Delete product
 const performDeleteVariant = async (id) => {
   try {
     const res = await axios.delete(
       `/api/product-variants/${id}`,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
-      // If there was only one item on the current page and it's not the first page
       if (variants.value.length === 1 && paginationData.current_page > 1) {
         await getVariants(paginationData.current_page - 1);
       } else {
         await getVariants(paginationData.current_page);
       }
-
       showNotification("success", "Success", "Variant deleted successfully!");
     } else {
-      showNotification(
-        "error",
-        "Error",
-        res.data.message || "Failed to delete variant"
-      );
+      showNotification("error", "Error", res.data.message || "Failed to delete variant");
     }
   } catch (err) {
-    showNotification(
-      "error",
-      "Error",
-      "An error occurred while deleting the variant"
-    );
+    showNotification("error", "Error", "An error occurred while deleting the variant");
     console.error("Error deleting variant:", err);
     await globalStore.onCheckError(err, router);
   }
 };
 
-// Show delete confirmation
 const deleteVariant = (id) => {
   showConfirmation(
     "Delete Variant",
@@ -1038,21 +860,12 @@ const deleteVariant = (id) => {
   );
 };
 
-// Lifecycle Hook
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    // Load reference data in parallel
-    await Promise.all([
-      fetchProducts(),
-      fetchColors(),
-      fetchSizes(),
-      fetchBrands(),
-    ]);
-
-    // Then load variants
+    await Promise.all([fetchProducts(), fetchColors(), fetchSizes(), fetchBrands()]);
     await getVariants(1);
   } catch (err) {
     error.value = "Failed to load initial data";

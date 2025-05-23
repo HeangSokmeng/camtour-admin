@@ -91,26 +91,18 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["page-changed"]);
-
-// Calculate visible page numbers
 const visiblePageNumbers = computed(() => {
   const maxVisiblePages = 5;
   let startPage = Math.max(1, props.currentPage - 2);
   let endPage = Math.min(props.lastPage, startPage + maxVisiblePages - 1);
-
-  // Adjust start page if we're near the end
   if (endPage - startPage + 1 < maxVisiblePages) {
     startPage = Math.max(1, endPage - maxVisiblePages + 1);
   }
-
   return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
 });
 
-// Navigation conditions
 const canGoPrevious = computed(() => props.currentPage > 1);
 const canGoNext = computed(() => props.currentPage < props.lastPage);
-
-// Navigation handler
 const goToPage = (page) => {
   if (page >= 1 && page <= props.lastPage && page !== props.currentPage) {
     emit("page-changed", page);

@@ -343,7 +343,6 @@ import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-// State
 const locations = ref([]);
 const selectedLocationId = ref("");
 const selectedLocation = ref(null);
@@ -360,12 +359,8 @@ const fileInput = ref(null);
 const objectUrls = ref([]);
 const isDragging = ref(false);
 const previewImage = ref(null);
-
-// Toast notifications
 const { showNotification } = useToast();
 const globalStore = useGlobalStore();
-
-// Image preview methods
 const getImagePreviewUrl = (file) => {
   if (file instanceof File || file instanceof Blob) {
     const url = URL.createObjectURL(file);
@@ -382,7 +377,6 @@ const cleanupObjectURLs = () => {
   objectUrls.value = [];
 };
 
-// Fetch methods
 const fetchLocations = async () => {
   try {
     const response = await axios.get("/api/locations", globalStore.getAxiosHeader());
@@ -400,32 +394,25 @@ const fetchLocations = async () => {
 const fetchLocationDetails = async (locationId) => {
   isLoading.value = true;
   try {
-    // Fetch location details
     const locationResponse = await axios.get(
       `/api/locations/${locationId}`,
       globalStore.getAxiosHeader()
     );
-
     if (locationResponse.data.result) {
       selectedLocation.value = locationResponse.data.data;
-
-      // Fetch images from server using the specific endpoint
       const imagesResponse = await axios.get(
         `/api/locations/get/images/${locationId}`,
         globalStore.getAxiosHeader()
       );
-
       if (imagesResponse.data.result) {
-        // Transform the data to match your component's expected format
         uploadedImages.value = imagesResponse.data.data.map((image) => ({
           id: image.id,
-          name: image.photo.split("/").pop(), // Extract filename from path
+          name: image.photo.split("/").pop(),
           url: image.url,
-          created_at: new Date().toISOString(), // You might want to add this field to your API response
-          size: 0, // You might want to add this field to your API response
+          created_at: new Date().toISOString(),
+          size: 0,
         }));
       } else {
-        // Handle error when fetching images
         console.error("Failed to fetch images:", imagesResponse.data.message);
         uploadedImages.value = [];
         showNotification("error", "Error", "Failed to fetch images");
@@ -438,7 +425,7 @@ const fetchLocationDetails = async (locationId) => {
     isLoading.value = false;
   }
 };
-// Location and formatting methods
+
 const formatLocation = (location) => {
   const parts = [];
   if (location.district?.name) parts.push(location.district.name);
@@ -464,7 +451,6 @@ const formatSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-// File handling methods
 const handleLocationChange = () => {
   if (selectedLocationId.value) {
     fetchLocationDetails(selectedLocationId.value);
@@ -510,7 +496,6 @@ const shortenFileName = (name) => {
   return name;
 };
 
-// Drag and drop methods
 const handleDragOver = () => {
   isDragging.value = true;
 };
@@ -529,13 +514,10 @@ const handleDrop = (event) => {
   });
 };
 
-// Upload method
 const uploadImages = async () => {
   if (!selectedLocationId.value || !selectedFiles.value.length) return;
-
   isUploading.value = true;
   uploadResult.value = "";
-
   try {
     const formData = new FormData();
     selectedFiles.value.forEach((file) => {
@@ -543,13 +525,11 @@ const uploadImages = async () => {
         formData.append("images[]", file);
       }
     });
-
     const response = await axios.post(
       `/api/locations/images/${selectedLocationId.value}`,
       formData,
       globalStore.getAxiosHeader()
     );
-
     if (response.data.result) {
       uploadSuccess.value = true;
       uploadResult.value = response.data.message || "Images uploaded successfully";
@@ -571,7 +551,6 @@ const uploadImages = async () => {
   }
 };
 
-// Image management methods
 const viewImage = (image) => {
   previewImage.value = image;
 };
@@ -592,14 +571,12 @@ const closeConfirmModal = () => {
 
 const deleteImage = async () => {
   if (!imageToDelete.value) return;
-
   isDeleting.value = true;
   try {
     const response = await axios.delete(
       `/api/locations/images/${imageToDelete.value}`,
       globalStore.getAxiosHeader()
     );
-
     if (response.data.result) {
       showNotification("success", "Success", "Image deleted successfully");
       uploadedImages.value = uploadedImages.value.filter(
@@ -621,7 +598,6 @@ const deleteImage = async () => {
   }
 };
 
-// Lifecycle hooks
 onBeforeUnmount(() => {
   cleanupObjectURLs();
 });

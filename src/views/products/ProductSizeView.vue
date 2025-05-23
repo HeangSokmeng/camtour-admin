@@ -169,21 +169,15 @@ import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
-// Initialize the global store immediately
 const globalStore = useGlobalStore();
-
 const state = reactive({
   sizes: [],
   isLoading: false,
   error: null,
 });
 
-// Data collections
 const products = ref([]);
-
-// UI state
 const searchQuery = ref("");
 const showModal = ref(false);
 const isEditMode = ref(false);
@@ -191,7 +185,6 @@ const currentSizeId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -200,13 +193,11 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// New size form data
 const newSize = reactive({
   size: "",
   product_id: "",
 });
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -215,14 +206,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -230,48 +219,34 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Helper function to find an item by ID with type-safe comparison
 const findById = (collection, id) => {
   if (!id || !collection || !collection.length) return null;
-
-  // Convert both to strings for comparison to handle string/number mismatches
   const stringId = String(id);
   return collection.find((item) => String(item.id) === stringId);
 };
 
-// Helper function to get product name
 const getProductName = (productId) => {
   if (!productId) return "Unknown";
-
-  // First try to find the product in our reference data
   const product = findById(products.value, productId);
   if (product) {
     return product.name;
   }
-
-  // If not found, get the product directly from the size's product object
   const sizeWithThisProduct = state.sizes.find(
     (c) => c.product_id === productId || (c.product && c.product.id === productId)
   );
-
   if (sizeWithThisProduct && sizeWithThisProduct.product) {
     return sizeWithThisProduct.product.name;
   }
-
   return "Unknown";
 };
 
-// Data fetching functions
 const fetchSizes = async () => {
   state.isLoading = true;
   state.error = null;
   try {
-    // Added authorization headers to the GET request
     const res = await axios.get("/api/product-sizes", globalStore.getAxiosHeader());
-
     if (res.data.result && Array.isArray(res.data.data)) {
       state.sizes = res.data.data;
-      console.log("Fetched sizes:", state.sizes);
     } else {
       state.error = res.data.message || "Failed to fetch product sizes";
       console.error("API error when fetching sizes:", res.data);
@@ -286,11 +261,9 @@ const fetchSizes = async () => {
 
 const fetchProducts = async () => {
   try {
-    // Added authorization headers to the GET request
     const res = await axios.get("/api/products", globalStore.getAxiosHeader());
     if (res.data.result && Array.isArray(res.data.data)) {
       products.value = res.data.data;
-      console.log("Fetched products for size selection:", products.value);
     } else {
       console.error("Failed to fetch products for size selection:", res.data);
       showNotification("error", "Error", "Failed to fetch products");
@@ -302,23 +275,19 @@ const fetchProducts = async () => {
   }
 };
 
-// CRUD operations for sizes
 const createSize = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
-
   try {
     const sizeData = {
       size: newSize.size,
       product_id: newSize.product_id,
     };
-
     const res = await axios.post(
       `/api/product-sizes`,
       sizeData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await fetchSizes();
       closeModal();
@@ -333,7 +302,6 @@ const createSize = async () => {
       if (error.response.data.message) {
         modalMessage.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalMessage.value = errors.join("\n");
       } else {
@@ -342,29 +310,24 @@ const createSize = async () => {
     } else {
       modalMessage.value = "An error occurred while creating the size.";
     }
-
     await globalStore.onCheckError(error);
   }
-
   isSubmitting.value = false;
 };
 
 const updateSize = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
-
   try {
     const sizeData = {
       size: newSize.size,
       product_id: newSize.product_id,
     };
-
     const res = await axios.put(
       `/api/product-sizes/${currentSizeId.value}`,
       sizeData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await fetchSizes();
       closeModal();
@@ -379,7 +342,6 @@ const updateSize = async () => {
       if (error.response.data.message) {
         modalMessage.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalMessage.value = errors.join("\n");
       } else {
@@ -388,14 +350,12 @@ const updateSize = async () => {
     } else {
       modalMessage.value = "An error occurred while updating the size.";
     }
-
     await globalStore.onCheckError(error);
   }
 
   isSubmitting.value = false;
 };
 
-// Delete size function
 const performDeleteSize = async (sizeId) => {
   try {
     const res = await axios.delete(
@@ -415,7 +375,6 @@ const performDeleteSize = async (sizeId) => {
   }
 };
 
-// Show delete confirmation
 const deleteSize = (sizeId) => {
   showConfirmation(
     "Delete Size",
@@ -425,7 +384,6 @@ const deleteSize = (sizeId) => {
   );
 };
 
-// Modal controls
 const openModal = () => {
   resetSizeForm();
   isEditMode.value = false;
@@ -435,17 +393,12 @@ const openModal = () => {
 const editSize = async (sizeId) => {
   try {
     state.isLoading = true;
-
-    // Find size in existing data or fetch if needed
     let size = state.sizes.find((s) => String(s.id) === String(sizeId));
-
     if (!size) {
-      // Fetch the size data if not in the list
       const response = await axios.get(
         `/api/product-sizes/${sizeId}`,
         globalStore.getAxiosHeader()
       );
-
       if (response.data.result && response.data.data) {
         size = response.data.data;
       } else {
@@ -454,13 +407,7 @@ const editSize = async (sizeId) => {
         return;
       }
     }
-
-    console.log("Editing size:", size);
-
-    // Set size fields
     newSize.size = size.size || "";
-
-    // Handle product_id as either direct ID or nested product.id
     if (size.product_id) {
       newSize.product_id = String(size.product_id);
     } else if (size.product && size.product.id) {
@@ -468,12 +415,10 @@ const editSize = async (sizeId) => {
     } else {
       newSize.product_id = "";
     }
-
     currentSizeId.value = sizeId;
     isEditMode.value = true;
     showModal.value = true;
   } catch (error) {
-    console.error("Error fetching size details:", error);
     showNotification("error", "Error", "An error occurred while fetching size details");
     await globalStore.onCheckError(error);
   } finally {
@@ -495,25 +440,19 @@ const resetSizeForm = () => {
 
 const handleSubmit = async (event) => {
   event.preventDefault();
-
-  // Check form validity
   if (!event.target.checkValidity()) {
     event.stopPropagation();
     event.target.classList.add("was-validated");
     return;
   }
-
-  // Validate required fields
   if (!newSize.size.trim()) {
     modalMessage.value = "Size value is required";
     return;
   }
-
   if (!newSize.product_id) {
     modalMessage.value = "Product is required";
     return;
   }
-
   if (isEditMode.value) {
     await updateSize();
   } else {
@@ -530,19 +469,10 @@ const filteredSizes = computed(() => {
         .includes(searchQuery.value.toLowerCase())
   );
 });
-
-// Initialize data on component mount
 onMounted(async () => {
   try {
-    console.log("Component mounted, fetching data...");
-
-    // Fetch products first to ensure we have reference data
     await fetchProducts();
-
-    // Then fetch sizes
     await fetchSizes();
-
-    console.log("Data loading complete.");
   } catch (error) {
     console.error("Error during initialization:", error);
     showNotification("error", "Error", "Failed to initialize the component");
@@ -550,5 +480,3 @@ onMounted(async () => {
   }
 });
 </script>
-
-

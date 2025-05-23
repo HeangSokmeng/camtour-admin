@@ -165,7 +165,6 @@ const fetchCategories = async () => {
   } catch (error) {
     state.error = "An error occurred while fetching tags";
     console.error(error);
-    // Handle error properly with the store
     await globalStore.onCheckError(error, router);
   } finally {
     state.isLoading = false;

@@ -35954,6 +35954,8 @@ a[href].bg-body-secondary:hover, a[href].bg-body-secondary:focus {
 
 .bg-auth-card-overlay {
   mix-blend-mode: overlay;
+    height: 100vh;
+  
 }
 
 .auth-card {

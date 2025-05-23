@@ -561,25 +561,15 @@ const userForm = reactive({
   image: null,
 });
 
-// Helper functions
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "/images/default-avatar.png";
-
   if (imagePath.startsWith("http")) {
     return imagePath;
   }
-
   return `/storage/${imagePath}`;
 };
 
-// const getGenderText = (gender) => {
-//   if (gender === 1) return "Male";
-//   if (gender === 2) return "Female";
-//   return "Not Specified";
-// };
-
 const getRoleBadgeClass = (roleId) => {
-  // Map role IDs to appropriate badge classes
   switch (roleId) {
     case 1:
       return "bg-danger"; // Admin
@@ -597,11 +587,7 @@ const displayedPages = computed(() => {
   const pages = [];
   const lastPage = pagination.last_page;
   const currentPage = pagination.current_page;
-
-  // Always show first page
   pages.push(1);
-
-  // Show pages around current page
   for (
     let i = Math.max(2, currentPage - 1);
     i <= Math.min(lastPage - 1, currentPage + 1);
@@ -609,13 +595,9 @@ const displayedPages = computed(() => {
   ) {
     pages.push(i);
   }
-
-  // Always show last page if it exists
   if (lastPage > 1) {
     pages.push(lastPage);
   }
-
-  // Return unique sorted pages
   return [...new Set(pages)].sort((a, b) => a - b);
 });
 
@@ -632,22 +614,16 @@ const fetchUsers = async () => {
     if (filters.gender) params.append("gender", filters.gender);
     if (filters.page) params.append("page", filters.page);
     if (filters.per_page) params.append("per_page", filters.per_page);
-
     const res = await axios.get(
       `/api/users?${params.toString()}`,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       users.value = res.data.data || [];
-
-      // Update pagination information
       pagination.current_page = res.data.current_page || 1;
       pagination.per_page = res.data.per_page || 9;
       pagination.total = res.data.total || 0;
       pagination.last_page = res.data.last_page || 1;
-
-      console.log("Fetched users:", users.value);
     } else {
       state.error = res.data.message || "Failed to fetch users";
       console.error("API error when fetching users:", res.data);
@@ -657,17 +633,14 @@ const fetchUsers = async () => {
     state.error = "An error occurred while fetching users.";
     await globalStore.onCheckError(error);
   }
-
   state.isLoading = false;
 };
 
 const fetchRoles = async () => {
   try {
     const res = await axios.get("/api/roles", globalStore.getAxiosHeader());
-
     if (res.data.result) {
       roles.value = res.data.data || [];
-      console.log("Fetched roles:", roles.value);
     } else {
       console.error("Failed to fetch roles:", res.data);
     }
@@ -679,16 +652,15 @@ const fetchRoles = async () => {
 
 // Filter and pagination functions
 const onSearchInput = () => {
-  // Debounce search input to avoid too many API calls
   clearTimeout(onSearchInput.timer);
   onSearchInput.timer = setTimeout(() => {
-    filters.page = 1; // Reset to first page on new search
+    filters.page = 1;
     filterUsers();
   }, 300);
 };
 
 const filterUsers = () => {
-  filters.page = 1; // Reset to first page when filter changes
+  filters.page = 1;
   fetchUsers();
 };
 
@@ -704,8 +676,6 @@ const changePage = (page) => {
   if (page < 1 || page > pagination.last_page) return;
   filters.page = page;
   fetchUsers();
-
-  // Scroll to top of user list
   window.scrollTo({
     top: 0,
     behavior: "smooth",
@@ -719,8 +689,6 @@ const createUser = async () => {
 
   try {
     const formData = new FormData();
-
-    // Append all form fields
     for (const [key, value] of Object.entries(userForm)) {
       if (key === "image") {
         if (value) formData.append("image", value);
@@ -733,10 +701,9 @@ const createUser = async () => {
       ...globalStore.getAxiosHeader(),
       headers: {
         ...globalStore.getAxiosHeader().headers,
-        "Content-Type": "multipart/form-data", // Important for file uploads
+        "Content-Type": "multipart/form-data",
       },
     });
-
     if (res.data.result) {
       await fetchUsers();
       closeModal();
@@ -751,7 +718,6 @@ const createUser = async () => {
       if (error.response.data.message) {
         modalMessage.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalMessage.value = errors.join("\n");
       } else {
@@ -760,10 +726,8 @@ const createUser = async () => {
     } else {
       modalMessage.value = "An error occurred while creating the user.";
     }
-
     await globalStore.onCheckError(error);
   }
-
   isSubmitting.value = false;
 };
 
@@ -773,27 +737,20 @@ const updateUser = async () => {
 
   try {
     const formData = new FormData();
-
-    // Use FormData for file uploads
     for (const [key, value] of Object.entries(userForm)) {
-      // Skip password fields if not changing password
       if (
         !showPasswordFields.value &&
         (key === "password" || key === "password_confirmation")
       ) {
         continue;
       }
-
       if (key === "image") {
         if (value) formData.append("image", value);
       } else if (value !== "" && value !== null) {
         formData.append(key, value);
       }
     }
-
-    // Add method_put for Laravel to recognize as PUT request when using FormData
     formData.append("_method", "PUT");
-
     const res = await axios.post(`/api/users/update/${currentUserId.value}`, formData, {
       ...globalStore.getAxiosHeader(),
       headers: {
@@ -801,7 +758,6 @@ const updateUser = async () => {
         "Content-Type": "multipart/form-data",
       },
     });
-
     if (res.data.result) {
       await fetchUsers();
       closeModal();
@@ -825,22 +781,18 @@ const updateUser = async () => {
     } else {
       modalMessage.value = "An error occurred while updating the user.";
     }
-
     await globalStore.onCheckError(error);
   }
-
   isSubmitting.value = false;
 };
 
 const performDeleteUser = async () => {
   isSubmitting.value = true;
-
   try {
     const res = await axios.delete(
       `/api/users/${confirmationDialog.userId}`,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await fetchUsers();
       showNotification("success", "Success", "User deleted successfully!");
@@ -852,7 +804,6 @@ const performDeleteUser = async () => {
     showNotification("error", "Error", "An error occurred while deleting the user.");
     await globalStore.onCheckError(error);
   }
-
   isSubmitting.value = false;
   closeConfirmDialog();
 };
@@ -861,10 +812,9 @@ const toggleLockUser = async (userId, currentLockStatus) => {
   try {
     const res = await axios.put(
       `/api/users/islock/${userId}`,
-      {}, // Empty body as we're just toggling the lock status
+      {},
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await fetchUsers();
       const newStatus = currentLockStatus === "lock" ? "unlocked" : "locked";
@@ -892,23 +842,18 @@ const openModal = () => {
   resetUserForm();
   isEditMode.value = false;
   showModal.value = true;
-  showPasswordFields.value = !isEditMode.value; // Show password fields for new users
+  showPasswordFields.value = !isEditMode.value;
 };
 
 const editUser = async (userId) => {
   try {
     state.isLoading = true;
-
-    // Find user in existing data or fetch if needed
     let user = users.value.find((u) => u.id === userId);
-
     if (!user) {
-      // Fetch the user data if not in the list
       const response = await axios.get(
         `/api/users/${userId}`,
         globalStore.getAxiosHeader()
       );
-
       if (response.data.result && response.data.data) {
         user = response.data.data;
       } else {
@@ -917,33 +862,24 @@ const editUser = async (userId) => {
         return;
       }
     }
-
-    // Reset form first
     resetUserForm();
-
-    // Set user fields
     userForm.first_name = user.first_name || "";
     userForm.last_name = user.last_name || "";
     userForm.email = user.email || "";
     userForm.phone = user.phone || "";
     userForm.gender = user.gender || "";
-
-    // Handle role assignment
     if (user.roles && user.roles.length > 0) {
       userForm.role_id = user.roles[0].id.toString();
     } else if (user.role_id) {
       userForm.role_id = user.role_id.toString();
     }
-
-    // Set user image if exists
     if (user.image) {
       imagePreview.value = getImageUrl(user.image);
     }
-
     currentUserId.value = userId;
     isEditMode.value = true;
     showModal.value = true;
-    showPasswordFields.value = false; // Don't show password fields by default in edit mode
+    showPasswordFields.value = false;
   } catch (error) {
     console.error("Error fetching user details:", error);
     showNotification("error", "Error", "An error occurred while fetching user details");
@@ -995,24 +931,18 @@ const handleImageUpload = (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
-  // Check file size (max 2MB)
   if (file.size > 2 * 1024 * 1024) {
     modalMessage.value = "Image size must be less than 2MB";
-    event.target.value = null; // Clear the file input
+    event.target.value = null;
     return;
   }
 
-  // Check file type
   if (!["image/jpeg", "image/png"].includes(file.type)) {
     modalMessage.value = "Only JPG and PNG images are allowed";
-    event.target.value = null; // Clear the file input
+    event.target.value = null;
     return;
   }
-
-  // Set the file to the form
   userForm.image = file;
-
-  // Create preview
   const reader = new FileReader();
   reader.onload = (e) => {
     imagePreview.value = e.target.result;
@@ -1023,23 +953,17 @@ const handleImageUpload = (event) => {
 const removeImage = () => {
   userForm.image = null;
   imagePreview.value = "";
-  // Clear the file input
   const fileInput = document.getElementById("profileImage");
   if (fileInput) fileInput.value = null;
 };
 
 const handleSubmit = async (event) => {
-  // Reset any previous error messages
   modalMessage.value = "";
-
-  // Check form validity
   if (!event.target.checkValidity()) {
     event.stopPropagation();
     event.target.classList.add("was-validated");
     return;
   }
-
-  // Basic validation
   if (
     !userForm.first_name.trim() ||
     !userForm.last_name.trim() ||
@@ -1048,15 +972,11 @@ const handleSubmit = async (event) => {
     modalMessage.value = "Please fill in all required fields";
     return;
   }
-
-  // Email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(userForm.email)) {
     modalMessage.value = "Please enter a valid email address";
     return;
   }
-
-  // Password validation for new users or when changing password
   if ((!isEditMode.value || showPasswordFields.value) && userForm.password) {
     if (userForm.password.length < 8) {
       modalMessage.value = "Password must be at least 8 characters long";
@@ -1068,27 +988,16 @@ const handleSubmit = async (event) => {
       return;
     }
   }
-
-  // Create or update user
   if (isEditMode.value) {
     await updateUser();
   } else {
     await createUser();
   }
 };
-
-// Initialize data on component mount
 onMounted(async () => {
   try {
-    console.log("Component mounted, fetching data...");
-
-    // Fetch roles first to populate dropdowns
     await fetchRoles();
-
-    // Then fetch users
     await fetchUsers();
-
-    console.log("Data loading complete.");
   } catch (error) {
     console.error("Error during initialization:", error);
     showNotification("error", "Error", "Failed to initialize the component");

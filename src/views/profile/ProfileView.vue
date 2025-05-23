@@ -370,7 +370,7 @@ const profile = computed(
     state.profile || {
       first_name: "",
       last_name: "",
-      image: "", // fallback if no image
+      image: "",
       phone: "",
       email: "",
       created_at: "",
@@ -394,7 +394,6 @@ const joinedAgo = computed(() => {
   return `${Math.floor(diffInMonths)} months ago`;
 });
 
-// Password Reset Modal Variables
 const showPasswordModal = ref(false);
 const passwordForm = reactive({
   current_password: "",
@@ -413,8 +412,8 @@ const errors = reactive({
   new_password_confirmation: "",
 });
 
-// Edit Profile Modal Variables
 const showEditModal = ref(false);
+
 const editForm = reactive({
   first_name: "",
   last_name: "",
@@ -437,17 +436,13 @@ const profileErrors = reactive({
 const togglePasswordModal = () => {
   showPasswordModal.value = !showPasswordModal.value;
   if (showPasswordModal.value) showEditModal.value = false;
-
   if (!showPasswordModal.value) {
-    // Reset form when closing modal
     passwordForm.current_password = "";
     passwordForm.new_password = "";
     passwordForm.new_password_confirmation = "";
-    // Clear any errors
     errors.current_password = "";
     errors.new_password = "";
     errors.new_password_confirmation = "";
-    // Reset password visibility
     passwordVisibility.current = false;
     passwordVisibility.new = false;
     passwordVisibility.confirmation = false;
@@ -457,7 +452,6 @@ const togglePasswordModal = () => {
 const toggleEditModal = () => {
   showEditModal.value = !showEditModal.value;
   if (showEditModal.value) {
-    // Populate form with current data
     showPasswordModal.value = false;
     editForm.first_name = profile.value.first_name;
     editForm.last_name = profile.value.last_name;
@@ -466,7 +460,6 @@ const toggleEditModal = () => {
     editForm.email = profile.value.email;
     editForm.imagePreview = null;
   } else {
-    // Clear form and errors when closing
     profileErrors.first_name = "";
     profileErrors.last_name = "";
     profileErrors.gender = "";
@@ -483,10 +476,7 @@ const togglePasswordVisibility = (field) => {
 const handleImageChange = (event) => {
   const file = event.target.files[0];
   if (!file) return;
-
   editForm.image = file;
-
-  // Create a preview
   const reader = new FileReader();
   reader.onload = (e) => {
     editForm.imagePreview = e.target.result;
@@ -518,28 +508,21 @@ const fetchProfile = async () => {
 };
 
 const submitProfileEdit = async () => {
-  // Reset errors
   Object.keys(profileErrors).forEach((key) => {
     profileErrors[key] = "";
   });
-
   editForm.isSubmitting = true;
-
   try {
     const globalStore = useGlobalStore();
-
-    // Create FormData for file upload
     const formData = new FormData();
     formData.append("first_name", editForm.first_name);
     formData.append("last_name", editForm.last_name);
     formData.append("gender", editForm.gender);
     formData.append("phone", editForm.phone);
     formData.append("email", editForm.email);
-
     if (editForm.image) {
       formData.append("image", editForm.image);
     }
-
     const res = await axios.put("/api/profile/info", formData, {
       ...globalStore.getAxiosHeader(),
       headers: {
@@ -547,14 +530,11 @@ const submitProfileEdit = async () => {
         "Content-Type": "multipart/form-data",
       },
     });
-
     if (res.data.result) {
-      // Update local profile data
       fetchProfile();
       alert("Profile updated successfully!");
       toggleEditModal();
     } else {
-      // Handle validation errors from backend
       if (res.data.errors) {
         for (const [key, value] of Object.entries(res.data.errors)) {
           if (profileErrors.hasOwnProperty(key)) {
@@ -581,17 +561,13 @@ const submitProfileEdit = async () => {
 };
 
 const submitPasswordReset = async () => {
-  // Reset errors
   errors.current_password = "";
   errors.new_password = "";
   errors.new_password_confirmation = "";
-
-  // Validate passwords match
   if (passwordForm.new_password !== passwordForm.new_password_confirmation) {
     errors.new_password_confirmation = "Passwords do not match";
     return;
   }
-
   passwordForm.isSubmitting = true;
   try {
     const globalStore = useGlobalStore();
@@ -604,12 +580,10 @@ const submitPasswordReset = async () => {
       },
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       alert("Password changed successfully!");
       togglePasswordModal();
     } else {
-      // Handle validation errors from backend
       if (res.data.errors) {
         for (const [key, value] of Object.entries(res.data.errors)) {
           if (errors.hasOwnProperty(key)) {

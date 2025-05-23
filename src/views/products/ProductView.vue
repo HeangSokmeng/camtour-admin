@@ -389,22 +389,15 @@ import axios from "axios";
 import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
-
-// Router and Store
 const router = useRouter();
 const globalStore = useGlobalStore();
-
-// Data collections
 const products = ref([]);
 const brands = ref([]);
 const categories = ref([]);
 const productCategories = ref([]);
 const isLoading = ref(false);
 const error = ref(null);
-
-// Pagination settings
 const perPage = ref(15);
 const sortCol = ref("id");
 const sortDir = ref("desc");
@@ -418,14 +411,10 @@ const paginationData = reactive({
   current_page: 1,
   last_page: 1,
 });
-
-// Search and Filter
 const searchQuery = ref("");
 const selectedBrand = ref("");
 const selectedCategory = ref("");
 let searchTimeout = null;
-
-// UI state
 const showModal = ref(false);
 const isEditMode = ref(false);
 const currentProductId = ref(null);
@@ -433,7 +422,6 @@ const isSubmitting = ref(false);
 const modalError = ref("");
 const objectUrls = ref([]);
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -442,7 +430,6 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Product form data
 const productForm = reactive({
   name: "",
   name_km: "",
@@ -456,7 +443,6 @@ const productForm = reactive({
   thumbnail: null,
 });
 
-// Show confirmation modal
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -465,14 +451,12 @@ const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.actionParams = actionParams;
 };
 
-// Close confirmation modal
 const closeConfirmationModal = () => {
   confirmationModal.show = false;
   confirmationModal.action = null;
   confirmationModal.actionParams = null;
 };
 
-// Confirm action
 const confirmAction = () => {
   if (confirmationModal.action && typeof confirmationModal.action === "function") {
     confirmationModal.action(confirmationModal.actionParams);
@@ -480,18 +464,15 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Helper method to safely create object URLs
 const getImagePreviewUrl = (file) => {
   if (file instanceof File || file instanceof Blob) {
     const url = URL.createObjectURL(file);
     objectUrls.value.push(url);
     return url;
   }
-  // Return the string URL if it's not a File/Blob
   return typeof file === "string" ? file : "/placeholder-image.jpg";
 };
 
-// Clean up object URLs to prevent memory leaks
 const cleanupObjectURLs = () => {
   objectUrls.value.forEach((url) => {
     URL.revokeObjectURL(url);
@@ -499,24 +480,20 @@ const cleanupObjectURLs = () => {
   objectUrls.value = [];
 };
 
-// Handle search input with debounce
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
-
   searchTimeout = setTimeout(() => {
     handleSearch();
   }, 500);
 };
 
-// Handle search when user submits the search
 const handleSearch = async () => {
   paginationData.current_page = 1;
   await getProducts(1);
 };
 
-// Toggle sorting
 const toggleSort = async (column) => {
   if (sortCol.value === column) {
     sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
@@ -528,32 +505,22 @@ const toggleSort = async (column) => {
   await getProducts(1);
 };
 
-// Handle pagination
 const changePage = async (page) => {
   await getProducts(page);
 };
 
-// Fetch products data
 const getProducts = async (page = 1) => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    // Build query URL with all filter parameters
     const url = `/api/products?page=${page}&per_page=${perPage.value}&sort_col=${sortCol.value}&sort_dir=${sortDir.value}&search=${searchQuery.value}&brand_id=${selectedBrand.value}&category_id=${selectedCategory.value}`;
-
-    console.log("API URL:", url);
-
     const res = await axios.get(url, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       products.value = res.data.data;
-
-      // Update pagination data
       if (res.data.paginate) {
         Object.assign(paginationData, res.data.paginate);
       }
-
       return true;
     } else {
       error.value = res.data.message || "Failed to fetch products";
@@ -568,64 +535,46 @@ const getProducts = async (page = 1) => {
   }
 };
 
-// Helper function to find an item by ID with type-safe comparison
 const findById = (collection, id) => {
   if (!id || !collection || !collection.length) return null;
-
-  // Convert both to strings for comparison to handle string/number mismatches
   const stringId = String(id);
   return collection.find((item) => String(item.id) === stringId);
 };
-
-// Helper function to get brand name
 const getBrandName = (product) => {
-  // First check if product has nested brand object (direct API format)
   if (product.brand && product.brand.name) {
     return product.brand.name;
   }
-
-  // Fallback to looking up by ID if we have the collection
   if (product.brand_id) {
     const brand = findById(brands.value, product.brand_id);
     if (brand) {
       return brand.name;
     }
   }
-
   return "Unknown";
 };
 
-// Helper function to get category name
 const getCategoryName = (product) => {
-  // First check for a product_category object (from detailed response)
   if (product.product_category && product.product_category.name) {
     return product.product_category.name;
   }
-
-  // Fallback to category object (from detailed response)
   if (product.category && product.category.name) {
     return product.category.name;
   }
-
-  // Then try to look up by ID from collections
   if (product.product_category_id) {
     const prodCategory = findById(productCategories.value, product.product_category_id);
     if (prodCategory) {
       return prodCategory.name;
     }
   }
-
   if (product.category_id) {
     const category = findById(categories.value, product.category_id);
     if (category) {
       return category.name;
     }
   }
-
   return "Unknown";
 };
 
-// Data fetching functions
 const fetchBrands = async () => {
   try {
     const res = await axios.get("/api/brands", globalStore.getAxiosHeader());
@@ -671,7 +620,6 @@ const fetchProductCategories = async () => {
   }
 };
 
-// File upload handling
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
@@ -679,7 +627,6 @@ const handleFileUpload = (event) => {
   }
 };
 
-// Modal Methods
 const openCreateModal = () => {
   isEditMode.value = false;
   currentProductId.value = null;
@@ -697,8 +644,6 @@ const editProduct = async (productId) => {
     );
     if (res.data.result) {
       const product = res.data.data;
-
-      // Set basic info
       currentProductId.value = productId;
       productForm.name = product.name || "";
       productForm.name_km = product.name_km || "";
@@ -706,33 +651,26 @@ const editProduct = async (productId) => {
       productForm.description = product.description || "";
       productForm.price = product.price || "";
       productForm.status = product.status || "draft";
-
-      // Handle relations
       productForm.brand_id = product.brand
         ? product.brand.id
         : product.brand_id
         ? product.brand_id
         : "";
-
       productForm.category_id = product.category
         ? product.category.id
         : product.category_id
         ? product.category_id
         : "";
-
       productForm.product_category_id = product.product_category
         ? product.product_category.id
         : product.product_category_id
         ? product.product_category_id
         : "";
-
-      // Set thumbnail if exists
       if (product.thumbnail && typeof product.thumbnail === "string") {
         productForm.thumbnail = product.thumbnail;
       } else {
         productForm.thumbnail = null;
       }
-
       isEditMode.value = true;
       showModal.value = true;
     } else {
@@ -765,31 +703,24 @@ const resetProductForm = () => {
   productForm.thumbnail = null;
 };
 
-// Form submission
 const handleSubmit = async (event) => {
   event.preventDefault();
-
-  // Validate required fields
   if (!productForm.name.trim()) {
     modalError.value = "Product name is required";
     return;
   }
-
   if (!productForm.name_km.trim()) {
     modalError.value = "Product name in Khmer is required";
     return;
   }
-
   if (!productForm.code.trim()) {
     modalError.value = "Product code is required";
     return;
   }
-
   if (!productForm.price) {
     modalError.value = "Price is required";
     return;
   }
-
   if (isEditMode.value) {
     await updateProduct();
   } else {
@@ -797,24 +728,17 @@ const handleSubmit = async (event) => {
   }
 };
 
-// Create product
 const createProduct = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
-    // Create form data for submission
     const formData = new FormData();
-
-    // Add basic product fields
     formData.append("name", productForm.name);
     formData.append("name_km", productForm.name_km);
     formData.append("code", productForm.code);
     formData.append("description", productForm.description || "");
     formData.append("price", productForm.price);
     formData.append("status", productForm.status);
-
-    // Add foreign keys
     if (productForm.brand_id) {
       formData.append("brand_id", productForm.brand_id);
     }
@@ -824,14 +748,10 @@ const createProduct = async () => {
     if (productForm.product_category_id) {
       formData.append("product_category_id", productForm.product_category_id);
     }
-
-    // Add thumbnail if selected
     if (productForm.thumbnail instanceof File) {
       formData.append("thumbnail", productForm.thumbnail);
     }
-
     const res = await axios.post(`/api/products`, formData, globalStore.getAxiosHeader());
-
     if (res.data.result) {
       await getProducts(paginationData.current_page);
       closeModal();
@@ -845,7 +765,6 @@ const createProduct = async () => {
       if (error.response.data.message) {
         modalError.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalError.value = errors.join("\n");
       } else {
@@ -854,34 +773,24 @@ const createProduct = async () => {
     } else {
       modalError.value = "An error occurred while creating the product.";
     }
-
     await globalStore.onCheckError(error, router);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Update product
 const updateProduct = async () => {
   isSubmitting.value = true;
   modalError.value = "";
-
   try {
-    // Create form data for submission
     const formData = new FormData();
-
-    // Add method override for Laravel
     formData.append("_method", "PUT");
-
-    // Add basic product fields
     formData.append("name", productForm.name);
     formData.append("name_km", productForm.name_km);
     formData.append("code", productForm.code);
     formData.append("description", productForm.description || "");
     formData.append("price", productForm.price);
     formData.append("status", productForm.status);
-
-    // Add foreign keys
     if (productForm.brand_id) {
       formData.append("brand_id", productForm.brand_id);
     }
@@ -891,19 +800,14 @@ const updateProduct = async () => {
     if (productForm.product_category_id) {
       formData.append("product_category_id", productForm.product_category_id);
     }
-
-    // Add thumbnail if selected
     if (productForm.thumbnail instanceof File) {
       formData.append("thumbnail", productForm.thumbnail);
     }
-
-    // Use POST with _method=PUT for FormData
     const res = await axios.post(
       `/api/products/${currentProductId.value}`,
       formData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await getProducts(paginationData.current_page);
       closeModal();
@@ -926,26 +830,21 @@ const updateProduct = async () => {
     } else {
       modalError.value = "An error occurred while updating the product.";
     }
-
     await globalStore.onCheckError(error, router);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-// Delete product
 const performDeleteProduct = async (id) => {
   try {
     const res = await axios.delete(`/api/products/${id}`, globalStore.getAxiosHeader());
-
     if (res.data.result) {
-      // If there was only one item on the current page and it's not the first page
       if (products.value.length === 1 && paginationData.current_page > 1) {
         await getProducts(paginationData.current_page - 1);
       } else {
         await getProducts(paginationData.current_page);
       }
-
       showNotification("success", "Success", "Product deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete product");
@@ -957,7 +856,6 @@ const performDeleteProduct = async (id) => {
   }
 };
 
-// Show delete confirmation
 const deleteProduct = (id) => {
   showConfirmation(
     "Delete Product",
@@ -967,21 +865,14 @@ const deleteProduct = (id) => {
   );
 };
 
-// Clean up when component unmounts
 onBeforeUnmount(() => {
   cleanupObjectURLs();
 });
-
-// Lifecycle Hook
 onMounted(async () => {
   isLoading.value = true;
   error.value = null;
-
   try {
-    // Load reference data in parallel
     await Promise.all([fetchBrands(), fetchCategories(), fetchProductCategories()]);
-
-    // Then load products
     await getProducts(1);
   } catch (err) {
     error.value = "Failed to load initial data";

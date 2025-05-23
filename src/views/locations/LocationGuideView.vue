@@ -551,33 +551,23 @@
 </template>
 
 <script setup>
+import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { reactive, ref } from "vue";
-
-// Global store import (assuming it's similar to the product colors component)
-// Adjust this import path based on your actual implementation
-import { useGlobalStore } from "@/stores/global";
 const globalStore = useGlobalStore();
-
-// State
 const loading = ref(false);
 const loadingGuide = ref(false);
 const error = ref(null);
 const locations = ref([]);
 const selectedLocationId = ref("");
 const currentGuide = ref(null);
-
-// Modal state
 const showModal = ref(false);
 const isEditMode = ref(false);
 const modalError = ref("");
 const submitting = ref(false);
-
-// Toast notifications
 const toasts = ref([]);
 let toastId = 0;
 
-// Form data with default structure
 const formData = reactive({
   location_id: "",
   best_time_to_visit: "",
@@ -600,33 +590,24 @@ const formData = reactive({
     customs: [],
   },
 });
-
-// Track contact keys and values separately for easier manipulation
 const contactKeys = ref([]);
 const contactValues = ref([]);
-
-// Helper to get location name by ID
 const getLocationName = (locationId) => {
   const location = locations.value.find((loc) => loc.id === locationId);
   return location ? location.name : "Unknown Location";
 };
 
-// Format date for display
 const formatDate = (dateStr) => {
   if (!dateStr) return "N/A";
   const date = new Date(dateStr);
   return date.toLocaleString();
 };
 
-// Fetch all locations
 const fetchLocations = async () => {
   loading.value = true;
   error.value = null;
-
   try {
-    // Assuming there's an API endpoint for locations similar to the products endpoint
     const response = await axios.get("/api/locations", globalStore.getAxiosHeader());
-
     if (response.data.result && Array.isArray(response.data.data)) {
       locations.value = response.data.data;
       console.log("Fetched locations:", locations.value);
@@ -643,27 +624,22 @@ const fetchLocations = async () => {
   }
 };
 
-// Fetch guide for selected location
 const fetchGuideForLocation = async () => {
   if (!selectedLocationId.value) {
     currentGuide.value = null;
     return;
   }
-
   loadingGuide.value = true;
   error.value = null;
-
   try {
     const response = await axios.get(
       "/api/locations/guide/get",
       globalStore.getAxiosHeader()
     );
-
     if (response.data.error === false && Array.isArray(response.data.data)) {
       const guide = response.data.data.find(
         (g) => g.location_id === Number(selectedLocationId.value)
       );
-
       currentGuide.value = guide || null;
       console.log("Current guide:", currentGuide.value);
     } else {
@@ -679,7 +655,6 @@ const fetchGuideForLocation = async () => {
   }
 };
 
-// Initialize form data from current guide
 const initFormData = () => {
   if (currentGuide.value) {
     formData.location_id = currentGuide.value.location_id;
@@ -692,8 +667,6 @@ const initFormData = () => {
       greeting: currentGuide.value.local_etiquette.greeting,
       customs: [...currentGuide.value.local_etiquette.customs],
     };
-
-    // Initialize contact keys and values
     contactKeys.value = [];
     contactValues.value = [];
     Object.entries(currentGuide.value.local_contacts).forEach(([key, value]) => {
@@ -701,7 +674,6 @@ const initFormData = () => {
       contactValues.value.push(value);
     });
   } else {
-    // Reset to defaults for a new guide
     formData.location_id = selectedLocationId.value;
     formData.best_time_to_visit = "";
     formData.currency_and_budget = {
@@ -721,14 +693,11 @@ const initFormData = () => {
       greeting: "",
       customs: [""],
     };
-
-    // Reset contacts
     contactKeys.value = ["Emergency"];
     contactValues.value = [""];
   }
 };
 
-// Modal actions
 const openCreateModal = () => {
   isEditMode.value = false;
   initFormData();
@@ -746,7 +715,6 @@ const closeModal = () => {
   modalError.value = "";
 };
 
-// Toast notifications
 const showNotification = (type, title, message) => {
   const id = toastId++;
   const icons = {
@@ -755,7 +723,6 @@ const showNotification = (type, title, message) => {
     warning: "fas fa-exclamation-triangle",
     info: "fas fa-info-circle",
   };
-
   toasts.value.push({
     id,
     type,
@@ -773,14 +740,12 @@ const removeToast = (id) => {
   toasts.value = toasts.value.filter((toast) => toast.id !== id);
 };
 
-// Form array manipulation helpers
 const addListItem = (listName) => {
   formData[listName].push("");
 };
 
 const removeListItem = (listName, index) => {
   formData[listName].splice(index, 1);
-  // Ensure there's always at least one item
   if (formData[listName].length === 0) {
     formData[listName].push("");
   }
@@ -794,7 +759,6 @@ const addContact = () => {
 const removeContact = (index) => {
   contactKeys.value.splice(index, 1);
   contactValues.value.splice(index, 1);
-  // Ensure there's always at least one contact
   if (contactKeys.value.length === 0) {
     contactKeys.value.push("Emergency");
     contactValues.value.push("");
@@ -807,13 +771,11 @@ const addCustom = () => {
 
 const removeCustom = (index) => {
   formData.local_etiquette.customs.splice(index, 1);
-  // Ensure there's always at least one custom
   if (formData.local_etiquette.customs.length === 0) {
     formData.local_etiquette.customs.push("");
   }
 };
 
-// Computed properties for building the local_contacts object
 const buildContactsObject = () => {
   const contacts = {};
   contactKeys.value.forEach((key, index) => {
@@ -824,25 +786,17 @@ const buildContactsObject = () => {
   return contacts;
 };
 
-// Form submission handler
 const handleSubmit = async (event) => {
   event.preventDefault();
-
-  // Basic form validation
   if (!event.target.checkValidity()) {
     event.stopPropagation();
     event.target.classList.add("was-validated");
     return;
   }
-
   submitting.value = true;
   modalError.value = "";
-
   try {
-    // Update local_contacts from our tracked keys and values
     formData.local_contacts = buildContactsObject();
-
-    // Prepare the data object for API
     const guideData = {
       location_id: selectedLocationId.value,
       best_time_to_visit: formData.best_time_to_visit,
@@ -858,25 +812,20 @@ const handleSubmit = async (event) => {
         ),
       },
     };
-
     let response;
-
     if (isEditMode.value && currentGuide.value) {
-      // Update existing guide
       response = await axios.put(
         `/api/locations/guide/${currentGuide.value.id}`,
         guideData,
         globalStore.getAxiosHeader()
       );
     } else {
-      // Create new guide
       response = await axios.post(
         "/api/locations/guide",
         guideData,
         globalStore.getAxiosHeader()
       );
     }
-
     if (response.data.result || response.data.error === false) {
       await fetchGuideForLocation();
       closeModal();
@@ -893,12 +842,10 @@ const handleSubmit = async (event) => {
       isEditMode.value ? "Error updating guide:" : "Error creating guide:",
       err
     );
-
     if (err.response && err.response.data) {
       if (err.response.data.message) {
         modalError.value = err.response.data.message;
       } else if (err.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(err.response.data.errors).flat();
         modalError.value = errors.join("\n");
       } else {
@@ -907,7 +854,6 @@ const handleSubmit = async (event) => {
     } else {
       modalError.value = "An error occurred while saving the guide.";
     }
-
     await globalStore.onCheckError(err);
   } finally {
     submitting.value = false;

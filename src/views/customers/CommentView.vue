@@ -257,42 +257,29 @@ import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 
-// Get toast functionality from the composable
 const { toasts, showNotification, removeToast } = useToast();
 const globalStore = useGlobalStore();
-
-// Main state
 const state = reactive({
   ratings: [],
   isLoading: false,
   error: null,
 });
-
-// Data collections
 const locations = ref([]);
 const users = ref([]);
 const ratings = ref([]);
-
-// Filters
 const filters = reactive({
   location_name: "",
   status: "",
 });
-
-// UI state
 const showModal = ref(false);
 const isEditMode = ref(false);
 const currentRatingId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 const filterTimer = ref(null);
-
-// Computed for checking if filters are applied
 const isFiltered = computed(() => {
   return filters.location_name.trim() !== "" || filters.status !== "";
 });
-
-// Form data
 const newRating = reactive({
   location_id: "",
   rater_id: "",
@@ -301,7 +288,6 @@ const newRating = reactive({
   status: true,
 });
 
-// Confirmation modal state
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -310,14 +296,12 @@ const confirmationModal = reactive({
   actionParams: null,
 });
 
-// Text utilities
 const truncateText = (text, maxLength) => {
   if (!text) return "";
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + "...";
 };
 
-// Format date utility function
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -328,22 +312,17 @@ const formatDate = (dateString) => {
   });
 };
 
-// Fetch ratings from API
 const fetchRatings = async () => {
   state.isLoading = true;
   state.error = null;
-
   try {
-    // Build query parameters
     const params = new URLSearchParams();
     if (filters.location_name) params.append("location_name", filters.location_name);
     if (filters.status !== "") params.append("status", filters.status);
-
     const res = await axios.get(
       `/api/web/comment?${params.toString()}`,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result && Array.isArray(res.data.data)) {
       ratings.value = res.data.data;
     } else {
@@ -360,11 +339,9 @@ const fetchRatings = async () => {
   }
 };
 
-// Fetch locations for dropdown
 const fetchLocations = async () => {
   try {
     const res = await axios.get("/api/locations", globalStore.getAxiosHeader());
-
     if (res.data.result && Array.isArray(res.data.data)) {
       locations.value = res.data.data;
     } else {
@@ -376,11 +353,9 @@ const fetchLocations = async () => {
   }
 };
 
-// Fetch users for rater dropdown
 const fetchUsers = async () => {
   try {
     const res = await axios.get("/api/users", globalStore.getAxiosHeader());
-
     if (res.data.result && Array.isArray(res.data.data)) {
       users.value = res.data.data;
     } else {
@@ -392,9 +367,7 @@ const fetchUsers = async () => {
   }
 };
 
-// Filter handling
 const onFilterInput = () => {
-  // Debounce search input
   clearTimeout(filterTimer.value);
   filterTimer.value = setTimeout(() => {
     applyFilters();
@@ -411,11 +384,9 @@ const resetFilters = () => {
   fetchRatings();
 };
 
-// CRUD operations
 const createRating = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
-
   try {
     const ratingData = {
       location_id: newRating.location_id,
@@ -424,13 +395,11 @@ const createRating = async () => {
       comment: newRating.comment,
       status: newRating.status ? 1 : 0,
     };
-
     const res = await axios.post(
       "/api/web/comment",
       ratingData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await fetchRatings();
       closeModal();
@@ -454,7 +423,6 @@ const createRating = async () => {
     } else {
       modalMessage.value = "An error occurred while creating the rating.";
     }
-
     await globalStore.onCheckError(error);
   } finally {
     isSubmitting.value = false;
@@ -464,7 +432,6 @@ const createRating = async () => {
 const updateRating = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
-
   try {
     const ratingData = {
       location_id: newRating.location_id,
@@ -473,13 +440,11 @@ const updateRating = async () => {
       comment: newRating.comment,
       status: newRating.status ? 1 : 0,
     };
-
     const res = await axios.put(
       `/api/web/comment/update/${currentRatingId.value}`,
       ratingData,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       await fetchRatings();
       closeModal();
@@ -494,7 +459,6 @@ const updateRating = async () => {
       if (error.response.data.message) {
         modalMessage.value = error.response.data.message;
       } else if (error.response.data.errors) {
-        // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalMessage.value = errors.join("\n");
       } else {
@@ -510,24 +474,18 @@ const updateRating = async () => {
   }
 };
 
-// Toggle rating status
 const performToggleStatus = async (ratingId) => {
   try {
     const rating = ratings.value.find((r) => r.id === ratingId);
     if (!rating) return;
-
     const newStatus = !rating.status;
-
     const res = await axios.put(
       `/api/web/comment/update/status/${ratingId}`,
       { status: newStatus ? 1 : 0 },
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
-      // Update local state
       rating.status = newStatus;
-
       showNotification(
         "success",
         "Success",
@@ -551,7 +509,6 @@ const performToggleStatus = async (ratingId) => {
   }
 };
 
-// Prompt for status toggle
 const toggleRatingStatus = (ratingId, currentStatus) => {
   const action = currentStatus ? "deactivate" : "activate";
   showConfirmation(
@@ -562,14 +519,12 @@ const toggleRatingStatus = (ratingId, currentStatus) => {
   );
 };
 
-// Delete rating implementation
 const performDeleteRating = async (ratingId) => {
   try {
     const res = await axios.delete(
       `/api/web/comment/${ratingId}`,
       globalStore.getAxiosHeader()
     );
-
     if (res.data.result) {
       ratings.value = ratings.value.filter((r) => r.id !== ratingId);
       showNotification("success", "Success", "Rating deleted successfully!");
@@ -583,7 +538,6 @@ const performDeleteRating = async (ratingId) => {
   }
 };
 
-// Show confirmation for delete
 const deleteRating = (ratingId) => {
   showConfirmation(
     "Delete Rating",
@@ -593,7 +547,6 @@ const deleteRating = (ratingId) => {
   );
 };
 
-// Modal controls and form handling
 const openModal = () => {
   resetRatingForm();
   isEditMode.value = false;
@@ -602,30 +555,23 @@ const openModal = () => {
 
 const editRating = async (ratingId) => {
   resetRatingForm();
-
   try {
     state.isLoading = true;
-
-    // Find rating in existing data
     const rating = ratings.value.find((r) => r.id === ratingId);
-
     if (rating) {
       newRating.location_id = rating.location_id;
       newRating.rater_id = rating.rater_id;
       newRating.star = rating.star;
       newRating.comment = rating.comment;
       newRating.status = rating.status;
-
       currentRatingId.value = ratingId;
       isEditMode.value = true;
       showModal.value = true;
     } else {
-      // Rating not in local state, fetch from API
       const res = await axios.get(
         `/api/web/comment/${ratingId}`,
         globalStore.getAxiosHeader()
       );
-
       if (res.data.result) {
         const rating = res.data.data;
         newRating.location_id = rating.location_id;
@@ -633,7 +579,6 @@ const editRating = async (ratingId) => {
         newRating.star = rating.star;
         newRating.comment = rating.comment;
         newRating.status = rating.status;
-
         currentRatingId.value = ratingId;
         isEditMode.value = true;
         showModal.value = true;
@@ -673,10 +618,8 @@ const resetRatingForm = () => {
   currentRatingId.value = null;
 };
 
-// Form submission handler
 const handleSubmit = async (event) => {
   event.preventDefault();
-
   if (isEditMode.value) {
     await updateRating();
   } else {
@@ -684,7 +627,6 @@ const handleSubmit = async (event) => {
   }
 };
 
-// Confirmation modal controls
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
   confirmationModal.title = title;
@@ -706,10 +648,8 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
-// Initialize data on component mount
 onMounted(async () => {
   try {
-    // Load all required data
     await Promise.all([fetchRatings(), fetchLocations(), fetchUsers()]);
   } catch (error) {
     console.error("Error initializing component:", error);
@@ -718,8 +658,8 @@ onMounted(async () => {
   }
 });
 </script>
+
 <style scoped>
-/* Comment text styles */
 .comment-text {
   max-width: 250px;
   overflow: hidden;
