@@ -20,7 +20,10 @@
                   <div
                     class="position-relative px-4 px-lg-7 pt-7 pb-7 pb-sm-5 text-center text-md-start pb-lg-7 pb-md-7"
                   >
-                    <h3 class="mb-3 text-body-emphasis">ADV Dashboard</h3>
+                    <h3 class="mb-3 text-body-emphasis">
+                      Camtour Recommender <br />
+                      Dashboard
+                    </h3>
                     <!-- <p class="text-body-tertiary">
                       Outdoor adventure help to promote tourism in Cambodia. We’re
                       promoting very attractive tourist place by providing the detail

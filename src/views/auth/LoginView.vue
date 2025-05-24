@@ -69,14 +69,14 @@
         </div>
         <div class="col-auto">
           <RouterLink to="/forgot-password" class="fs-9 fw-semibold">
-            Forgot Password?
+            <!-- Forgot Password? -->
           </RouterLink>
         </div>
       </div>
 
       <div class="position-relative">
         <hr class="bg-body-secondary mt-5 mb-4" />
-        <div class="divider-content-center bg-body-emphasis">or use email</div>
+        <!-- <div class="divider-content-center bg-body-emphasis">or use email</div> -->
       </div>
       <!-- <button
         type="button"
