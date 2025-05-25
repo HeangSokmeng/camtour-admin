@@ -22,7 +22,7 @@
                   >
                     <h3 class="mb-3 text-body-emphasis">
                       Camtour Recommender <br />
-                      Dashboard
+                      <!-- Dashboard -->
                     </h3>
                     <!-- <p class="text-body-tertiary">
                       Outdoor adventure help to promote tourism in Cambodia. We’re
@@ -33,28 +33,60 @@
                     <ul class="list-unstyled mb-0 w-max-content w-md-auto">
                       <li class="d-flex align-items-center">
                         <span class="uil uil-check-circle text-success me-2"></span>
-                        <span class="text-body-tertiary fw-semibold">User site</span>
-                      </li>
-                      <li class="d-flex align-items-center">
-                        <span class="uil uil-check-circle text-success me-2"></span>
                         <span class="text-body-tertiary fw-semibold"
                           >Admin dashboard</span
                         >
                       </li>
                       <li class="d-flex align-items-center">
                         <span class="uil uil-check-circle text-success me-2"></span>
-                        <span class="text-body-tertiary fw-semibold">Web API</span>
+                        <span class="text-body-tertiary fw-semibold"
+                          >User Managements</span
+                        >
+                      </li>
+
+                      <li class="d-flex align-items-center">
+                        <span class="uil uil-check-circle text-success me-2"></span>
+                        <span class="text-body-tertiary fw-semibold"
+                          >Product Managements</span
+                        >
+                      </li>
+                      <li class="d-flex align-items-center">
+                        <span class="uil uil-check-circle text-success me-2"></span>
+                        <span class="text-body-tertiary fw-semibold"
+                          >Location Managements</span
+                        >
+                      </li>
+                      <img
+                        class="auth-title-box-img"
+                        src="../../assets/img/png/login.png"
+                        alt="illustration"
+                      />
+                      <li>
+                        <div
+                          class="position-relative z-n1 mb-6 d-none d-md-block text-center mt-md-15"
+                        >
+                          <img
+                            class="auth-title-box-img"
+                            src="../../assets/img/png/login_auth.png"
+                            alt="illustration"
+                          />
+
+                          hahahahaha
+                        </div>
                       </li>
                     </ul>
                   </div>
                   <div
                     class="position-relative z-n1 mb-6 d-none d-md-block text-center mt-md-15"
+                    style="background-image: url('/cr_assets/png/login_auth.png')"
                   >
-                    <img
+                    <!-- <img
                       class="auth-title-box-img d-dark-none"
                       src="/cr_assets/png/login_auth.png"
                       alt="illustration"
-                    />
+                    /> -->
+
+                    hahahahaha
                   </div>
                 </div>
                 <slot></slot>

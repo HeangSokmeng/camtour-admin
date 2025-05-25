@@ -54,24 +54,21 @@
           </button>
         </div>
       </div>
-      <div class="row flex-between-center mb-7">
-        <div class="col-auto">
-          <div class="form-check mb-0">
-            <input
-              class="form-check-input"
-              id="basic-checkbox"
-              type="checkbox"
-              checked="checked"
-              v-model="state.is_remember"
-            />
-            <label class="form-check-label mb-0" for="basic-checkbox">Remember me</label>
-          </div>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="form-check mb-0">
+          <input
+            class="form-check-input"
+            id="basic-checkbox"
+            type="checkbox"
+            checked="checked"
+            v-model="state.is_remember"
+          />
+          <label class="form-check-label mb-0" for="basic-checkbox">Remember me</label>
         </div>
-        <div class="col-auto">
-          <RouterLink to="/forgot-password" class="fs-9 fw-semibold">
-            <!-- Forgot Password? -->
-          </RouterLink>
-        </div>
+
+        <RouterLink to="/forgot-password" class="fs-9 fw-semibold">
+          Forgot Password?
+        </RouterLink>
       </div>
 
       <div class="position-relative">

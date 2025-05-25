@@ -1,6 +1,6 @@
 <template>
   <div class="col mx-auto">
-    <div class="auth-form-box">
+    <div class="auth-form-box" style="height: 500px">
       <div class="text-center">
         <a class="d-flex flex-center text-decoration-none mb-4" href="#">
           <div class="d-flex align-items-center fw-bolder fs-3 d-inline-block">
