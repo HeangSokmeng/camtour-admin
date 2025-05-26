@@ -29,6 +29,8 @@ const ForbiddenView = () => import('@/views/error/ForbiddenView.vue')
 const CustomerCommment = () => import('@/views/customers/CommentView.vue')
 const ProductOrder = () => import('@/views/products/ProductOrderView.vue')
 const LocationGuide = () => import('@/views/locations/LocationGuideView.vue')
+const SettingProfile = () => import('@/views/settings/ProfileSettingView.vue')
+const UserRole = () => import('@/views/users/UserRoleView.vue')
 
 // Role constants
 const ROLES = {
@@ -68,8 +70,7 @@ const router = createRouter({
             component: ForbiddenView,
             meta: {
                 title: 'Admin Camtour . Access Forbidden',
-                layout: 'auth',
-                auth: true
+                 layout: null,
             }
         },
         {
@@ -81,6 +82,16 @@ const router = createRouter({
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN] // Only admin and system admin
+            }
+        },{
+            path: '/user-role',
+            name: 'user role',
+            component: UserRole,
+            meta: {
+                title: 'Admin Camtour . Role Management',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN] // Only admin and system admin
             }
         },
         {
@@ -117,6 +128,16 @@ const router = createRouter({
             path: '/category',
             name: 'category',
             component: CategoryView,
+            meta: {
+                title: 'Admin Camtour . Categories',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        }, {
+            path: '/setting',
+            name: 'setting',
+            component: SettingProfile,
             meta: {
                 title: 'Admin Camtour . Categories',
                 layout: 'board',

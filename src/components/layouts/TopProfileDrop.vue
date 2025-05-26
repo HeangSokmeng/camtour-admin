@@ -50,7 +50,7 @@
         <div class="overflow-auto scrollbar">
           <hr />
           <ul class="nav d-flex flex-column mb-0 pb-1">
-            <li class="nav-item">
+            <!-- <li class="nav-item">
               <a
                 href="#"
                 class="nav-link px-3 d-block"
@@ -59,7 +59,7 @@
                 <span class="me-2 text-body align-bottom" data-feather="user"></span>
                 <span>Edit Profile</span>
               </a>
-            </li>
+            </li> -->
             <li class="nav-item">
               <a
                 href="#"
@@ -70,10 +70,16 @@
                 <span>Change Password</span>
               </a>
             </li>
-            <li class="nav-item">
+            <!-- <li class="nav-item">
               <RouterLink to="/" class="nav-link px-3 d-block">
                 <span class="me-2 text-body align-bottom" data-feather="tablet"></span>
                 <span>Devices</span>
+              </RouterLink>
+            </li> -->
+            <li class="nav-item">
+              <RouterLink to="/setting" class="nav-link px-3 d-block">
+                <span class="me-2 text-body align-bottom" data-feather="tablet"></span>
+                <span>Setting</span>
               </RouterLink>
             </li>
             <li class="nav-item">

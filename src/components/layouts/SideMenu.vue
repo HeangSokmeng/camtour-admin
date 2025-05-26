@@ -427,7 +427,7 @@
             </div>
             <!-- Role Management - Only for system admin -->
             <div class="nav-item-wrapper" v-if="globalStore.isSystemAdmin">
-              <RouterLink to="/" custom v-slot="{ navigate, isActive }">
+              <RouterLink to="/user-role" custom v-slot="{ navigate, isActive }">
                 <a
                   class="nav-link dropdown-indicator label-1"
                   :class="{ active: isActive || route.path === '/' }"

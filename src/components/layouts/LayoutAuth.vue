@@ -71,7 +71,7 @@
                             alt="illustration"
                           />
 
-                          hahahahaha
+                          <!-- hahahahaha -->
                         </div>
                       </li>
                     </ul>

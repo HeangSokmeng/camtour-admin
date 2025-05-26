@@ -27,8 +27,8 @@
 
 <script setup>
 import { useGlobalStore } from "@/stores/global";
-import { useRouter, useRoute } from "vue-router";
 import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 const globalStore = useGlobalStore();
 const router = useRouter();

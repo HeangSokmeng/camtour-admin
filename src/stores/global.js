@@ -7,8 +7,10 @@ export const useGlobalStore = defineStore('global', {
         token: '',
         is_remember: true,
         mdl_logout: null,
-        ldi_page: false
+        ldi_page: false,
+        roleName: null
     }),
+    persist: true,
     getters: {
         // Use profile instead of user for role checking
         isSystemAdmin: (state) => state.profile?.role_id === 1,
