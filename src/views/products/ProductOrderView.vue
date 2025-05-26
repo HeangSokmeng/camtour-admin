@@ -168,7 +168,7 @@
       </div>
       <div v-else-if="currentOrder" class="modal-body">
         <!-- Order Info -->
-        <div class="order-header mb-4">
+        <div class="order-header mb-4" id="printable-order-content">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">{{ currentOrder.order_no }}</h5>
             <span class="badge" :class="getStatusClass(currentOrder.status)">
@@ -199,68 +199,73 @@
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Order Items -->
-        <h6 class="mb-3">Order Items</h6>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered">
-            <thead class="table-light">
-              <tr>
-                <th>#</th>
-                <th>Product</th>
-                <th>Variant</th>
-                <th>Price</th>
-                <th>Qty</th>
-                <th class="text-end">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!currentOrder.items || currentOrder.items.length === 0">
-                <td colspan="6" class="text-center">No items in this order</td>
-              </tr>
-              <tr v-else v-for="(item, index) in currentOrder.items" :key="index">
-                <td>{{ index + 1 }}</td>
-                <td>{{ item.product_name }}</td>
-                <td>
-                  <div v-if="item.color_name" class="d-flex align-items-center">
-                    <span
-                      v-if="item.color_code"
-                      class="color-sample me-2"
-                      :style="{ backgroundColor: item.color_code }"
-                    ></span>
-                    {{ item.color_name }}
-                    <span v-if="item.size" class="ms-1">({{ item.size }})</span>
-                  </div>
-                  <span v-else>-</span>
-                </td>
-                <td>{{ currentOrder.currency }} {{ item.price }}</td>
-                <td>{{ item.qty }}</td>
-                <td class="text-end">{{ currentOrder.currency }} {{ item.subtotal }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
-                <td class="text-end">{{ calculateSubtotal() }}</td>
-              </tr>
-              <tr>
-                <td colspan="5" class="text-end"><strong>Discount:</strong></td>
-                <td class="text-end">
-                  -{{ currentOrder.currency }} {{ currentOrder.discount_amount }}
-                </td>
-              </tr>
-              <tr>
-                <td colspan="5" class="text-end"><strong>Total:</strong></td>
-                <td class="text-end fw-bold">
-                  {{ currentOrder.currency }} {{ currentOrder.total_amount }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+          <!-- Order Items -->
+          <h6 class="mb-3 mt-4">Order Items</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Product</th>
+                  <th>Variant</th>
+                  <th>Price</th>
+                  <th>Qty</th>
+                  <th class="text-end">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!currentOrder.items || currentOrder.items.length === 0">
+                  <td colspan="6" class="text-center">No items in this order</td>
+                </tr>
+                <tr v-else v-for="(item, index) in currentOrder.items" :key="index">
+                  <td>{{ index + 1 }}</td>
+                  <td>{{ item.product_name }}</td>
+                  <td>
+                    <div v-if="item.color_name" class="d-flex align-items-center">
+                      <span
+                        v-if="item.color_code"
+                        class="color-sample me-2"
+                        :style="{ backgroundColor: item.color_code }"
+                      ></span>
+                      {{ item.color_name }}
+                      <span v-if="item.size" class="ms-1">({{ item.size }})</span>
+                    </div>
+                    <span v-else>-</span>
+                  </td>
+                  <td>{{ currentOrder.currency }} {{ item.price }}</td>
+                  <td>{{ item.qty }}</td>
+                  <td class="text-end">
+                    {{ currentOrder.currency }} {{ item.subtotal }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
+                  <td class="text-end">{{ calculateSubtotal() }}</td>
+                </tr>
+                <tr>
+                  <td colspan="5" class="text-end"><strong>Discount:</strong></td>
+                  <td class="text-end">
+                    -{{ currentOrder.currency }} {{ currentOrder.discount_amount }}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="5" class="text-end"><strong>Total:</strong></td>
+                  <td class="text-end fw-bold">
+                    {{ currentOrder.currency }} {{ currentOrder.total_amount }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
+        <button class="btn btn-success me-2" @click="printOrder">
+          <span class="fas fa-print me-1"></span>Print
+        </button>
         <button class="btn btn-secondary" @click="closeOrderModal">Close</button>
       </div>
     </div>
@@ -330,6 +335,7 @@ import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
+
 const { toasts, showNotification, removeToast } = useToast();
 const state = reactive({
   users: [],
@@ -535,6 +541,242 @@ const calculateSubtotal = () => {
   }, 0);
   return `${currentOrder.value.currency} ${subtotal.toFixed(2)}`;
 };
+
+// Print function
+const printOrder = () => {
+  if (!currentOrder.value) return;
+
+  // Create a new window for printing
+  const printWindow = window.open("", "_blank");
+
+  // Get the current order content
+  const orderContent = document.getElementById("printable-order-content");
+  if (!orderContent) return;
+
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Order ${currentOrder.value.order_no}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          color: #333;
+        }
+        .order-header {
+          border-bottom: 2px solid #ddd;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+        }
+        .order-title {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+        }
+        .order-title h1 {
+          margin: 0;
+          color: #2c3e50;
+        }
+        .status-badge {
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-weight: bold;
+          text-transform: uppercase;
+          font-size: 12px;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-processing { background-color: #d1ecf1; color: #0c5460; }
+        .status-shipped { background-color: #cce5ff; color: #004085; }
+        .status-delivered, .status-completed { background-color: #d4edda; color: #155724; }
+        .status-cancelled { background-color: #f8d7da; color: #721c24; }
+        .customer-info {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          margin-bottom: 30px;
+        }
+        .info-section p {
+          margin: 5px 0;
+        }
+        .info-section strong {
+          color: #2c3e50;
+        }
+        .items-section h2 {
+          color: #2c3e50;
+          border-bottom: 1px solid #ddd;
+          padding-bottom: 10px;
+          margin-bottom: 20px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        th, td {
+          padding: 12px 8px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+        }
+        th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+          color: #2c3e50;
+        }
+        .text-end {
+          text-align: right;
+        }
+        .color-sample {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 1px solid #ddd;
+          display: inline-block;
+          margin-right: 8px;
+          vertical-align: middle;
+        }
+        .total-row {
+          font-weight: bold;
+          background-color: #f8f9fa;
+        }
+        .print-date {
+          text-align: center;
+          color: #666;
+          font-size: 12px;
+          margin-top: 30px;
+          border-top: 1px solid #ddd;
+          padding-top: 15px;
+        }
+        @media print {
+          body { margin: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="order-header">
+        <div class="order-title">
+          <h1>Order ${currentOrder.value.order_no}</h1>
+          <span class="status-badge status-${currentOrder.value.status}">
+            ${capitalizeFirstLetter(currentOrder.value.status)}
+          </span>
+        </div>
+        
+        <div class="customer-info">
+          <div class="info-section">
+            <p><strong>Customer:</strong> ${currentOrder.value.first_name} ${
+    currentOrder.value.last_name
+  }</p>
+            <p><strong>Email:</strong> ${currentOrder.value.email}</p>
+            <p><strong>Phone:</strong> ${currentOrder.value.phone}</p>
+          </div>
+          <div class="info-section">
+            <p><strong>Date:</strong> ${formatDate(currentOrder.value.created_at)}</p>
+            <p><strong>Payment Method:</strong> ${formatPaymentMethod(
+              currentOrder.value.payment_method
+            )}</p>
+            ${
+              currentOrder.value.notes
+                ? `<p><strong>Notes:</strong> ${currentOrder.value.notes}</p>`
+                : ""
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="items-section">
+        <h2>Order Items</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Variant</th>
+              <th>Price</th>
+              <th>Qty</th>
+              <th class="text-end">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              currentOrder.value.items && currentOrder.value.items.length > 0
+                ? currentOrder.value.items
+                    .map(
+                      (item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${item.product_name}</td>
+                  <td>
+                    ${
+                      item.color_name
+                        ? `
+                      ${
+                        item.color_code
+                          ? `<span class="color-sample" style="background-color: ${item.color_code}"></span>`
+                          : ""
+                      }
+                      ${item.color_name}${item.size ? ` (${item.size})` : ""}
+                    `
+                        : "-"
+                    }
+                  </td>
+                  <td>${currentOrder.value.currency} ${item.price}</td>
+                  <td>${item.qty}</td>
+                  <td class="text-end">${currentOrder.value.currency} ${
+                        item.subtotal
+                      }</td>
+                </tr>
+              `
+                    )
+                    .join("")
+                : '<tr><td colspan="6" style="text-align: center;">No items in this order</td></tr>'
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
+              <td class="text-end">${calculateSubtotal()}</td>
+            </tr>
+            <tr>
+              <td colspan="5" class="text-end"><strong>Discount:</strong></td>
+              <td class="text-end">-${currentOrder.value.currency} ${
+    currentOrder.value.discount_amount
+  }</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="5" class="text-end"><strong>Total:</strong></td>
+              <td class="text-end"><strong>${currentOrder.value.currency} ${
+    currentOrder.value.total_amount
+  }</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="print-date">
+        Printed on ${new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </div>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+
+  // Wait for content to load, then print
+  printWindow.onload = () => {
+    printWindow.print();
+    printWindow.close();
+  };
+};
+
 onMounted(() => {
   fetchOrders();
 });
@@ -706,144 +948,16 @@ onMounted(() => {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(30px);
-  justify-content: center;
-  z-index: 1050;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-}
-
-.order-modal {
-  max-height: 90vh;
-  max-width: 800px;
-}
-
-.status-modal {
-  max-width: 400px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  max-height: calc(90vh - 130px);
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.close-btn:hover {
-  opacity: 1;
-}
-
-/* User orders styles */
-.user-info {
-  border-left: 4px solid #4e73df;
-}
-
-/* Color sample */
-.color-sample {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1px solid #dee2e6;
-}
-
-/* Toast Styles */
-.toast-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
-  max-width: 350px;
-}
-
-.toast-notification {
-  display: flex;
-  background: white;
-  border-radius: 6px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-  margin-bottom: 15px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.toast-icon {
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-}
-
-.toast-notification.success .toast-icon {
-  background: #d4edda;
-  color: #155724;
-}
-
-.toast-notification.error .toast-icon {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.toast-content {
-  padding: 15px;
-  flex: 1;
-}
-
-.toast-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  font-size: 20px;
-  padding: 10px;
-  cursor: pointer;
-  opacity: 0.6;
-}
-
-.toast-close:hover {
-  opacity: 1;
-}
-
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
+/* Print-specific styles */
+@media print {
+  .modal-overlay,
+  .modal-content,
+  .modal-header,
+  .modal-footer,
+  .toast-container {
+    display: none !important;
+  }
 }
 </style>

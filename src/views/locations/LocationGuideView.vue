@@ -81,21 +81,22 @@
                   <span class="fas fa-money-bill-wave me-2 text-primary"></span>
                   Currency & Budget
                 </h5>
-                <ul class="list-unstyled">
-                  <li>
-                    <strong>Currency:</strong>
-                    {{ currentGuide.currency_and_budget.currency }}
-                  </li>
-                  <li>
-                    <strong>Notes:</strong> {{ currentGuide.currency_and_budget.notes }}
-                  </li>
-                  <li>
-                    <strong>ATMs:</strong> {{ currentGuide.currency_and_budget.ATMs }}
-                  </li>
-                  <li>
-                    <strong>Budget:</strong> {{ currentGuide.currency_and_budget.budget }}
-                  </li>
-                </ul>
+                <div v-if="parsedCurrencyBudget">
+                  <ul class="list-unstyled">
+                    <li v-if="parsedCurrencyBudget.currency">
+                      <strong>Currency:</strong> {{ parsedCurrencyBudget.currency }}
+                    </li>
+                    <li v-if="parsedCurrencyBudget.notes">
+                      <strong>Notes:</strong> {{ parsedCurrencyBudget.notes }}
+                    </li>
+                    <li v-if="parsedCurrencyBudget.ATMs">
+                      <strong>ATMs:</strong> {{ parsedCurrencyBudget.ATMs }}
+                    </li>
+                    <li v-if="parsedCurrencyBudget.budget">
+                      <strong>Budget:</strong> {{ parsedCurrencyBudget.budget }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -106,19 +107,21 @@
                   <span class="fas fa-shuttle-van me-2 text-primary"></span>
                   Local Transportation
                 </h5>
-                <ul class="list-unstyled">
-                  <li>
-                    <strong>Short Distances:</strong>
-                    {{ currentGuide.local_transportation.shortDistances }}
-                  </li>
-                  <li>
-                    <strong>Long Distances:</strong>
-                    {{ currentGuide.local_transportation.longDistances }}
-                  </li>
-                  <li>
-                    <strong>Tip:</strong> {{ currentGuide.local_transportation.tip }}
-                  </li>
-                </ul>
+                <div v-if="parsedTransportation">
+                  <ul class="list-unstyled">
+                    <li v-if="parsedTransportation.shortDistances">
+                      <strong>Short Distances:</strong>
+                      {{ parsedTransportation.shortDistances }}
+                    </li>
+                    <li v-if="parsedTransportation.longDistances">
+                      <strong>Long Distances:</strong>
+                      {{ parsedTransportation.longDistances }}
+                    </li>
+                    <li v-if="parsedTransportation.tip">
+                      <strong>Tip:</strong> {{ parsedTransportation.tip }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -129,11 +132,13 @@
                   <span class="fas fa-phone-alt me-2 text-primary"></span>
                   Local Contacts
                 </h5>
-                <ul class="list-unstyled">
-                  <li v-for="(contact, key) in currentGuide.local_contacts" :key="key">
-                    <strong>{{ key }}:</strong> {{ contact }}
-                  </li>
-                </ul>
+                <div v-if="parsedContacts">
+                  <ul class="list-unstyled">
+                    <li v-for="(contact, key) in parsedContacts" :key="key">
+                      <strong>{{ key }}:</strong> {{ contact }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -144,15 +149,17 @@
                   <span class="fas fa-suitcase me-2 text-primary"></span>
                   What to Pack
                 </h5>
-                <ul class="list-group list-group-flush">
-                  <li
-                    v-for="(item, index) in currentGuide.what_to_pack"
-                    :key="index"
-                    class="list-group-item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
+                <div v-if="parsedWhatToPack && parsedWhatToPack.length">
+                  <ul class="list-group list-group-flush">
+                    <li
+                      v-for="(item, index) in parsedWhatToPack"
+                      :key="index"
+                      class="list-group-item"
+                    >
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -163,15 +170,17 @@
                   <span class="fas fa-shopping-bag me-2 text-primary"></span>
                   What's on Sale
                 </h5>
-                <ul class="list-group list-group-flush">
-                  <li
-                    v-for="(item, index) in currentGuide.what_on_sale"
-                    :key="index"
-                    class="list-group-item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
+                <div v-if="parsedWhatOnSale && parsedWhatOnSale.length">
+                  <ul class="list-group list-group-flush">
+                    <li
+                      v-for="(item, index) in parsedWhatOnSale"
+                      :key="index"
+                      class="list-group-item"
+                    >
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
@@ -182,19 +191,23 @@
                   <span class="fas fa-handshake me-2 text-primary"></span>
                   Local Etiquette
                 </h5>
-                <p>
-                  <strong>Greeting:</strong> {{ currentGuide.local_etiquette.greeting }}
-                </p>
-                <p><strong>Customs:</strong></p>
-                <ul class="list-group list-group-flush">
-                  <li
-                    v-for="(custom, index) in currentGuide.local_etiquette.customs"
-                    :key="index"
-                    class="list-group-item"
-                  >
-                    {{ custom }}
-                  </li>
-                </ul>
+                <div v-if="parsedEtiquette">
+                  <p v-if="parsedEtiquette.greeting">
+                    <strong>Greeting:</strong> {{ parsedEtiquette.greeting }}
+                  </p>
+                  <div v-if="parsedEtiquette.customs && parsedEtiquette.customs.length">
+                    <p><strong>Customs:</strong></p>
+                    <ul class="list-group list-group-flush">
+                      <li
+                        v-for="(custom, index) in parsedEtiquette.customs"
+                        :key="index"
+                        class="list-group-item"
+                      >
+                        {{ custom }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -207,6 +220,7 @@
       </div>
     </div>
 
+    <!-- Empty States -->
     <div v-else-if="selectedLocationId && !loadingGuide" class="text-center py-5">
       <div class="empty-state">
         <div class="icon-container mb-3">
@@ -233,8 +247,8 @@
     </div>
 
     <!-- Travel Guide Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content guide-form">
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content guide-form" @click.stop>
         <h4>{{ isEditMode ? "Edit" : "Create" }} Travel Guide</h4>
         <div v-if="modalError" class="alert alert-danger">
           {{ modalError }}
@@ -343,7 +357,7 @@
             <div class="col-md-12 mb-3">
               <h5 class="form-section-title">Local Contacts</h5>
               <div
-                v-for="(contact, key, index) in formData.local_contacts"
+                v-for="(contact, index) in contactEntries"
                 :key="index"
                 class="row g-3 mb-2"
               >
@@ -352,7 +366,7 @@
                     >Contact Type</label
                   >
                   <input
-                    v-model="contactKeys[index]"
+                    v-model="contact.key"
                     type="text"
                     class="form-control"
                     :id="'contactName' + index"
@@ -364,7 +378,7 @@
                     >Contact Number</label
                   >
                   <input
-                    v-model="contactValues[index]"
+                    v-model="contact.value"
                     type="text"
                     class="form-control"
                     :id="'contactValue' + index"
@@ -553,8 +567,11 @@
 <script setup>
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
-import { reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
+
 const globalStore = useGlobalStore();
+
+// Reactive data
 const loading = ref(false);
 const loadingGuide = ref(false);
 const error = ref(null);
@@ -568,6 +585,7 @@ const submitting = ref(false);
 const toasts = ref([]);
 let toastId = 0;
 
+// Form data
 const formData = reactive({
   location_id: "",
   best_time_to_visit: "",
@@ -590,8 +608,54 @@ const formData = reactive({
     customs: [],
   },
 });
-const contactKeys = ref([]);
-const contactValues = ref([]);
+
+// Contact entries for form handling
+const contactEntries = ref([]);
+
+// Computed properties for parsing JSON data
+const parsedContacts = computed(() => {
+  if (!currentGuide.value?.local_contacts) return {};
+  return parseJsonField(currentGuide.value.local_contacts);
+});
+
+const parsedCurrencyBudget = computed(() => {
+  if (!currentGuide.value?.currency_and_budget) return {};
+  return parseJsonField(currentGuide.value.currency_and_budget);
+});
+
+const parsedTransportation = computed(() => {
+  if (!currentGuide.value?.local_transportation) return {};
+  return parseJsonField(currentGuide.value.local_transportation);
+});
+
+const parsedWhatToPack = computed(() => {
+  if (!currentGuide.value?.what_to_pack) return [];
+  return parseJsonField(currentGuide.value.what_to_pack);
+});
+
+const parsedWhatOnSale = computed(() => {
+  if (!currentGuide.value?.what_on_sale) return [];
+  return parseJsonField(currentGuide.value.what_on_sale);
+});
+
+const parsedEtiquette = computed(() => {
+  if (!currentGuide.value?.local_etiquette) return {};
+  return parseJsonField(currentGuide.value.local_etiquette);
+});
+
+// Utility functions
+const parseJsonField = (field) => {
+  if (typeof field === "string") {
+    try {
+      return JSON.parse(field);
+    } catch (e) {
+      console.warn("Failed to parse JSON field:", field);
+      return {};
+    }
+  }
+  return field || {};
+};
+
 const getLocationName = (locationId) => {
   const location = locations.value.find((loc) => loc.id === locationId);
   return location ? location.name : "Unknown Location";
@@ -599,15 +663,21 @@ const getLocationName = (locationId) => {
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "N/A";
-  const date = new Date(dateStr);
-  return date.toLocaleString();
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleString();
+  } catch (e) {
+    return "Invalid Date";
+  }
 };
 
+// API functions
 const fetchLocations = async () => {
   loading.value = true;
   error.value = null;
   try {
     const response = await axios.get("/api/locations", globalStore.getAxiosHeader());
+
     if (response.data.result && Array.isArray(response.data.data)) {
       locations.value = response.data.data;
       console.log("Fetched locations:", locations.value);
@@ -629,15 +699,19 @@ const fetchGuideForLocation = async () => {
     currentGuide.value = null;
     return;
   }
+
   loadingGuide.value = true;
   error.value = null;
+
   try {
     const response = await axios.get(
       "/api/locations/guide/get",
       globalStore.getAxiosHeader()
     );
+
     if (response.data.error === false && Array.isArray(response.data.data)) {
-      const guide = response.data.data.find(
+      const guides = response.data.data;
+      const guide = guides.find(
         (g) => g.location_id === Number(selectedLocationId.value)
       );
       currentGuide.value = guide || null;
@@ -655,25 +729,30 @@ const fetchGuideForLocation = async () => {
   }
 };
 
+// Form handling functions
 const initFormData = () => {
   if (currentGuide.value) {
+    // Edit mode - populate with existing data
     formData.location_id = currentGuide.value.location_id;
     formData.best_time_to_visit = currentGuide.value.best_time_to_visit;
-    formData.currency_and_budget = { ...currentGuide.value.currency_and_budget };
-    formData.local_transportation = { ...currentGuide.value.local_transportation };
-    formData.what_to_pack = [...currentGuide.value.what_to_pack];
-    formData.what_on_sale = [...currentGuide.value.what_on_sale];
+
+    // Parse and assign JSON fields
+    formData.currency_and_budget = { ...parsedCurrencyBudget.value };
+    formData.local_transportation = { ...parsedTransportation.value };
+    formData.what_to_pack = [...parsedWhatToPack.value];
+    formData.what_on_sale = [...parsedWhatOnSale.value];
     formData.local_etiquette = {
-      greeting: currentGuide.value.local_etiquette.greeting,
-      customs: [...currentGuide.value.local_etiquette.customs],
+      greeting: parsedEtiquette.value.greeting || "",
+      customs: [...(parsedEtiquette.value.customs || [])],
     };
-    contactKeys.value = [];
-    contactValues.value = [];
-    Object.entries(currentGuide.value.local_contacts).forEach(([key, value]) => {
-      contactKeys.value.push(key);
-      contactValues.value.push(value);
+
+    // Setup contacts
+    contactEntries.value = [];
+    Object.entries(parsedContacts.value).forEach(([key, value]) => {
+      contactEntries.value.push({ key, value });
     });
   } else {
+    // Create mode - setup empty form
     formData.location_id = selectedLocationId.value;
     formData.best_time_to_visit = "";
     formData.currency_and_budget = {
@@ -693,11 +772,21 @@ const initFormData = () => {
       greeting: "",
       customs: [""],
     };
-    contactKeys.value = ["Emergency"];
-    contactValues.value = [""];
+    contactEntries.value = [{ key: "Emergency", value: "" }];
   }
 };
 
+const buildContactsObject = () => {
+  const contacts = {};
+  contactEntries.value.forEach((entry) => {
+    if (entry.key && entry.key.trim()) {
+      contacts[entry.key] = entry.value || "";
+    }
+  });
+  return contacts;
+};
+
+// Modal functions
 const openCreateModal = () => {
   isEditMode.value = false;
   initFormData();
@@ -715,6 +804,41 @@ const closeModal = () => {
   modalError.value = "";
 };
 
+// List manipulation functions
+const addListItem = (listName) => {
+  formData[listName].push("");
+};
+
+const removeListItem = (listName, index) => {
+  formData[listName].splice(index, 1);
+  if (formData[listName].length === 0) {
+    formData[listName].push("");
+  }
+};
+
+const addContact = () => {
+  contactEntries.value.push({ key: "", value: "" });
+};
+
+const removeContact = (index) => {
+  contactEntries.value.splice(index, 1);
+  if (contactEntries.value.length === 0) {
+    contactEntries.value.push({ key: "Emergency", value: "" });
+  }
+};
+
+const addCustom = () => {
+  formData.local_etiquette.customs.push("");
+};
+
+const removeCustom = (index) => {
+  formData.local_etiquette.customs.splice(index, 1);
+  if (formData.local_etiquette.customs.length === 0) {
+    formData.local_etiquette.customs.push("");
+  }
+};
+
+// Toast notification functions
 const showNotification = (type, title, message) => {
   const id = toastId++;
   const icons = {
@@ -723,6 +847,7 @@ const showNotification = (type, title, message) => {
     warning: "fas fa-exclamation-triangle",
     info: "fas fa-info-circle",
   };
+
   toasts.value.push({
     id,
     type,
@@ -740,67 +865,24 @@ const removeToast = (id) => {
   toasts.value = toasts.value.filter((toast) => toast.id !== id);
 };
 
-const addListItem = (listName) => {
-  formData[listName].push("");
-};
-
-const removeListItem = (listName, index) => {
-  formData[listName].splice(index, 1);
-  if (formData[listName].length === 0) {
-    formData[listName].push("");
-  }
-};
-
-const addContact = () => {
-  contactKeys.value.push("");
-  contactValues.value.push("");
-};
-
-const removeContact = (index) => {
-  contactKeys.value.splice(index, 1);
-  contactValues.value.splice(index, 1);
-  if (contactKeys.value.length === 0) {
-    contactKeys.value.push("Emergency");
-    contactValues.value.push("");
-  }
-};
-
-const addCustom = () => {
-  formData.local_etiquette.customs.push("");
-};
-
-const removeCustom = (index) => {
-  formData.local_etiquette.customs.splice(index, 1);
-  if (formData.local_etiquette.customs.length === 0) {
-    formData.local_etiquette.customs.push("");
-  }
-};
-
-const buildContactsObject = () => {
-  const contacts = {};
-  contactKeys.value.forEach((key, index) => {
-    if (key && key.trim()) {
-      contacts[key] = contactValues.value[index] || "";
-    }
-  });
-  return contacts;
-};
-
+// Form submission
 const handleSubmit = async (event) => {
   event.preventDefault();
+
   if (!event.target.checkValidity()) {
     event.stopPropagation();
     event.target.classList.add("was-validated");
     return;
   }
+
   submitting.value = true;
   modalError.value = "";
+
   try {
-    formData.local_contacts = buildContactsObject();
     const guideData = {
       location_id: selectedLocationId.value,
       best_time_to_visit: formData.best_time_to_visit,
-      local_contacts: formData.local_contacts,
+      local_contacts: buildContactsObject(),
       currency_and_budget: formData.currency_and_budget,
       local_transportation: formData.local_transportation,
       what_to_pack: formData.what_to_pack.filter((item) => item.trim() !== ""),
@@ -812,6 +894,7 @@ const handleSubmit = async (event) => {
         ),
       },
     };
+
     let response;
     if (isEditMode.value && currentGuide.value) {
       response = await axios.put(
@@ -826,6 +909,7 @@ const handleSubmit = async (event) => {
         globalStore.getAxiosHeader()
       );
     }
+
     if (response.data.result || response.data.error === false) {
       await fetchGuideForLocation();
       closeModal();
@@ -842,6 +926,7 @@ const handleSubmit = async (event) => {
       isEditMode.value ? "Error updating guide:" : "Error creating guide:",
       err
     );
+
     if (err.response && err.response.data) {
       if (err.response.data.message) {
         modalError.value = err.response.data.message;
@@ -854,11 +939,17 @@ const handleSubmit = async (event) => {
     } else {
       modalError.value = "An error occurred while saving the guide.";
     }
+
     await globalStore.onCheckError(err);
   } finally {
     submitting.value = false;
   }
 };
+
+// Initialize component
+onMounted(() => {
+  fetchLocations();
+});
 </script>
 
 <style scoped>
@@ -884,12 +975,14 @@ const handleSubmit = async (event) => {
 }
 
 .modal-content {
+  top: 40px;
   background-color: white;
   border-radius: 8px;
   padding: 20px;
   width: 90%;
-  max-width: 600px;
+  max-width: 1000px;
   max-height: 90vh;
+  left: 100px;
   overflow-y: auto;
 }
 
@@ -978,6 +1071,34 @@ const handleSubmit = async (event) => {
 .table th {
   background-color: #f8f9fa;
   font-weight: 500;
+}
+
+.guide-section {
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  height: 100%;
+}
+
+.section-title {
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+.form-section-title {
+  color: #495057;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.empty-state {
+  color: #6c757d;
+}
+
+.icon-container {
+  margin-bottom: 1rem;
 }
 
 /* Toast styles */
