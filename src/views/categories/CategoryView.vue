@@ -36,7 +36,7 @@
               <th class="align-middle ps-0">#</th>
               <th class="align-middle">Image</th>
               <th class="align-middle">Category Name</th>
-              <th class="align-middle">Description</th>
+              <th class="align-middle">Category Name Km</th>
               <th class="align-middle text-end">Created At</th>
               <th class="align-middle text-end">Action</th>
             </tr>
@@ -56,7 +56,7 @@
                 />
               </td>
               <td class="align-middle">{{ category.name }}</td>
-              <td class="align-middle">{{ category.description }}</td>
+              <td class="align-middle">{{ category.name_km }}</td>
               <td class="align-middle text-end">{{ category.created_at }}</td>
               <td class="align-middle text-end">
                 <button
@@ -97,6 +97,17 @@
           <div class="invalid-feedback">Category name is required</div>
         </div>
         <div class="col-md-6">
+          <label class="form-label" for="categoryName">Category name km</label>
+          <input
+            v-model="newCategory.name_km"
+            class="form-control"
+            id="categoryName"
+            type="text"
+            required
+          />
+          <div class="invalid-feedback">Category name km is required</div>
+        </div>
+        <div class="col-md-12">
           <label class="form-label" for="categoryImage">Image</label>
           <input
             class="form-control"
@@ -147,6 +158,7 @@ const isSubmitting = ref(false);
 
 const newCategory = reactive({
   name: "",
+  name_km: "",
   description: "",
   image: null,
 });
@@ -178,6 +190,7 @@ const createCategory = async () => {
     modalMessage.value = "";
     const formData = new FormData();
     formData.append("name", newCategory.name);
+    formData.append("name_km", newCategory.name_km);
     formData.append("description", newCategory.description);
     if (newCategory.image) {
       formData.append("image", newCategory.image);
@@ -210,6 +223,7 @@ const updateCategory = async () => {
     modalMessage.value = "";
     const formData = new FormData();
     formData.append("name", newCategory.name);
+    formData.append("name_km", newCategory.name_km);
     formData.append("description", newCategory.description);
     if (newCategory.image) {
       formData.append("image", newCategory.image);
@@ -267,6 +281,7 @@ const editCategory = (categoryId) => {
   const category = state.categories.find((c) => c.id === categoryId);
   if (category) {
     newCategory.name = category.name;
+    newCategory.name_km = category.name_km;
     newCategory.description = category.description;
     currentCategoryId.value = categoryId;
     isEditMode.value = true;
@@ -282,6 +297,7 @@ const closeModal = () => {
 
 const resetCategoryForm = () => {
   newCategory.name = "";
+  newCategory.name_km = "";
   newCategory.description = "";
   newCategory.image = null;
   currentCategoryId.value = null;
