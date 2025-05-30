@@ -8,7 +8,7 @@ export const useGlobalStore = defineStore('global', {
         is_remember: true,
         mdl_logout: null,
         ldi_page: false,
-        roleName: null
+        // roleName: null
     }),
     persist: true,
     getters: {

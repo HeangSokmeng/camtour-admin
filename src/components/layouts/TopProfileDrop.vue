@@ -137,14 +137,27 @@
           </div>
         </div>
         <div v-else class="modal-body">
-          <form @submit.prevent="submitProfileEdit">
+          <form @submit.prevent="submitProfileEdit" autocomplete="on">
+            <!-- Hidden username field for accessibility -->
+            <input
+              type="text"
+              name="username"
+              :value="editForm.email"
+              autocomplete="username"
+              style="position: absolute; left: -9999px; opacity: 0"
+              tabindex="-1"
+              readonly
+            />
+
             <div class="mb-3">
               <label for="edit_first_name" class="form-label">First Name</label>
               <input
                 type="text"
                 class="form-control"
                 id="edit_first_name"
+                name="first_name"
                 v-model="editForm.first_name"
+                autocomplete="given-name"
                 required
               />
               <div class="invalid-feedback" v-if="profileErrors.first_name">
@@ -157,7 +170,9 @@
                 type="text"
                 class="form-control"
                 id="edit_last_name"
+                name="last_name"
                 v-model="editForm.last_name"
+                autocomplete="family-name"
                 required
               />
               <div class="invalid-feedback" v-if="profileErrors.last_name">
@@ -166,7 +181,13 @@
             </div>
             <div class="mb-3">
               <label for="edit_gender" class="form-label">Gender</label>
-              <select class="form-select" id="edit_gender" v-model="editForm.gender">
+              <select
+                class="form-select"
+                id="edit_gender"
+                name="gender"
+                v-model="editForm.gender"
+                autocomplete="sex"
+              >
                 <option value="0">Not specified</option>
                 <option value="1">Male</option>
                 <option value="2">Female</option>
@@ -181,7 +202,9 @@
                 type="tel"
                 class="form-control"
                 id="edit_phone"
+                name="phone"
                 v-model="editForm.phone"
+                autocomplete="tel"
               />
               <div class="invalid-feedback" v-if="profileErrors.phone">
                 {{ profileErrors.phone }}
@@ -193,7 +216,9 @@
                 type="email"
                 class="form-control"
                 id="edit_email"
+                name="email"
                 v-model="editForm.email"
+                autocomplete="email"
                 required
               />
               <div class="invalid-feedback" v-if="profileErrors.email">
@@ -206,6 +231,7 @@
                 type="file"
                 class="form-control"
                 id="edit_image"
+                name="image"
                 @change="handleImageChange"
                 accept="image/*"
               />
@@ -274,7 +300,18 @@
           <button type="button" class="btn-close" @click="togglePasswordModal"></button>
         </div>
         <div class="modal-body">
-          <form @submit.prevent="submitPasswordChange">
+          <form @submit.prevent="submitPasswordChange" autocomplete="on">
+            <!-- Hidden username field for accessibility and password managers -->
+            <input
+              type="text"
+              name="username"
+              :value="globalStore.profile?.email || editForm.email"
+              autocomplete="username"
+              style="position: absolute; left: -9999px; opacity: 0"
+              tabindex="-1"
+              readonly
+            />
+
             <div class="mb-3">
               <label for="current_password" class="form-label">Current Password</label>
               <div class="input-group">
@@ -282,6 +319,7 @@
                   :type="passwordVisibility.current ? 'text' : 'password'"
                   class="form-control"
                   id="current_password"
+                  name="current_password"
                   v-model="passwordForm.current_password"
                   required
                   autocomplete="current-password"
@@ -290,6 +328,7 @@
                   class="btn btn-outline-secondary"
                   type="button"
                   @click="togglePasswordVisibility('current')"
+                  aria-label="Toggle current password visibility"
                 >
                   <span v-if="passwordVisibility.current" class="fas fa-eye-slash"></span>
                   <span v-else class="fas fa-eye"></span>
@@ -307,6 +346,7 @@
                   :type="passwordVisibility.new ? 'text' : 'password'"
                   class="form-control"
                   id="new_password"
+                  name="new_password"
                   v-model="passwordForm.new_password"
                   required
                   autocomplete="new-password"
@@ -315,6 +355,7 @@
                   class="btn btn-outline-secondary"
                   type="button"
                   @click="togglePasswordVisibility('new')"
+                  aria-label="Toggle new password visibility"
                 >
                   <span v-if="passwordVisibility.new" class="fas fa-eye-slash"></span>
                   <span v-else class="fas fa-eye"></span>
@@ -334,6 +375,7 @@
                   :type="passwordVisibility.confirmation ? 'text' : 'password'"
                   class="form-control"
                   id="new_password_confirmation"
+                  name="new_password_confirmation"
                   v-model="passwordForm.new_password_confirmation"
                   required
                   autocomplete="new-password"
@@ -342,6 +384,7 @@
                   class="btn btn-outline-secondary"
                   type="button"
                   @click="togglePasswordVisibility('confirmation')"
+                  aria-label="Toggle password confirmation visibility"
                 >
                   <span
                     v-if="passwordVisibility.confirmation"
@@ -409,7 +452,7 @@
           <form @submit.prevent="submitLanguageSettings">
             <div class="mb-3">
               <label class="form-label">Select Language</label>
-              <select class="form-select" v-model="languageForm.language">
+              <select class="form-select" name="language" v-model="languageForm.language">
                 <option value="en">English</option>
                 <option value="km">Khmer</option>
                 <option value="fr">French</option>

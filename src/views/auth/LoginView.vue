@@ -1,5 +1,5 @@
 <template>
-  <form class="col mx-auto" @submit.prevent="onSubmitLogin()">
+  <form class="col mx-auto" @submit.prevent="onSubmitLogin()" autocomplete="on">
     <div class="auth-form-box">
       <div class="text-center mb-7">
         <a class="d-flex flex-center text-decoration-none mb-4" href="#">
@@ -17,8 +17,10 @@
           <input
             class="form-control form-icon-input"
             id="email"
+            name="email"
             type="email"
             placeholder="name@example.com"
+            autocomplete="email"
             :class="{ 'is-invalid': vv.email.$error }"
             v-model="state.frm.email"
           />
@@ -34,8 +36,10 @@
           <input
             class="form-control form-icon-input pe-6 cdl-pass"
             id="password"
+            name="password"
             :type="state.is_show_pass ? 'text' : 'password'"
             placeholder="Password"
+            autocomplete="current-password"
             :class="{ 'is-invalid': vv.password.$error }"
             v-model="state.frm.password"
           />
@@ -48,6 +52,7 @@
             class="btn px-3 py-0 position-absolute end-0 fs-7 text-body-tertiary"
             style="top: 6px"
             @click="state.is_show_pass = !state.is_show_pass"
+            aria-label="Toggle password visibility"
           >
             <span class="uil uil-eye" v-show="!state.is_show_pass"></span>
             <span class="uil uil-eye-slash" v-show="state.is_show_pass"></span>
@@ -59,6 +64,7 @@
           <input
             class="form-check-input"
             id="basic-checkbox"
+            name="remember"
             type="checkbox"
             checked="checked"
             v-model="state.is_remember"

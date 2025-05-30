@@ -412,11 +412,11 @@ const selectedUserOrders = computed(() => {
   return user ? user.orders : [];
 });
 
-const selectedUserName = computed(() => {
-  if (!selectedUserId.value) return "";
-  const user = state.users.find((u) => u.user_id === selectedUserId.value);
-  return user ? `${user.first_name} ${user.last_name}` : "";
-});
+// const selectedUserName = computed(() => {
+//   if (!selectedUserId.value) return "";
+//   const user = state.users.find((u) => u.user_id === selectedUserId.value);
+//   return user ? `${user.first_name} ${user.last_name}` : "";
+// });
 
 const fetchOrders = async () => {
   state.isLoading = true;

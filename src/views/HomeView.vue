@@ -191,7 +191,7 @@
     </div>
 
     <!-- Navigation Sidebar -->
-    <aside class="sidebar">
+    <!-- <aside class="sidebar">
       <div class="logo">
         <span class="logo-icon">🌍</span>
       </div>
@@ -217,7 +217,7 @@
           <i class="fa fa-cog"></i>
         </a>
       </div>
-    </aside>
+    </aside> -->
   </div>
 </template>
 
@@ -361,20 +361,11 @@ const calendarDays = computed(() => {
 });
 
 // Methods
-const toggleProfileMenu = () => {
-  // Would implement dropdown functionality here
-  console.log("Toggle profile menu");
-};
+const toggleProfileMenu = () => {};
 
-const previousMonth = () => {
-  // Would implement month navigation here
-  console.log("Previous month");
-};
+const previousMonth = () => {};
 
-const nextMonth = () => {
-  // Would implement month navigation here
-  console.log("Next month");
-};
+const nextMonth = () => {};
 
 // Lifecycle
 onMounted(() => {

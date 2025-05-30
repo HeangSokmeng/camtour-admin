@@ -680,7 +680,6 @@ const fetchLocations = async () => {
 
     if (response.data.result && Array.isArray(response.data.data)) {
       locations.value = response.data.data;
-      console.log("Fetched locations:", locations.value);
     } else {
       error.value = response.data.message || "Failed to fetch locations";
       console.error("API error when fetching locations:", response.data);
@@ -715,7 +714,6 @@ const fetchGuideForLocation = async () => {
         (g) => g.location_id === Number(selectedLocationId.value)
       );
       currentGuide.value = guide || null;
-      console.log("Current guide:", currentGuide.value);
     } else {
       error.value = response.data.message || "Failed to fetch travel guide";
       console.error("API error when fetching guide:", response.data);
