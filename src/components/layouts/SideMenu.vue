@@ -448,6 +448,29 @@
 
           <!-- General Settings - Accessible to staff and above -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">
+            <p class="navbar-vertical-label">ChatBot Questions</p>
+            <hr class="navbar-vertical-line" />
+            <div class="nav-item-wrapper">
+              <RouterLink to="/chatbot" custom v-slot="{ navigate, isActive }">
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{ active: isActive || route.path === '/chatbot' }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="grid"></span>
+                    </span>
+                    <span class="nav-link-text">ChatBot</span>
+                  </div>
+                </a>
+              </RouterLink>
+            </div>
+          </li>
+          <!-- General Settings - Accessible to staff and above -->
+          <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">General Settings</p>
             <hr class="navbar-vertical-line" />
             <div class="nav-item-wrapper">

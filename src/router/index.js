@@ -31,6 +31,7 @@ const ProductOrder = () => import('@/views/products/ProductOrderView.vue')
 const LocationGuide = () => import('@/views/locations/LocationGuideView.vue')
 const SettingProfile = () => import('@/views/settings/ProfileSettingView.vue')
 const UserRole = () => import('@/views/users/UserRoleView.vue')
+const ChatBot = () => import('@/views/chatbot/ChatbotView.vue')
 
 // Role constants
 const ROLES = {
@@ -130,6 +131,16 @@ const router = createRouter({
             component: CategoryView,
             meta: {
                 title: 'Admin Camtour . Categories',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },{
+            path: '/chatbot',
+            name: 'chatbot',
+            component: ChatBot,
+            meta: {
+                title: 'Admin Camtour . ChatBot',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
