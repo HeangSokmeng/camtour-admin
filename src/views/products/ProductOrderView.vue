@@ -18,8 +18,152 @@
               />
             </div>
           </div>
+          <div class="col-auto">
+            <button
+              class="btn btn-outline-secondary"
+              @click="toggleFilters"
+              :class="{ 'btn-primary': showFilters }"
+            >
+              <i class="fas fa-filter me-1"></i>
+              Filters
+              <span v-if="activeFiltersCount > 0" class="badge bg-danger ms-1">
+                {{ activeFiltersCount }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div v-if="showFilters" class="filter-panel mt-3 p-3 bg-light rounded">
+          <div class="row g-3">
+            <!-- Date Range Filter -->
+            <div class="col-md-3">
+              <label class="form-label">From Date</label>
+              <input
+                v-model="filters.dateFrom"
+                type="date"
+                class="form-control"
+                @change="applyFilters"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">To Date</label>
+              <input
+                v-model="filters.dateTo"
+                type="date"
+                class="form-control"
+                @change="applyFilters"
+              />
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-md-3">
+              <label class="form-label">Order Status</label>
+              <select v-model="filters.status" class="form-select" @change="applyFilters">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <!-- Payment Method Filter -->
+            <div class="col-md-3">
+              <label class="form-label">Payment Method</label>
+              <select
+                v-model="filters.paymentMethod"
+                class="form-select"
+                @change="applyFilters"
+              >
+                <option value="">All Methods</option>
+                <option
+                  v-for="method in availablePaymentMethods"
+                  :key="method"
+                  :value="method"
+                >
+                  {{ formatPaymentMethod(method) }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Amount Range Filter -->
+            <div class="col-md-3">
+              <label class="form-label">Min Amount</label>
+              <input
+                v-model.number="filters.minAmount"
+                type="number"
+                step="0.01"
+                class="form-control"
+                placeholder="0.00"
+                @input="applyFilters"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Max Amount</label>
+              <input
+                v-model.number="filters.maxAmount"
+                type="number"
+                step="0.01"
+                class="form-control"
+                placeholder="999999.99"
+                @input="applyFilters"
+              />
+            </div>
+
+            <!-- Quick Date Filters -->
+            <div class="col-md-6">
+              <label class="form-label">Quick Date Filters</label>
+              <div class="btn-group w-100" role="group">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  @click="setDateFilter('today')"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  @click="setDateFilter('week')"
+                >
+                  This Week
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  @click="setDateFilter('month')"
+                >
+                  This Month
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm"
+                  @click="setDateFilter('year')"
+                >
+                  This Year
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Actions -->
+          <div class="row mt-3">
+            <div class="col-12">
+              <button class="btn btn-secondary btn-sm me-2" @click="clearFilters">
+                <i class="fas fa-times me-1"></i>Clear Filters
+              </button>
+              <small class="text-muted">
+                Found {{ filteredUsers.length }} users with
+                {{ totalFilteredOrders }} orders
+              </small>
+            </div>
+          </div>
         </div>
       </div>
+
       <div v-if="state.isLoading" class="text-center">
         <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
@@ -58,7 +202,7 @@
                   </td>
                   <td class="align-middle">{{ userData.email }}</td>
                   <td class="align-middle">{{ userData.phone }}</td>
-                  <td class="align-middle">{{ userData.orders.length }}</td>
+                  <td class="align-middle">{{ userData.filteredOrders.length }}</td>
                   <td class="align-middle text-end">
                     <button
                       class="btn btn-sm btn-primary"
@@ -78,6 +222,9 @@
                     <div class="user-orders-container p-3">
                       <h5 class="mb-3">
                         Orders for {{ userData.first_name }} {{ userData.last_name }}
+                        <small class="text-muted"
+                          >({{ userData.filteredOrders.length }} orders)</small
+                        >
                       </h5>
 
                       <div class="table-responsive">
@@ -94,12 +241,12 @@
                             </tr>
                           </thead>
                           <tbody>
-                            <tr v-if="userData.orders.length === 0">
+                            <tr v-if="userData.filteredOrders.length === 0">
                               <td colspan="7" class="text-center">No orders found</td>
                             </tr>
                             <tr
                               v-else
-                              v-for="(order, index) in userData.orders"
+                              v-for="(order, index) in userData.filteredOrders"
                               :key="order.order_id"
                             >
                               <td class="align-middle ps-3">{{ index + 1 }}</td>
@@ -346,7 +493,20 @@ const state = reactive({
   statusModalError: null,
   isSubmitting: false,
 });
+
+// Search and Filter states
 const searchQuery = ref("");
+const showFilters = ref(false);
+const filters = reactive({
+  dateFrom: "",
+  dateTo: "",
+  status: "",
+  paymentMethod: "",
+  minAmount: null,
+  maxAmount: null,
+});
+
+// Modal states
 const showOrderModal = ref(false);
 const showStatusModal = ref(false);
 const currentOrder = ref(null);
@@ -354,6 +514,7 @@ const currentOrderId = ref(null);
 const newStatus = ref("pending");
 const selectedUserId = ref(null);
 
+// Utility functions
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const options = {
@@ -398,6 +559,155 @@ const getStatusClass = (status) => {
   }
 };
 
+// Filter functions
+const toggleFilters = () => {
+  showFilters.value = !showFilters.value;
+};
+
+const activeFiltersCount = computed(() => {
+  let count = 0;
+  if (filters.dateFrom) count++;
+  if (filters.dateTo) count++;
+  if (filters.status) count++;
+  if (filters.paymentMethod) count++;
+  if (filters.minAmount !== null && filters.minAmount !== "") count++;
+  if (filters.maxAmount !== null && filters.maxAmount !== "") count++;
+  return count;
+});
+
+const availablePaymentMethods = computed(() => {
+  const methods = new Set();
+  state.users.forEach((user) => {
+    user.orders.forEach((order) => {
+      if (order.payment_method) {
+        methods.add(order.payment_method);
+      }
+    });
+  });
+  return Array.from(methods).sort();
+});
+
+const setDateFilter = (period) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (period) {
+    case "today":
+      filters.dateFrom = today.toISOString().split("T")[0];
+      filters.dateTo = today.toISOString().split("T")[0];
+      break;
+    case "week":
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      filters.dateFrom = weekStart.toISOString().split("T")[0];
+      filters.dateTo = today.toISOString().split("T")[0];
+      break;
+    case "month":
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      filters.dateFrom = monthStart.toISOString().split("T")[0];
+      filters.dateTo = today.toISOString().split("T")[0];
+      break;
+    case "year":
+      const yearStart = new Date(today.getFullYear(), 0, 1);
+      filters.dateFrom = yearStart.toISOString().split("T")[0];
+      filters.dateTo = today.toISOString().split("T")[0];
+      break;
+  }
+  applyFilters();
+};
+
+const clearFilters = () => {
+  filters.dateFrom = "";
+  filters.dateTo = "";
+  filters.status = "";
+  filters.paymentMethod = "";
+  filters.minAmount = null;
+  filters.maxAmount = null;
+  applyFilters();
+};
+
+const applyFilters = () => {
+  // Trigger reactivity by updating a reactive property
+  // The computed filteredUsers will automatically recalculate
+};
+
+const isOrderInDateRange = (orderDate) => {
+  if (!filters.dateFrom && !filters.dateTo) return true;
+
+  const date = new Date(orderDate);
+  const from = filters.dateFrom ? new Date(filters.dateFrom) : null;
+  const to = filters.dateTo ? new Date(filters.dateTo + "T23:59:59") : null;
+
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+
+  return true;
+};
+
+const isOrderMatchingFilters = (order) => {
+  // Date filter
+  if (!isOrderInDateRange(order.created_at)) return false;
+
+  // Status filter
+  if (filters.status && order.status !== filters.status) return false;
+
+  // Payment method filter
+  if (filters.paymentMethod && order.payment_method !== filters.paymentMethod)
+    return false;
+
+  // Amount filters
+  const amount = parseFloat(order.total_amount);
+  if (
+    filters.minAmount !== null &&
+    filters.minAmount !== "" &&
+    amount < filters.minAmount
+  )
+    return false;
+  if (
+    filters.maxAmount !== null &&
+    filters.maxAmount !== "" &&
+    amount > filters.maxAmount
+  )
+    return false;
+
+  return true;
+};
+
+const filteredUsers = computed(() => {
+  let users = state.users;
+
+  // Apply search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    users = users.filter((user) => {
+      return (
+        user.first_name.toLowerCase().includes(query) ||
+        user.last_name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.phone.includes(query)
+      );
+    });
+  }
+
+  // Apply order filters and add filteredOrders to each user
+  return users
+    .map((user) => {
+      const filteredOrders = user.orders.filter(isOrderMatchingFilters);
+      return {
+        ...user,
+        filteredOrders,
+      };
+    })
+    .filter((user) => user.filteredOrders.length > 0); // Only show users with matching orders
+});
+
+const totalFilteredOrders = computed(() => {
+  return filteredUsers.value.reduce(
+    (total, user) => total + user.filteredOrders.length,
+    0
+  );
+});
+
 const toggleUserOrders = (userId) => {
   if (selectedUserId.value === userId) {
     selectedUserId.value = null;
@@ -408,15 +718,9 @@ const toggleUserOrders = (userId) => {
 
 const selectedUserOrders = computed(() => {
   if (!selectedUserId.value) return [];
-  const user = state.users.find((u) => u.user_id === selectedUserId.value);
-  return user ? user.orders : [];
+  const user = filteredUsers.value.find((u) => u.user_id === selectedUserId.value);
+  return user ? user.filteredOrders : [];
 });
-
-// const selectedUserName = computed(() => {
-//   if (!selectedUserId.value) return "";
-//   const user = state.users.find((u) => u.user_id === selectedUserId.value);
-//   return user ? `${user.first_name} ${user.last_name}` : "";
-// });
 
 const fetchOrders = async () => {
   state.isLoading = true;
@@ -437,19 +741,6 @@ const fetchOrders = async () => {
     state.isLoading = false;
   }
 };
-
-const filteredUsers = computed(() => {
-  if (!searchQuery.value) return state.users;
-  const query = searchQuery.value.toLowerCase();
-  return state.users.filter((user) => {
-    return (
-      user.first_name.toLowerCase().includes(query) ||
-      user.last_name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.phone.includes(query)
-    );
-  });
-});
 
 const viewOrderDetails = async (orderId) => {
   currentOrderId.value = orderId;
@@ -546,10 +837,7 @@ const calculateSubtotal = () => {
 const printOrder = () => {
   if (!currentOrder.value) return;
 
-  // Create a new window for printing
   const printWindow = window.open("", "_blank");
-
-  // Get the current order content
   const orderContent = document.getElementById("printable-order-content");
   if (!orderContent) return;
 
@@ -770,7 +1058,6 @@ const printOrder = () => {
   printWindow.document.write(printContent);
   printWindow.document.close();
 
-  // Wait for content to load, then print
   printWindow.onload = () => {
     printWindow.print();
     printWindow.close();
@@ -783,6 +1070,130 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Filter Panel Styles */
+.filter-panel {
+  border: 1px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.filter-panel .btn-group .btn {
+  font-size: 0.8rem;
+  padding: 0.375rem 0.5rem;
+}
+
+/* Badge styles for active filters */
+.badge {
+  font-size: 0.65rem;
+}
+
+/* Search box enhancement */
+.search-box {
+  position: relative;
+}
+
+.search-input {
+  padding-left: 2.5rem;
+}
+
+.search-box::before {
+  content: "\f002";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 10;
+}
+
+/* Enhanced button styles */
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+.btn.btn-primary {
+  background-color: #4e73df;
+  border-color: #4e73df;
+}
+
+/* Form control enhancements */
+.form-control:focus,
+.form-select:focus {
+  border-color: #4e73df;
+  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+/* Filter statistics */
+.text-muted {
+  font-size: 0.85rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-panel .col-md-3,
+  .filter-panel .col-md-6 {
+    margin-bottom: 1rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .btn-group .btn {
+    border-radius: 0.375rem !important;
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Table enhancements */
+.table th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+/* User orders container enhancements */
+.user-orders-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-left: 4px solid #4e73df;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.user-orders-container h5 {
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+/* Status badge enhancements */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+.badge.bg-warning {
+  color: #000;
+}
+
+/* Loading and error states */
+.spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+.text-danger {
+  font-weight: 500;
+}
+
 /* Modal styles */
 .modal-overlay {
   position: fixed;
@@ -861,13 +1272,6 @@ onMounted(() => {
 
 .selected-row {
   background-color: rgba(78, 115, 223, 0.1);
-  border-left: 4px solid #4e73df;
-}
-
-/* User orders container */
-.user-orders-container {
-  background-color: #f8f9fa;
-  border-radius: 0.5rem;
   border-left: 4px solid #4e73df;
 }
 

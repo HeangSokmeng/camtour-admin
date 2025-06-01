@@ -1,1039 +1,1412 @@
 <template>
-  <div class="travel-explorer">
-    <!-- Header Section -->
-    <header class="header">
-      <div class="welcome">
-        <h1>Hello, {{ userName }} <span class="wave-emoji">👋</span></h1>
-        <p class="welcome-text">Welcome back and explore the world.</p>
+  <div class="dashboard">
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <h1><i class="fas fa-mountain"></i> CamTour Recommender</h1>
+        <p class="subtitle">Mountain Trails • Outdoor Gear • Adventure Analytics</p>
       </div>
-      <div class="search-container">
-        <i class="fa fa-search search-icon"></i>
-        <input
-          type="search"
-          placeholder="Search Destinations..."
-          v-model="searchQuery"
-          class="search-input"
-        />
+      <div class="controls">
+        <select v-model="timeRange" class="time-selector" @change="fetchDashboardData">
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+          <option value="90d">Last 3 Months</option>
+          <option value="1y">Last Year</option>
+        </select>
+        <button @click="refreshData" class="refresh-btn" :disabled="loading">
+          <i class="fas fa-sync-alt" :class="{ spinner: loading }"></i>
+          Refresh
+        </button>
       </div>
-      <div class="user-actions">
-        <div class="notification-badge">
-          <i class="fa fa-bell"></i>
-          <span class="badge">3</span>
-        </div>
-        <div class="user-profile" @click="toggleProfileMenu">
-          <img :src="userImage" alt="User Profile" class="avatar" />
-          <div class="user-info">
-            <span class="user-name">{{ userName }}</span>
-            <span class="user-title">{{ userTitle }}</span>
-          </div>
-          <i class="fa fa-chevron-down"></i>
-        </div>
-      </div>
-    </header>
+    </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- Featured Destinations Section -->
-      <section class="featured-destinations">
-        <div
-          v-for="destination in featuredDestinations"
-          :key="destination.id"
-          class="destination-card"
-          :style="{ backgroundImage: `url(${destination.image})` }"
-        >
-          <div class="destination-info">
-            <h3>{{ destination.name }}</h3>
-            <div class="location">
-              <i class="fa fa-map-marker-alt"></i>
-              <span>{{ destination.location }}</span>
-            </div>
-            <div class="rating">
-              <i class="fa fa-star"></i>
-              <span>{{ destination.rating }}</span>
-            </div>
+    <!-- Hero Cards Section -->
+    <div class="hero-cards">
+      <div
+        class="hero-card"
+        style="
+          background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2)),
+            url('https://cms-image-bucket-production-ap-northeast-1-a7d2.s3.ap-northeast-1.amazonaws.com/images/7/3/5/9/23219537-1-eng-GB/003.jpg');
+        "
+      >
+        <div class="hero-content">
+          <h3>Cardamom Mountains</h3>
+          <div class="hero-location">
+            <i class="fas fa-map-marker-alt"></i>
+            Cambodia
+          </div>
+          <div class="hero-rating">
+            <i class="fas fa-star"></i>
+            4.8
           </div>
         </div>
-      </section>
+      </div>
 
-      <div class="content-grid">
-        <!-- Left Column -->
-        <div class="left-column">
-          <!-- Best Destinations Section -->
-          <section class="best-destinations">
-            <div class="section-header">
-              <h2>Best Destination <span class="emoji">🚀</span></h2>
-              <span class="destination-count">100+ Destination found</span>
+      <div
+        class="hero-card"
+        style="
+          background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2)),
+            url('https://travelsetu.com/apps/uploads/new_destinations_photos/destination/2024/06/28/c6223b7daeeb62fecc8f97165691d895_1000x1000.jpg');
+        "
+      >
+        <div class="hero-content">
+          <h3>Elephant Mountains</h3>
+          <div class="hero-location">
+            <i class="fas fa-map-marker-alt"></i>
+            Koh Kong
+          </div>
+          <div class="hero-rating">
+            <i class="fas fa-star"></i>
+            4.6
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="hero-card"
+        style="
+          background-image: linear-gradient(45deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2)),
+            url('https://preview.redd.it/kulen-mountain-waterfall-in-siem-reap-cambodia-v0-1dgyq7e834z91.jpg?width=640&crop=smart&auto=webp&s=3954821b909492435fd095d30ada2ca1c0bf45db');
+        "
+      >
+        <div class="hero-content">
+          <h3>Kulen Mountain</h3>
+          <div class="hero-location">
+            <i class="fas fa-map-marker-alt"></i>
+            Siem Reap
+          </div>
+          <div class="hero-rating">
+            <i class="fas fa-star"></i>
+            4.9
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stats-grid" v-if="dashboardStats">
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">
+              {{ formatNumber(dashboardStats.total_locations) }}
             </div>
+            <div class="stat-label">Hiking Trails</div>
+          </div>
+          <div class="stat-icon trails">
+            <i class="fas fa-hiking"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Active trails
+        </div>
+      </div>
 
-            <div class="filter-bar">
-              <button class="filter-button">
-                <i class="fa fa-sliders-h"></i>
-                {{ filtersCount }} filters
-              </button>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">
+              {{ formatNumber(dashboardStats.total_products) }}
             </div>
+            <div class="stat-label">Outdoor Gear</div>
+          </div>
+          <div class="stat-icon gear">
+            <i class="fas fa-backpack"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Available gear
+        </div>
+      </div>
 
-            <div class="destination-list">
-              <div
-                v-for="destination in popularDestinations"
-                :key="destination.id"
-                class="destination-list-item"
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">{{ formatNumber(dashboardStats.total_users) }}</div>
+            <div class="stat-label">Adventurers</div>
+          </div>
+          <div class="stat-icon adventurers">
+            <i class="fas fa-users"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Registered hikers
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">{{ formatNumber(dashboardStats.total_views) }}</div>
+            <div class="stat-label">Trail Views</div>
+          </div>
+          <div class="stat-icon views">
+            <i class="fas fa-binoculars"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Trail explorations
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">
+              {{ dashboardStats.average_location_rating?.toFixed(1) || "0.0" }}
+            </div>
+            <div class="stat-label">Trail Rating</div>
+          </div>
+          <div class="stat-icon rating">
+            <i class="fas fa-medal"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Average rating
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">
+              {{ dashboardStats.average_product_rating?.toFixed(1) || "0.0" }}
+            </div>
+            <div class="stat-label">Gear Rating</div>
+          </div>
+          <div class="stat-icon gear-rating">
+            <i class="fas fa-award"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Gear quality
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">
+              {{ formatNumber(dashboardStats.total_categories) }}
+            </div>
+            <div class="stat-label">Trail Types</div>
+          </div>
+          <div class="stat-icon trail-types">
+            <i class="fas fa-route"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Trail categories
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-value">
+              {{ formatNumber(dashboardStats.total_provinces) }}
+            </div>
+            <div class="stat-label">Provinces</div>
+          </div>
+          <div class="stat-icon regions">
+            <i class="fas fa-map-marked"></i>
+          </div>
+        </div>
+        <div class="stat-change positive">
+          <i class="fas fa-arrow-up"></i>
+          Hiking regions
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="section-header">
+      <h2>Trail Insights 📊</h2>
+      <p>Discover popular hiking destinations and trail categories</p>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">
+          <i class="fas fa-mountain"></i>
+          Trails by Category
+        </div>
+        <div class="chart-container">
+          <canvas ref="categoryChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">
+          <i class="fas fa-map-signs"></i>
+          Trails by Region
+        </div>
+        <div class="chart-container">
+          <canvas ref="provinceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Section -->
+    <div class="bottom-section">
+      <div class="data-table">
+        <div class="table-header">
+          <i class="fas fa-trophy"></i>
+          Top Hiking Trails
+        </div>
+        <div class="table-content">
+          <div v-for="location in topLocations" :key="location.id" class="table-row">
+            <div class="location-info">
+              <div class="location-name">{{ location.name }}</div>
+              <div class="location-details">
+                {{ location.province }} • {{ location.category }}
+              </div>
+            </div>
+            <div class="location-stats">
+              <span
+                ><i class="fas fa-eye"></i> {{ formatNumber(location.total_views) }}</span
               >
-                <div class="destination-image">
-                  <img :src="destination.image" :alt="destination.name" />
-                </div>
-                <div class="destination-details">
-                  <h4>{{ destination.name }}</h4>
-                  <div class="location">
-                    <i class="fa fa-map-marker-alt"></i>
-                    <span>{{ destination.location }}</span>
-                  </div>
-                  <div class="rating">
-                    <i class="fa fa-star"></i>
-                    <span>{{ destination.rating }}</span>
-                  </div>
-                </div>
-                <div class="destination-price">
-                  <span class="price">${{ destination.price }}</span>
-                  <span class="price-period">/day</span>
-                </div>
-              </div>
+              <span
+                ><i class="fas fa-star"></i>
+                {{ location.average_rating?.toFixed(1) || "N/A" }}</span
+              >
+              <span
+                ><i class="fas fa-dollar-sign"></i> ${{ location.min_price }}-${{
+                  location.max_price
+                }}</span
+              >
             </div>
-          </section>
+          </div>
         </div>
+      </div>
 
-        <!-- Right Column -->
-        <div class="right-column">
-          <!-- Calendar Section -->
-          <section class="calendar-section">
-            <div class="month-navigator">
-              <h3>{{ currentMonth }} {{ currentYear }}</h3>
-              <div class="month-controls">
-                <button class="control-button" @click="previousMonth">
-                  <i class="fa fa-chevron-left"></i>
-                </button>
-                <button class="control-button" @click="nextMonth">
-                  <i class="fa fa-chevron-right"></i>
-                </button>
+      <div class="data-table">
+        <div class="table-header">
+          <i class="fas fa-tools"></i>
+          Top Outdoor Gear
+        </div>
+        <div class="table-content">
+          <div v-for="product in topProducts" :key="product.id" class="table-row">
+            <div class="location-info">
+              <div class="location-name">{{ product.name }}</div>
+              <div class="location-details">
+                {{ product.brand }} • {{ product.category }}
               </div>
             </div>
-
-            <div class="calendar">
-              <div class="weekdays">
-                <div v-for="day in weekdays" :key="day" class="weekday">{{ day }}</div>
-              </div>
-              <div class="days">
-                <div
-                  v-for="day in calendarDays"
-                  :key="day.value"
-                  :class="[
-                    'day',
-                    {
-                      'current-day': day.isCurrentDay,
-                      'has-event': day.hasEvent,
-                      'other-month': !day.isCurrentMonth,
-                    },
-                  ]"
-                >
-                  {{ day.value }}
-                </div>
-              </div>
+            <div class="location-stats">
+              <span
+                ><i class="fas fa-eye"></i> {{ formatNumber(product.total_views) }}</span
+              >
+              <span
+                ><i class="fas fa-star"></i>
+                {{ product.average_rating?.toFixed(1) || "N/A" }}</span
+              >
+              <span><i class="fas fa-dollar-sign"></i> ${{ product.price }}</span>
             </div>
-          </section>
-
-          <!-- Schedule Section -->
-          <section class="schedule-section">
-            <div class="section-header">
-              <h3>My Schedule</h3>
-              <button class="more-button">
-                <i class="fa fa-ellipsis-h"></i>
-              </button>
-            </div>
-
-            <div class="schedule-list">
-              <div v-for="trip in upcomingTrips" :key="trip.id" class="schedule-item">
-                <div class="trip-image">
-                  <img :src="trip.image" :alt="trip.name" />
-                </div>
-                <div class="trip-details">
-                  <h4>{{ trip.name }}</h4>
-                  <div class="trip-date">
-                    <i class="fa fa-calendar-alt"></i>
-                    <span>{{ trip.date }}</span>
-                  </div>
-                </div>
-                <div class="attendees">
-                  <div class="attendee-avatars">
-                    <div v-for="n in trip.attendees" :key="n" class="attendee-avatar">
-                      {{ n <= 3 ? n : "+" + (trip.attendees - 3) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Promotional Panel -->
-    <div class="promo-panel">
-      <div class="promo-character">
-        <img
-          src="https://www.campsited.com/wp-content/uploads/2021/09/eco-camping-382x214.jpg"
-          alt="Adventure Character"
-        />
-      </div>
-      <div class="promo-content">
-        <h3>Let's Explore The Beauty</h3>
-        <p>Get special offers & news</p>
-        <button class="promo-button">Join Now</button>
+    <!-- Loading Overlay -->
+    <div v-if="state.isLoading" class="loading-overlay">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading dashboard data...</p>
       </div>
     </div>
 
-    <!-- Navigation Sidebar -->
-    <!-- <aside class="sidebar">
-      <div class="logo">
-        <span class="logo-icon">🌍</span>
-      </div>
-      <nav class="nav-menu">
-        <a href="#" class="nav-item active">
-          <i class="fa fa-home"></i>
-        </a>
-        <a href="#" class="nav-item">
-          <i class="fa fa-map-marked-alt"></i>
-        </a>
-        <a href="#" class="nav-item">
-          <i class="fa fa-mountain"></i>
-        </a>
-        <a href="#" class="nav-item">
-          <i class="fa fa-sun"></i>
-        </a>
-        <a href="#" class="nav-item">
-          <i class="fa fa-compass"></i>
-        </a>
-      </nav>
-      <div class="sidebar-footer">
-        <a href="#" class="nav-item">
-          <i class="fa fa-cog"></i>
-        </a>
-      </div>
-    </aside> -->
+    <!-- Error Message -->
+    <div v-if="state.error" class="error-message">
+      <i class="fas fa-exclamation-triangle"></i>
+      <p>{{ state.error }}</p>
+      <button @click="fetchDashboardData" class="retry-btn">Retry</button>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container">
+      <transition-group name="toast">
+        <div
+          v-for="toast in toasts"
+          :key="toast.id"
+          class="toast-notification"
+          :class="toast.type"
+        >
+          <div class="toast-icon">
+            <i :class="getToastIcon(toast.type)"></i>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">{{ toast.title }}</div>
+            <div class="toast-message">{{ toast.message }}</div>
+          </div>
+          <button class="toast-close" @click="removeToast(toast.id)">&times;</button>
+        </div>
+      </transition-group>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { useGlobalStore } from "@/stores/global";
+import axios from "axios";
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
-// User Data
-const userName = ref("Jeremy");
-const userTitle = ref("Traveler Enthusiast");
-const userImage = ref(
-  "https://static.vecteezy.com/system/resources/previews/048/414/267/non_2x/tour-guide-icon-against-transparent-background-generated-by-ai-free-png.png"
-);
+// Initialize global store
+const globalStore = useGlobalStore();
 
-// Search
-const searchQuery = ref("");
-
-// Filters
-const filtersCount = ref(0);
-
-// Calendar
-const currentMonth = ref("June");
-const currentYear = ref("2025");
-const weekdays = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-
-// Sample Data
-const featuredDestinations = ref([
-  {
-    id: 1,
-    name: "Mount Fuji",
-    location: "Japan",
-    image:
-      "https://americanhiking.org/wp-content/uploads/2019/08/ER-web-Big_Basin_Late_Day_Landscape-Max-Forster.jpg",
-    rating: 4.9,
-  },
-  {
-    id: 2,
-    name: "Eco Camping",
-    location: "Patagonia",
-    image:
-      "https://www.europe-consommateurs.eu/fileadmin/_processed_/6/8/csm_camping-sauvage-tourisme_539c5d8f8c.jpg",
-    rating: 4.5,
-  },
-  {
-    id: 3,
-    name: "Mount Everest",
-    location: "Nepal",
-    image:
-      "https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/10/5c/8f/5d.jpg",
-    rating: 4.7,
-  },
-]);
-
-const popularDestinations = ref([
-  {
-    id: 1,
-    name: "Redwood Forest",
-    location: "California",
-    image:
-      "https://ecocamping.de/wp-content/uploads/2023/03/E-Mob-Roadshow-2021-08-5466-klein-scaled-e1677654409433-1024x774.jpg",
-    price: 150,
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    name: "Sahale Glacier Camp",
-    location: "Washington",
-    image:
-      "https://wildlandtrekking.com/content/webp-express/webp-images/doc-root/content/uploads/2024/07/sahale-glacier-camp-tents.jpg.webp",
-    price: 100,
-    rating: 4.7,
-  },
-  {
-    id: 3,
-    name: "Monteverde Forest",
-    location: "Costa Rica",
-    image: "https://www.infobuildenergia.it/wp-content/uploads/2020/07/eco-campeggio.jpg",
-    price: 120,
-    rating: 4.5,
-  },
-]);
-
-const upcomingTrips = ref([
-  {
-    id: 1,
-    name: "Crooked Forest",
-    date: "23 June, 2025",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLeRQ6D8eWE2ENX09ONrLVEWUcQjC6t-0KZw&s",
-    attendees: 2,
-  },
-  {
-    id: 2,
-    name: "Gioc Waterfall",
-    date: "28 June, 2025",
-    image:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNsWJ-QIV1pT0sd7Hi5fkF-ZKkyrMvyBXj3W8ykxBhrpySIo_xcCc23UuB-_T__REkoDU&usqp=CAU",
-    attendees: 3,
-  },
-  {
-    id: 3,
-    name: "Tortuguero Camp",
-    date: "4 July, 2025",
-    image:
-      "https://extraordinaryjourneys.com/wp-content/uploads/2014/12/eco_camp_suite_ext-1024x683.jpg",
-    attendees: 6,
-  },
-]);
-
-const calendarDays = computed(() => {
-  const days = [];
-  const totalDays = 30;
-  for (let i = 29; i <= 31; i++) {
-    days.push({
-      value: i,
-      isCurrentMonth: false,
-      isCurrentDay: false,
-      hasEvent: false,
-    });
-  }
-
-  // Current month days
-  for (let i = 1; i <= totalDays; i++) {
-    days.push({
-      value: i,
-      isCurrentMonth: true,
-      isCurrentDay: i === 16,
-      hasEvent: [10, 17, 23, 28].includes(i),
-    });
-  }
-
-  for (let i = 1; i <= 9; i++) {
-    days.push({
-      value: i,
-      isCurrentMonth: false,
-      isCurrentDay: false,
-      hasEvent: false,
-    });
-  }
-
-  return days;
+// State management
+const state = reactive({
+  isLoading: false,
+  error: null,
 });
 
+// UI state
+const timeRange = ref("30d");
+const categoryChart = ref(null);
+const provinceChart = ref(null);
+
+// Dashboard data
+const dashboardStats = ref(null);
+const topLocations = ref([]);
+const topProducts = ref([]);
+const categoryData = ref([]);
+const provinceData = ref([]);
+
+// Chart instances
+let categoryChartInstance = null;
+let provinceChartInstance = null;
+
+// Toast notifications
+const toasts = ref([]);
+let nextToastId = 1;
+
+const showNotification = (type, title, message) => {
+  const id = nextToastId++;
+  toasts.value.push({ id, type, title, message });
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    removeToast(id);
+  }, 5000);
+};
+
+const removeToast = (id) => {
+  toasts.value = toasts.value.filter((toast) => toast.id !== id);
+};
+
 // Methods
-const toggleProfileMenu = () => {};
+const formatNumber = (num) => {
+  if (!num) return "0";
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + "M";
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + "K";
+  }
+  return num.toString();
+};
 
-const previousMonth = () => {};
+const fetchDashboardStats = async () => {
+  state.isLoading = true;
+  state.error = null;
 
-const nextMonth = () => {};
+  try {
+    const params = new URLSearchParams();
+    if (timeRange.value) params.append("time_range", timeRange.value);
 
-// Lifecycle
-onMounted(() => {
-  // Any initialization code would go here
+    const res = await axios.get(
+      `/api/dashboard/stats?${params.toString()}`,
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.status === "OK") {
+      dashboardStats.value = res.data.data || {};
+    } else {
+      state.error = res.data.message || "Failed to fetch dashboard stats";
+      showNotification("error", "Error", state.error);
+    }
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    state.error = "An error occurred while fetching dashboard stats.";
+    showNotification("error", "Error", state.error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+const fetchTopLocations = async () => {
+  try {
+    const res = await axios.get(
+      "/api/dashboard/locations/top?limit=10",
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.status === "OK") {
+      topLocations.value = res.data.data || [];
+    } else {
+      console.error("Failed to fetch top locations:", res.data.message);
+    }
+  } catch (error) {
+    console.error("Error fetching top locations:", error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+const fetchTopProducts = async () => {
+  try {
+    const res = await axios.get(
+      "/api/dashboard/products/top?limit=10",
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.status === "OK") {
+      topProducts.value = res.data.data || [];
+    } else {
+      console.error("Failed to fetch top products:", res.data.message);
+    }
+  } catch (error) {
+    console.error("Error fetching top products:", error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+const fetchCategoryData = async () => {
+  try {
+    const res = await axios.get(
+      "/api/dashboard/locations/by-category",
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.status === "OK") {
+      categoryData.value = res.data.data || [];
+    } else {
+      console.error("Failed to fetch category data:", res.data.message);
+    }
+  } catch (error) {
+    console.error("Error fetching category data:", error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+const fetchProvinceData = async () => {
+  try {
+    const res = await axios.get(
+      "/api/dashboard/locations/by-province",
+      globalStore.getAxiosHeader()
+    );
+
+    if (res.data.status === "OK") {
+      provinceData.value = res.data.data || [];
+    } else {
+      console.error("Failed to fetch province data:", res.data.message);
+    }
+  } catch (error) {
+    console.error("Error fetching province data:", error);
+    await globalStore.onCheckError(error);
+  }
+};
+
+const fetchDashboardData = async () => {
+  state.isLoading = true;
+  state.error = null;
+
+  try {
+    // Fetch all dashboard data
+    await Promise.all([
+      fetchDashboardStats(),
+      fetchTopLocations(),
+      fetchTopProducts(),
+      fetchCategoryData(),
+      fetchProvinceData(),
+    ]);
+
+    // Update charts after data is loaded
+    await nextTick();
+    initCharts();
+
+    showNotification("success", "Success", "Dashboard data updated successfully");
+  } catch (err) {
+    console.error("Error fetching dashboard data:", err);
+    state.error = err.response?.data?.message || "Failed to load dashboard data";
+    showNotification("error", "Error", state.error);
+  } finally {
+    state.isLoading = false;
+  }
+};
+
+const refreshData = async () => {
+  await fetchDashboardData();
+};
+
+const initCharts = () => {
+  // Check if Chart.js is available
+  if (typeof Chart === "undefined") {
+    console.warn("Chart.js not found. Please include Chart.js library.");
+    return;
+  }
+
+  // Destroy existing charts
+  if (categoryChartInstance) {
+    categoryChartInstance.destroy();
+  }
+  if (provinceChartInstance) {
+    provinceChartInstance.destroy();
+  }
+
+  // Category Chart
+  if (categoryChart.value && categoryData.value.length > 0) {
+    categoryChartInstance = new Chart(categoryChart.value, {
+      type: "doughnut",
+      data: {
+        labels: categoryData.value.map((item) => item.category),
+        datasets: [
+          {
+            data: categoryData.value.map((item) => item.location_count),
+            backgroundColor: [
+              "#ff6b6b",
+              "#4ecdc4",
+              "#45b7d1",
+              "#f9ca24",
+              "#6c5ce7",
+              "#00b894",
+              "#fdcb6e",
+              "#e17055",
+            ],
+            borderWidth: 0,
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              padding: 20,
+              usePointStyle: true,
+              font: {
+                size: 12,
+              },
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const label = context.label || "";
+                const value = context.formattedValue;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.parsed * 100) / total).toFixed(1);
+                return `${label}: ${value} (${percentage}%)`;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // Province Chart
+  if (provinceChart.value && provinceData.value.length > 0) {
+    provinceChartInstance = new Chart(provinceChart.value, {
+      type: "bar",
+      data: {
+        labels: provinceData.value.map((item) => item.province_en || item.province),
+        datasets: [
+          {
+            label: "Locations",
+            data: provinceData.value.map((item) => item.location_count),
+            backgroundColor: "rgba(102, 126, 234, 0.8)",
+            borderColor: "#667eea",
+            borderWidth: 2,
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              afterLabel: function (context) {
+                const dataIndex = context.dataIndex;
+                const views = provinceData.value[dataIndex]?.total_views || 0;
+                return `Total Views: ${formatNumber(views)}`;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "rgba(0,0,0,0.1)",
+            },
+            ticks: {
+              font: {
+                size: 11,
+              },
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              font: {
+                size: 11,
+              },
+              maxRotation: 45,
+            },
+          },
+        },
+      },
+    });
+  }
+};
+
+const getToastIcon = (type) => {
+  switch (type) {
+    case "success":
+      return "fas fa-check-circle";
+    case "error":
+      return "fas fa-exclamation-circle";
+    case "warning":
+      return "fas fa-exclamation-triangle";
+    case "info":
+      return "fas fa-info-circle";
+    default:
+      return "fas fa-info-circle";
+  }
+};
+
+// Lifecycle hooks
+onMounted(async () => {
+  await fetchDashboardData();
+});
+
+// Cleanup
+onBeforeUnmount(() => {
+  if (categoryChartInstance) {
+    categoryChartInstance.destroy();
+  }
+  if (provinceChartInstance) {
+    provinceChartInstance.destroy();
+  }
 });
 </script>
 
 <style scoped>
-.travel-explorer {
-  font-family: "Poppins", sans-serif;
-  background-color: #f7f9fc;
-  color: #333;
+.dashboard {
+  padding: 5px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #f8fffe 0%, #f0f9ff 100%);
   min-height: 100vh;
   position: relative;
-  padding-left: 80px; /* Space for sidebar */
-  padding-right: 20px;
-  padding-top: 20px;
 }
 
-/* Header Styles */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  padding: 0 20px;
-}
-
-.welcome h1 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.wave-emoji {
-  display: inline-block;
-  animation: wave 1.5s infinite;
-  transform-origin: 70% 70%;
-}
-
-@keyframes wave {
-  0% {
-    transform: rotate(0deg);
-  }
-  10% {
-    transform: rotate(14deg);
-  }
-  20% {
-    transform: rotate(-8deg);
-  }
-  30% {
-    transform: rotate(14deg);
-  }
-  40% {
-    transform: rotate(-4deg);
-  }
-  50% {
-    transform: rotate(10deg);
-  }
-  60% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
-.welcome-text {
-  color: #6c757d;
-  font-size: 14px;
-}
-
-.search-container {
-  position: relative;
-  width: 300px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 15px 10px 40px;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
-  background-color: #fff;
-  font-size: 14px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6c757d;
-}
-
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.notification-badge {
-  position: relative;
-}
-
-.notification-badge i {
-  font-size: 18px;
-  color: #6c757d;
-}
-
-.badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #f44336;
-  color: white;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.user-title {
-  font-size: 12px;
-  color: #6c757d;
-}
-
-/* Main Content Styles */
-.main-content {
-  padding: 0 20px;
-}
-
-.featured-destinations {
+/* Hero Cards Section */
+.hero-cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 20px;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
 }
 
-.destination-card {
-  height: 180px;
-  border-radius: 16px;
+.hero-card {
+  height: 240px;
+  border-radius: 20px;
   background-size: cover;
   background-position: center;
+  display: flex;
+  align-items: flex-end;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  color: white;
+  /* box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); */
+  transition: all 0.4s ease;
 }
 
-.destination-card:hover {
+.hero-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
-.destination-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 15px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-}
-
-.destination-info h3 {
+.hero-content {
+  padding: 25px;
   color: white;
-  margin: 0 0 5px 0;
-  font-size: 18px;
-  font-weight: 600;
+  width: 100%;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
 }
 
-.location,
-.rating {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: white;
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 30px;
-}
-
-/* Best Destinations Section */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.section-header h2,
-.section-header h3 {
+.hero-content h3 {
+  font-size: 1.8rem;
   font-weight: 700;
-  margin: 0;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  color: white;
 }
 
-.destination-count {
-  font-size: 14px;
-  color: #6c757d;
-}
-
-.filter-bar {
-  margin-bottom: 20px;
-}
-
-.filter-button {
+.hero-location {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #f0f2f5;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  opacity: 0.9;
 }
 
-.filter-button:hover {
-  background-color: #e5e8ec;
-}
-
-.destination-list {
+.hero-rating {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.destination-list-item {
-  display: flex;
-  background-color: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.destination-image {
-  width: 90px;
-  height: 70px;
-  overflow: hidden;
-}
-
-.destination-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.destination-details {
-  flex: 1;
-  padding: 10px 15px;
-}
-
-.destination-details h4 {
-  margin: 0 0 5px 0;
-  font-size: 16px;
+  align-items: center;
+  gap: 6px;
   font-weight: 600;
+  font-size: 1.1rem;
 }
 
-.destination-price {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0 15px;
-  font-weight: 700;
-  color: #3f51b5;
-}
-
-.price {
-  font-size: 18px;
-}
-
-.price-period {
-  font-size: 12px;
-  color: #6c757d;
-  font-weight: 400;
-}
-
-/* Calendar Section */
-.calendar-section {
-  background-color: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+/* Section Headers */
+.section-header {
+  text-align: center;
   margin-bottom: 30px;
 }
 
-.month-navigator {
+.section-header h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 8px;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 30px;
+  border-radius: 24px;
+  /* box-shadow: 0 8px 32px rgba(30, 64, 175, 0.1); */
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.header h1 {
+  color: #1a7e8c;
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
+}
+
+.header .subtitle {
+  color: #3b82f6;
+  font-size: 1.2rem;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.time-selector {
+  padding: 12px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.time-selector:hover,
+.time-selector:focus {
+  border-color: #3b82f6;
+  outline: none;
+  /* box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); */
+}
+
+.refresh-btn {
+  background: linear-gradient(135deg, #3b82f6, #1a7e8c);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); */
+}
+
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  /* box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); */
+}
+
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.toast-notification {
+  background: white;
+  border-radius: 8px;
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); */
+  margin-bottom: 10px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  max-width: 400px;
+  position: relative;
+  border-left: 4px solid;
+}
+
+.toast-notification.success {
+  border-left-color: #28a745;
+}
+
+.toast-notification.error {
+  border-left-color: #dc3545;
+}
+
+.toast-notification.warning {
+  border-left-color: #ffc107;
+}
+
+.toast-notification.info {
+  border-left-color: #17a2b8;
+}
+
+.toast-icon {
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.toast-notification.success .toast-icon {
+  color: #28a745;
+}
+
+.toast-notification.error .toast-icon {
+  color: #dc3545;
+}
+
+.toast-notification.warning .toast-icon {
+  color: #ffc107;
+}
+
+.toast-notification.info .toast-icon {
+  color: #17a2b8;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.toast-message {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6c757d;
+  margin-left: 12px;
+  padding: 0;
+  line-height: 1;
+}
+
+.toast-close:hover {
+  color: #000;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  /* box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  /* box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15); */
+}
+
+.stat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
 }
 
-.month-controls {
-  display: flex;
-  gap: 10px;
-}
-
-.control-button {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: none;
-  background-color: #f0f2f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.control-button:hover {
-  background-color: #e5e8ec;
-}
-
-.weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  font-weight: 600;
-  color: #6c757d;
-  font-size: 12px;
-  margin-bottom: 10px;
-}
-
-.days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-}
-
-.day {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.day:hover {
-  background-color: #f0f2f5;
-}
-
-.current-day {
-  background-color: #4caf50;
-  color: white;
-}
-
-.has-event {
-  position: relative;
-}
-
-.has-event::after {
-  content: "";
-  position: absolute;
-  bottom: 2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: #f44336;
-}
-
-.other-month {
-  color: #bdbdbd;
-}
-
-/* Schedule Section */
-.schedule-section {
-  background-color: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.more-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #6c757d;
-}
-
-.schedule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 15px;
-}
-
-.schedule-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.trip-image {
-  width: 60px;
-  height: 60px;
+.stat-icon {
+  width: 50px;
+  height: 50px;
   border-radius: 12px;
-  overflow: hidden;
-}
-
-.trip-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.trip-details {
-  flex: 1;
-}
-
-.trip-details h4 {
-  margin: 0 0 5px 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.trip-date {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: #6c757d;
-}
-
-.attendees {
-  display: flex;
-  align-items: center;
-}
-
-.attendee-avatars {
-  display: flex;
-}
-
-.attendee-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background-color: #e0e0e0;
-  color: #616161;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  margin-left: -8px;
-  border: 2px solid white;
-}
-
-.attendee-avatar:first-child {
-  margin-left: 0;
-}
-
-/* Promo Panel */
-.promo-panel {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  background-color: #3f51b5;
-  border-radius: 16px;
-  padding: 20px;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  width: 320px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-}
-
-.promo-character img {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-}
-
-.promo-content h3 {
-  margin: 0 0 5px 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.promo-content p {
-  margin: 0 0 15px 0;
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.promo-button {
-  background-color: white;
-  color: #3f51b5;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.promo-button:hover {
-  background-color: #f0f2f5;
-}
-
-/* Sidebar */
-.sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 0;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-  z-index: 100;
-}
-
-.logo {
-  margin-bottom: 50px;
-}
-
-.logo-icon {
   font-size: 24px;
+  color: white;
 }
 
-.nav-menu {
+.stat-icon.locations {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+}
+.stat-icon.products {
+  background: linear-gradient(45deg, #4ecdc4, #44a08d);
+}
+.stat-icon.users {
+  background: linear-gradient(45deg, #45b7d1, #2980b9);
+}
+.stat-icon.views {
+  background: linear-gradient(45deg, #f9ca24, #f0932b);
+}
+.stat-icon.rating {
+  background: linear-gradient(45deg, #fdcb6e, #e17055);
+}
+.stat-icon.categories {
+  background: linear-gradient(45deg, #6c5ce7, #a29bfe);
+}
+.stat-icon.provinces {
+  background: linear-gradient(45deg, #00b894, #00a085);
+}
+
+.stat-value {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #1a7e8c;
+  margin-bottom: 8px;
+  /* text-shadow: 0 2px 4px rgba(45, 80, 22, 0.1); */
+}
+
+.stat-label {
+  color: #1a7e8c;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.stat-change {
   display: flex;
-  flex-direction: column;
   align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.stat-change.positive {
+  color: #2e7d32;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
-  flex: 1;
+  margin-bottom: 30px;
 }
 
-.nav-item {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.chart-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fdf7 100%);
+  padding: 30px;
+  border-radius: 20px;
+  /* box-shadow: 0 10px 40px rgba(45, 80, 22, 0.1); */
+  /* border: 1px solid rgba(139, 195, 74, 0.2); */
+}
+
+.chart-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a7e8c;
+  margin-bottom: 25px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #6c757d;
-  text-decoration: none;
+  gap: 12px;
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+
+.bottom-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.data-table {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fdf7 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(45, 80, 22, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(139, 195, 74, 0.2);
+}
+
+.table-header {
+  background: linear-gradient(135deg, #daddd8, #5b9aa2);
+  color: white;
+  padding: 25px 30px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); */
+}
+
+.table-content {
+  padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid rgba(139, 195, 74, 0.1);
   transition: all 0.3s ease;
 }
 
-.nav-item:hover {
-  background-color: #f0f2f5;
-  color: #3f51b5;
+/* Destination Cards */
+.destination-card,
+.gear-card {
+  display: flex;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); */
+  transition: all 0.3s ease;
 }
 
-.nav-item.active {
-  background-color: #3f51b5;
+.destination-card:hover,
+.gear-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.destination-image,
+.gear-image {
+  width: 120px;
+  height: 100px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.destination-info,
+.gear-info {
+  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.destination-header,
+.gear-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.destination-header h4,
+.gear-header h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e40af;
+  margin: 0;
+}
+
+.destination-price,
+.gear-price {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+.destination-price span,
+.gear-price span {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.destination-location,
+.gear-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.destination-stats,
+.gear-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.destination-stats span,
+.gear-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+table-row:hover {
+  background-color: #f8f9fa;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.location-info {
+  flex: 1;
+}
+
+.location-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.location-details {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.location-stats {
+  display: flex;
+  gap: 15px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.location-stats span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(45, 80, 22, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fdf7 100%);
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  /* box-shadow: 0 20px 60px rgba(45, 80, 22, 0.3); */
+  border: 2px solid rgba(139, 195, 74, 0.3);
+}
+
+.loading-spinner i {
+  font-size: 2.5rem;
+  color: #1a7e8c;
+  margin-bottom: 20px;
+}
+
+.loading-spinner p {
+  color: #1a7e8c;
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.error-message {
+  background: linear-gradient(135deg, #ffebee 0%, #ffffff 100%);
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(244, 67, 54, 0.2);
+  /* margin: 25px 0; */
+  border: 2px solid rgba(244, 67, 54, 0.2);
+}
+
+.error-message i {
+  font-size: 2.5rem;
+  color: #d32f2f;
+  margin-bottom: 20px;
+}
+
+.error-message p {
+  color: #b71c1c;
+  margin-bottom: 25px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.retry-btn {
+  background: linear-gradient(135deg, #d32f2f, #b71c1c);
   color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  /* box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3); */
 }
 
-.sidebar-footer {
-  margin-top: auto;
-  padding-bottom: 20px;
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4);
 }
 
-/* Responsive Styles */
-@media (max-width: 1200px) {
-  .content-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .right-column {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+.spinner {
+  animation: spin 1s linear infinite;
 }
 
-@media (max-width: 992px) {
-  .featured-destinations {
-    grid-template-columns: repeat(2, 1fr);
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-
-  .right-column {
-    grid-template-columns: 1fr;
+  to {
+    transform: rotate(360deg);
   }
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
-  .travel-explorer {
-    padding-left: 0;
-    padding-bottom: 70px;
+  .dashboard {
+    padding: 10px;
   }
 
   .header {
     flex-direction: column;
-    align-items: flex-start;
     gap: 15px;
+    text-align: center;
   }
 
-  .search-container {
-    width: 100%;
+  .header h1 {
+    font-size: 1.5rem;
   }
 
-  .user-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .featured-destinations {
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 
-  .sidebar {
-    top: auto;
-    bottom: 0;
-    right: 0;
-    width: 100%;
-    height: 60px;
-    flex-direction: row;
-    padding: 0 20px;
+  .bottom-section {
+    grid-template-columns: 1fr;
   }
 
-  .logo,
-  .sidebar-footer {
-    display: none;
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 
-  .nav-menu {
-    flex-direction: row;
-    width: 100%;
-    justify-content: space-between;
+  .stat-value {
+    font-size: 2rem;
   }
 
-  .promo-panel {
-    width: 100%;
-    right: 0;
-    bottom: 60px;
-    border-radius: 0;
+  .location-stats {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .table-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 20px;
+  }
+
+  .chart-card {
+    padding: 20px;
+  }
+
+  .location-stats {
+    align-items: flex-start;
   }
 }
 </style>

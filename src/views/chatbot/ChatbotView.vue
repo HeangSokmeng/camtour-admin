@@ -183,7 +183,7 @@
               </td>
               <td class="align-middle">
                 <div class="answer-preview">
-                  {{ truncateText(tour.answer, 80) }}
+                  {{ truncateText(tour.answer, 50) }}
                 </div>
               </td>
               <td class="align-middle">
@@ -1078,67 +1078,6 @@ const exportJson = async (format = "pretty") => {
     isExporting.value = false;
   }
 };
-
-// const exportJson = async (format = 'pretty') => {
-//   isExporting.value = true;
-//   try {
-//     // Use the data endpoint instead of direct file download
-//     const params = new URLSearchParams();
-
-//     // Add current filters to export
-//     if (searchQuery.value) params.append('search', searchQuery.value);
-//     if (selectedLocation.value) params.append('location', selectedLocation.value);
-//     if (selectedCategory.value) params.append('category', selectedCategory.value);
-
-//     const response = await axios.get(`/api/tours/export/data?${params.toString()}`, globalStore.getAxiosHeader());
-
-//     if (response.data.status === "OK" && !response.data.error) {
-//       // Create JSON string with proper formatting
-//       const jsonString = format === 'pretty'
-//         ? JSON.stringify(response.data.data, null, 2)
-//         : JSON.stringify(response.data.data);
-
-//       // Create blob and download
-//       const blob = new Blob([jsonString], {
-//         type: 'application/json;charset=utf-8'
-//       });
-
-//       const downloadUrl = window.URL.createObjectURL(blob);
-//       const link = document.createElement('a');
-//       link.href = downloadUrl;
-
-//       // Generate filename with timestamp
-//       const now = new Date();
-//       const timestamp = now.getFullYear() + '-' +
-//                        String(now.getMonth() + 1).padStart(2, '0') + '-' +
-//                        String(now.getDate()).padStart(2, '0') + '_' +
-//                        String(now.getHours()).padStart(2, '0') + '-' +
-//                        String(now.getMinutes()).padStart(2, '0') + '-' +
-//                        String(now.getSeconds()).padStart(2, '0');
-
-//       link.download = `tours_export_${format}_${timestamp}.json`;
-
-//       // Trigger download
-//       document.body.appendChild(link);
-//       link.click();
-//       document.body.removeChild(link);
-
-//       // Clean up
-//       window.URL.revokeObjectURL(downloadUrl);
-
-//       showNotification("success", "Success", `JSON export downloaded (${format} format)`);
-//     } else {
-//       showNotification("error", "Error", response.data.message || "Failed to get export data");
-//     }
-//   } catch (error) {
-//     console.error("Export error:", error);
-//     showNotification("error", "Error", "Failed to export data: " + (error.response?.data?.message || error.message));
-//   } finally {
-//     isExporting.value = false;
-//   }
-// };
-
-// Remove the alternative function since we're using the main one
 const showExportStats = async () => {
   try {
     const res = await axios.get("/api/tours/export/stats", globalStore.getAxiosHeader());
