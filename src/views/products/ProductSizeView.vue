@@ -73,19 +73,71 @@
         {{ modalMessage }}
       </div>
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
-        <!-- Size Information -->
-        <div class="col-md-12">
-          <label class="form-label" for="sizeValue">Size</label>
-          <input
-            v-model="newSize.size"
-            class="form-control"
-            id="sizeValue"
-            type="text"
-            placeholder="XS, S, M, L, XL, etc."
-            required
-          />
-          <div class="invalid-feedback">Size value is required</div>
+        <!-- Existing Size Selection (Default for new sizes) -->
+        <div v-if="!isEditMode && availableSizes.length > 0" class="col-12">
+          <div class="existing-size-section">
+            <div class="section-header">
+              <label class="form-label" for="existingSize">Select Existing Size</label>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm add-new-size-btn"
+                @click="switchToCreateMode"
+                title="Create New Size"
+              >
+                <i class="fas fa-plus me-1"></i>Create New
+              </button>
+            </div>
+
+            <div class="existing-size-selector">
+              <select
+                v-model="selectedExistingSizeId"
+                class="form-select"
+                id="existingSize"
+                @change="onExistingSizeSelect"
+                required
+              >
+                <option value="" disabled>Choose an existing size</option>
+                <option v-for="size in availableSizes" :key="size.id" :value="size.id">
+                  {{ size.size }}
+                </option>
+              </select>
+              <div class="invalid-feedback">Please select an existing size</div>
+            </div>
+
+            <!-- Enhanced Preview of selected existing size -->
+            <div v-if="previewExistingSize" class="existing-size-preview">
+              <div class="preview-card">
+                <div class="size-display">
+                  <div class="size-badge-large">
+                    {{ previewExistingSize.size }}
+                  </div>
+                </div>
+                <div class="size-info">
+                  <h6 class="size-name">Size: {{ previewExistingSize.size }}</h6>
+                  <span class="size-description">Standard clothing size</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- New Size Creation Fields (Hidden by default, shown when no existing sizes or when user clicks + button) -->
+        <template
+          v-if="sizeInputMethod === 'create' || isEditMode || availableSizes.length === 0"
+        >
+          <div class="col-md-12">
+            <label class="form-label" for="sizeValue">Size</label>
+            <input
+              v-model="newSize.size"
+              class="form-control"
+              id="sizeValue"
+              type="text"
+              placeholder="XS, S, M, L, XL, etc."
+              required
+            />
+            <div class="invalid-feedback">Size value is required</div>
+          </div>
+        </template>
 
         <!-- Product Selection -->
         <div class="col-md-12">
@@ -171,6 +223,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 
 const { toasts, showNotification, removeToast } = useToast();
 const globalStore = useGlobalStore();
+
 const state = reactive({
   sizes: [],
   isLoading: false,
@@ -185,6 +238,11 @@ const currentSizeId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 
+// New variables for size selection
+const sizeInputMethod = ref("select"); // 'create' or 'select'
+const selectedExistingSizeId = ref("");
+const previewExistingSize = ref(null);
+
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -197,6 +255,47 @@ const newSize = reactive({
   size: "",
   product_id: "",
 });
+
+// Get unique sizes for selection
+const availableSizes = computed(() => {
+  const uniqueSizes = [];
+  const seen = new Set();
+
+  state.sizes.forEach((size) => {
+    const key = size.size;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueSizes.push({
+        id: size.id,
+        size: size.size,
+      });
+    }
+  });
+
+  return uniqueSizes;
+});
+
+const onExistingSizeSelect = () => {
+  if (selectedExistingSizeId.value) {
+    const selectedSize = availableSizes.value.find(
+      (size) => size.id === selectedExistingSizeId.value
+    );
+    if (selectedSize) {
+      previewExistingSize.value = selectedSize;
+      // Auto-fill the size data
+      newSize.size = selectedSize.size;
+    }
+  } else {
+    previewExistingSize.value = null;
+  }
+};
+
+const switchToCreateMode = () => {
+  sizeInputMethod.value = "create";
+  selectedExistingSizeId.value = "";
+  previewExistingSize.value = null;
+  newSize.size = "";
+};
 
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
@@ -343,7 +442,6 @@ const updateSize = async () => {
         modalMessage.value = error.response.data.message;
       } else if (error.response.data.errors) {
         const errors = Object.values(error.response.data.errors).flat();
-        modalMessage.value = errors.join("\n");
       } else {
         modalMessage.value = "An error occurred while updating the size.";
       }
@@ -387,6 +485,8 @@ const deleteSize = (sizeId) => {
 const openModal = () => {
   resetSizeForm();
   isEditMode.value = false;
+  // Default to select mode if there are existing sizes, otherwise create mode
+  sizeInputMethod.value = availableSizes.value.length > 0 ? "select" : "create";
   showModal.value = true;
 };
 
@@ -436,6 +536,9 @@ const resetSizeForm = () => {
   newSize.size = "";
   newSize.product_id = "";
   currentSizeId.value = null;
+  selectedExistingSizeId.value = "";
+  previewExistingSize.value = null;
+  // Don't reset sizeInputMethod here - let openModal handle it
 };
 
 const handleSubmit = async (event) => {
@@ -445,6 +548,18 @@ const handleSubmit = async (event) => {
     event.target.classList.add("was-validated");
     return;
   }
+
+  // Validation for select existing size mode
+  if (
+    sizeInputMethod.value === "select" &&
+    !isEditMode.value &&
+    !selectedExistingSizeId.value &&
+    availableSizes.value.length > 0
+  ) {
+    modalMessage.value = "Please select an existing size";
+    return;
+  }
+
   if (!newSize.size.trim()) {
     modalMessage.value = "Size value is required";
     return;
@@ -469,6 +584,7 @@ const filteredSizes = computed(() => {
         .includes(searchQuery.value.toLowerCase())
   );
 });
+
 onMounted(async () => {
   try {
     await fetchProducts();
@@ -480,3 +596,323 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+.size-label {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.size-form .form-label {
+  font-weight: 500;
+}
+
+/* Enhanced existing size section styling */
+.existing-size-section {
+  background: transparent;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header .form-label {
+  color: #495057;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+.add-new-size-btn {
+  background: transparent;
+  border: 1px solid #6c757d;
+  color: #6c757d;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.add-new-size-btn:hover {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.stylish-select {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stylish-select:focus {
+  background: white;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.existing-size-preview {
+  margin-top: 1rem;
+}
+
+.preview-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.preview-card:hover {
+  transform: translateY(-2px);
+}
+
+.size-display {
+  flex-shrink: 0;
+}
+
+.size-badge-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: white;
+  color: #495057;
+  font-weight: bold;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  border: 2px solid #dee2e6;
+}
+
+.size-badge-large:hover {
+  transform: scale(1.05);
+}
+
+.size-info {
+  flex-grow: 1;
+}
+
+.size-name {
+  margin: 0;
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.size-description {
+  color: #718096;
+  font-size: 0.9rem;
+  background: #f7fafc;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.existing-size-selector {
+  margin-bottom: 1rem;
+}
+
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.confirmation-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.confirmation-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.confirmation-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.confirmation-icon.warning {
+  background-color: #fff3cd;
+  color: #ff9800;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.confirmation-body {
+  padding: 1rem;
+}
+
+.confirmation-footer {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #dee2e6;
+}
+
+.form-control,
+.form-select {
+  border-color: #e5e5e5;
+  padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 500;
+}
+
+/* Toast styles */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1050;
+}
+
+.toast-notification {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  width: 300px;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem 1rem;
+  animation: toast-in 0.2s ease-in;
+}
+
+.toast-notification.success {
+  border-left: 4px solid #198754;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #dc3545;
+}
+
+.toast-icon {
+  margin-right: 0.75rem;
+  color: #6c757d;
+}
+
+.toast-notification.success .toast-icon {
+  color: #198754;
+}
+
+.toast-notification.error .toast-icon {
+  color: #dc3545;
+}
+
+.toast-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.toast-message {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+</style>

@@ -32,6 +32,8 @@ const LocationGuide = () => import('@/views/locations/LocationGuideView.vue')
 const SettingProfile = () => import('@/views/settings/ProfileSettingView.vue')
 const UserRole = () => import('@/views/users/UserRoleView.vue')
 const ChatBot = () => import('@/views/chatbot/ChatbotView.vue')
+const LocationActivity = () => import('@/views/locations/LocationActivityView.vue')
+const Invoice = () => import('@/views/invoice/InvoiceView.vue')
 
 // Role constants
 const ROLES = {
@@ -150,7 +152,7 @@ const router = createRouter({
             name: 'setting',
             component: SettingProfile,
             meta: {
-                title: 'Admin Camtour . Categories',
+                title: 'Admin Camtour . Setting',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -160,7 +162,18 @@ const router = createRouter({
             name: 'location guide',
             component: LocationGuide,
             meta: {
-                title: 'Admin Camtour . Categories',
+                title: 'Admin Camtour . Guide,',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+         {
+            path: '/location/activity',
+            name: 'location activity',
+            component: LocationActivity,
+            meta: {
+                title: 'Admin Camtour . Activity',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -204,7 +217,7 @@ const router = createRouter({
             name: 'product.variant',
             component: ProductVariantView,
             meta: {
-                title: 'Admin Camtour . Product Variants',
+                title: 'Admin Camtour . Variants',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -215,7 +228,18 @@ const router = createRouter({
             name: 'product.order',
             component: ProductOrder,
             meta: {
-                title: 'Admin Camtour . Product Variants',
+                title: 'Admin Camtour . Order',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+         {
+            path: '/product/invoice',
+            name: 'product.invoice',
+            component: Invoice,
+            meta: {
+                title: 'Admin Camtour . Invoice',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -226,7 +250,7 @@ const router = createRouter({
             name: 'product.size',
             component: ProductSizeView,
             meta: {
-                title: 'Admin Camtour . Product Sizes',
+                title: 'Admin Camtour . Sizes',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -237,7 +261,7 @@ const router = createRouter({
             name: 'product.photo',
             component: ProductPhotoView,
             meta: {
-                title: 'Admin Camtour . Product Sizes',
+                title: 'Admin Camtour . Product Photo',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
@@ -248,7 +272,7 @@ const router = createRouter({
             name: 'customer.comment',
             component: CustomerCommment,
             meta: {
-                title: 'Admin Camtour . Product Sizes',
+                title: 'Admin Camtour . Commment',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]

@@ -224,9 +224,8 @@
             class="form-control"
             id="productCode"
             type="text"
-            required
           />
-          <div class="invalid-feedback">Product code is required</div>
+          <!-- <div class="invalid-feedback">Product code is required</div> -->
         </div>
 
         <!-- Categories and Brand -->
@@ -713,10 +712,7 @@ const handleSubmit = async (event) => {
     modalError.value = "Product name in Khmer is required";
     return;
   }
-  if (!productForm.code.trim()) {
-    modalError.value = "Product code is required";
-    return;
-  }
+
   if (!productForm.price) {
     modalError.value = "Price is required";
     return;

@@ -212,6 +212,7 @@
     </div>
   </div>
 
+  <!-- Main Variant Modal -->
   <div v-if="showModal" class="modal-overlay">
     <div class="modal-content variant-form">
       <h4>{{ isEditMode ? "Edit" : "Create" }} Product Variant</h4>
@@ -222,70 +223,162 @@
         <!-- Product Selection -->
         <div class="col-md-12">
           <label class="form-label" for="productId">Product</label>
-          <select
-            v-model="variantForm.product_id"
-            class="form-select"
-            id="productId"
-            required
-            @change="handleProductChange"
-          >
-            <option value="" disabled>Select a product</option>
-            <option v-for="product in products" :key="product.id" :value="product.id">
-              {{ product.name }}
-            </option>
-          </select>
+          <div class="input-group">
+            <select
+              v-model="variantForm.product_id"
+              class="form-select"
+              id="productId"
+              required
+              @change="handleProductChange"
+            >
+              <option value="" disabled>
+                {{
+                  products.length === 0
+                    ? "No products available - Create one first"
+                    : "Select a product"
+                }}
+              </option>
+              <option v-for="product in products" :key="product.id" :value="product.id">
+                {{ product.name }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="openQuickCreateModal('product')"
+              title="Create new product"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
           <div class="invalid-feedback">Product is required</div>
+          <div v-if="products.length === 0" class="form-text text-warning">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            No products available. Click + to create one.
+          </div>
         </div>
 
         <!-- Color Selection -->
         <div class="col-md-6">
           <label class="form-label" for="colorId">Color</label>
-          <select
-            v-model="variantForm.product_color_id"
-            class="form-select"
-            id="colorId"
-            required
-          >
-            <option value="" disabled>Select a color</option>
-            <option v-for="color in filteredColors" :key="color.id" :value="color.id">
-              {{ color.name }}
-            </option>
-          </select>
+          <div class="input-group">
+            <select
+              v-model="variantForm.product_color_id"
+              class="form-select"
+              id="colorId"
+              required
+              :disabled="!variantForm.product_id"
+            >
+              <option value="" disabled>
+                {{ !variantForm.product_id ? "Select product first" : "Select a color" }}
+              </option>
+              <option v-for="color in filteredColors" :key="color.id" :value="color.id">
+                {{ color.name }}
+              </option>
+            </select>
+            <span
+              v-if="variantForm.product_color_id"
+              class="input-group-text color-preview-addon"
+              :title="getSelectedColorName()"
+            >
+              <div
+                class="color-preview-swatch"
+                :style="{ backgroundColor: getSelectedColorCode() }"
+              ></div>
+            </span>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="openQuickCreateModal('color')"
+              :disabled="!variantForm.product_id"
+              title="Create new color"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
           <div class="invalid-feedback">Color is required</div>
+          <div
+            v-if="filteredColors.length === 0 && variantForm.product_id"
+            class="form-text text-warning"
+          >
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            No colors available for this product. Click + to create one.
+          </div>
         </div>
 
         <!-- Size Selection -->
         <div class="col-md-6">
           <label class="form-label" for="sizeId">Size</label>
-          <select
-            v-model="variantForm.product_size_id"
-            class="form-select"
-            id="sizeId"
-            required
-          >
-            <option value="" disabled>Select a size</option>
-            <option v-for="size in filteredSizes" :key="size.id" :value="size.id">
-              {{ size.size }}
-            </option>
-          </select>
+          <div class="input-group">
+            <select
+              v-model="variantForm.product_size_id"
+              class="form-select"
+              id="sizeId"
+              required
+              :disabled="!variantForm.product_id"
+            >
+              <option value="" disabled>
+                {{ !variantForm.product_id ? "Select product first" : "Select a size" }}
+              </option>
+              <option v-for="size in filteredSizes" :key="size.id" :value="size.id">
+                {{ size.size }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="openQuickCreateModal('size')"
+              :disabled="!variantForm.product_id"
+              title="Create new size"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
           <div class="invalid-feedback">Size is required</div>
+          <div
+            v-if="filteredSizes.length === 0 && variantForm.product_id"
+            class="form-text text-warning"
+          >
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            No sizes available for this product. Click + to create one.
+          </div>
         </div>
 
         <!-- Brand Selection -->
         <div class="col-md-12">
           <label class="form-label" for="brandId">Brand</label>
-          <select
-            v-model="variantForm.brand_id"
-            class="form-select"
-            id="brandId"
-            required
-          >
-            <option value="" disabled>Select a brand</option>
-            <option v-for="brand in brands" :key="brand.id" :value="brand.id">
-              {{ brand.name }}
-            </option>
-          </select>
+          <div class="input-group">
+            <select
+              v-model="variantForm.brand_id"
+              class="form-select"
+              id="brandId"
+              required
+            >
+              <option value="" disabled>
+                {{
+                  brands.length === 0
+                    ? "No brands available - Create one first"
+                    : "Select a brand"
+                }}
+              </option>
+              <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                {{ brand.name }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="openQuickCreateModal('brand')"
+              title="Create new brand"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
           <div class="invalid-feedback">Brand is required</div>
+          <div v-if="brands.length === 0" class="form-text text-warning">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            No brands available. Click + to create one.
+          </div>
         </div>
 
         <!-- Quantity Input -->
@@ -328,6 +421,195 @@
           </button>
           <button class="btn btn-primary" type="submit" :disabled="isSubmitting">
             {{ isSubmitting ? "Processing..." : isEditMode ? "Update" : "Save" }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quick Create Modal -->
+  <div v-if="showQuickCreateModal" class="modal-overlay">
+    <div class="modal-content quick-create-form">
+      <h5>
+        Create New
+        {{ quickCreateType.charAt(0).toUpperCase() + quickCreateType.slice(1) }}
+      </h5>
+      <div v-if="quickCreateError" class="alert alert-danger">
+        {{ quickCreateError }}
+      </div>
+
+      <!-- Product Form -->
+      <form
+        v-if="quickCreateType === 'product'"
+        @submit.prevent="handleQuickCreate"
+        class="row g-3"
+      >
+        <div class="col-12">
+          <label class="form-label">Product Name</label>
+          <input
+            v-model="quickCreateForm.name"
+            type="text"
+            class="form-control"
+            required
+            placeholder="Enter product name"
+          />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea
+            v-model="quickCreateForm.description"
+            class="form-control"
+            rows="3"
+            placeholder="Enter product description"
+          ></textarea>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button
+            type="button"
+            class="btn btn-secondary me-2"
+            @click="closeQuickCreateModal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" :disabled="isQuickCreating">
+            {{ isQuickCreating ? "Creating..." : "Create Product" }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Color Form -->
+      <form
+        v-if="quickCreateType === 'color'"
+        @submit.prevent="handleQuickCreate"
+        class="row g-3"
+      >
+        <div class="col-6">
+          <label class="form-label">Color Name</label>
+          <input
+            v-model="quickCreateForm.name"
+            type="text"
+            class="form-control"
+            required
+            placeholder="Enter color name"
+          />
+        </div>
+        <div class="col-6">
+          <label class="form-label">Color Code</label>
+          <div class="input-group">
+            <input
+              v-model="quickCreateForm.code"
+              type="color"
+              class="form-control form-control-color"
+              required
+              title="Choose color"
+            />
+            <input
+              v-model="quickCreateForm.code"
+              type="text"
+              class="form-control"
+              placeholder="#000000"
+              pattern="^#[0-9A-Fa-f]{6}$"
+            />
+          </div>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button
+            type="button"
+            class="btn btn-secondary me-2"
+            @click="closeQuickCreateModal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" :disabled="isQuickCreating">
+            {{ isQuickCreating ? "Creating..." : "Create Color" }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Size Form -->
+      <form
+        v-if="quickCreateType === 'size'"
+        @submit.prevent="handleQuickCreate"
+        class="row g-3"
+      >
+        <div class="col-12">
+          <label class="form-label">Size</label>
+          <input
+            v-model="quickCreateForm.size"
+            type="text"
+            class="form-control"
+            required
+            placeholder="Enter size (e.g., S, M, L, XL, 32, 34)"
+          />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Sort Order</label>
+          <input
+            v-model.number="quickCreateForm.sort_order"
+            type="number"
+            class="form-control"
+            min="1"
+            placeholder="Enter sort order"
+          />
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button
+            type="button"
+            class="btn btn-secondary me-2"
+            @click="closeQuickCreateModal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" :disabled="isQuickCreating">
+            {{ isQuickCreating ? "Creating..." : "Create Size" }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Brand Form -->
+      <form
+        v-if="quickCreateType === 'brand'"
+        @submit.prevent="handleQuickCreate"
+        class="row g-3"
+      >
+        <div class="col-md-6">
+          <label class="form-label">Brand Name (English)</label>
+          <input
+            v-model="quickCreateForm.name"
+            type="text"
+            class="form-control"
+            required
+            placeholder="Enter brand name in English"
+          />
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Brand Name (Khmer)</label>
+          <input
+            v-model="quickCreateForm.name_km"
+            type="text"
+            class="form-control"
+            placeholder="Enter brand name in Khmer"
+          />
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea
+            v-model="quickCreateForm.description"
+            class="form-control"
+            rows="3"
+            placeholder="Enter brand description"
+          ></textarea>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button
+            type="button"
+            class="btn btn-secondary me-2"
+            @click="closeQuickCreateModal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" :disabled="isQuickCreating">
+            {{ isQuickCreating ? "Creating..." : "Create Brand" }}
           </button>
         </div>
       </form>
@@ -422,6 +704,20 @@ const currentVariantId = ref(null);
 const isSubmitting = ref(false);
 const modalError = ref("");
 
+// Quick Create Modal States
+const showQuickCreateModal = ref(false);
+const quickCreateType = ref("");
+const isQuickCreating = ref(false);
+const quickCreateError = ref("");
+const quickCreateForm = reactive({
+  name: "",
+  description: "",
+  code: "#000000",
+  size: "",
+  sort_order: 1,
+  name_km: "",
+});
+
 const variantForm = reactive({
   product_id: "",
   product_color_id: "",
@@ -437,6 +733,7 @@ const filteredColors = computed(() => {
     (color) => String(color.product_id) === String(variantForm.product_id)
   );
 });
+
 const filteredSizes = computed(() => {
   if (!variantForm.product_id) return sizes.value;
   return sizes.value.filter(
@@ -477,6 +774,155 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
+// Quick Create Modal Methods
+const openQuickCreateModal = (type) => {
+  quickCreateType.value = type;
+  quickCreateError.value = "";
+  resetQuickCreateForm();
+  showQuickCreateModal.value = true;
+};
+
+const closeQuickCreateModal = () => {
+  showQuickCreateModal.value = false;
+  quickCreateType.value = "";
+  quickCreateError.value = "";
+  resetQuickCreateForm();
+};
+
+const resetQuickCreateForm = () => {
+  quickCreateForm.name = "";
+  quickCreateForm.description = "";
+  quickCreateForm.code = "#000000";
+  quickCreateForm.size = "";
+  quickCreateForm.sort_order = 1;
+  quickCreateForm.name_km = "";
+};
+
+const handleQuickCreate = async () => {
+  isQuickCreating.value = true;
+  quickCreateError.value = "";
+
+  try {
+    let endpoint = "";
+    let data = {};
+
+    switch (quickCreateType.value) {
+      case "product":
+        endpoint = "/api/products";
+        data = {
+          name: quickCreateForm.name,
+          description: quickCreateForm.description,
+        };
+        break;
+      case "color":
+        if (!variantForm.product_id) {
+          quickCreateError.value =
+            "Please select a product first, or create a new product";
+          return;
+        }
+        endpoint = "/api/product-colors";
+        data = {
+          name: quickCreateForm.name,
+          code: quickCreateForm.code,
+          product_id: variantForm.product_id,
+        };
+        break;
+      case "size":
+        if (!variantForm.product_id) {
+          quickCreateError.value =
+            "Please select a product first, or create a new product";
+          return;
+        }
+        endpoint = "/api/product-sizes";
+        data = {
+          size: quickCreateForm.size,
+          sort_order: quickCreateForm.sort_order,
+          product_id: variantForm.product_id,
+        };
+        break;
+      case "brand":
+        endpoint = "/api/brands";
+        data = {
+          name: quickCreateForm.name,
+          name_km: quickCreateForm.name_km,
+          description: quickCreateForm.description,
+        };
+        break;
+    }
+
+    const res = await axios.post(endpoint, data, globalStore.getAxiosHeader());
+
+    if (res.data.result) {
+      const newItem = res.data.data;
+
+      // Debug: Log the response to see the structure
+      console.log(`Created ${quickCreateType.value}:`, newItem);
+
+      // Update the appropriate array and set the selected value
+      switch (quickCreateType.value) {
+        case "product":
+          products.value.push(newItem);
+          variantForm.product_id = String(newItem.id);
+          // Reset color and size since product changed
+          variantForm.product_color_id = "";
+          variantForm.product_size_id = "";
+          break;
+        case "color":
+          colors.value.push(newItem);
+          variantForm.product_color_id = String(newItem.id);
+          break;
+        case "size":
+          sizes.value.push(newItem);
+          variantForm.product_size_id = String(newItem.id);
+          break;
+        case "brand":
+          brands.value.push(newItem);
+          // Check if the new item has an id field
+          if (newItem.id) {
+            variantForm.brand_id = String(newItem.id);
+          } else {
+            console.warn("Brand created but no ID returned:", newItem);
+            // If no id, try to find the brand by name to get the id
+            await fetchBrands(); // Refresh brands list
+            const foundBrand = brands.value.find((brand) => brand.name === newItem.name);
+            if (foundBrand) {
+              variantForm.brand_id = String(foundBrand.id);
+            }
+          }
+          break;
+      }
+
+      showNotification(
+        "success",
+        "Success",
+        `${
+          quickCreateType.value.charAt(0).toUpperCase() + quickCreateType.value.slice(1)
+        } created successfully!`
+      );
+      closeQuickCreateModal();
+    } else {
+      quickCreateError.value =
+        res.data.message || `Failed to create ${quickCreateType.value}`;
+    }
+  } catch (error) {
+    console.error(`Error creating ${quickCreateType.value}:`, error);
+    if (error.response && error.response.data) {
+      if (error.response.data.message) {
+        quickCreateError.value = error.response.data.message;
+      } else if (error.response.data.errors) {
+        const errors = Object.values(error.response.data.errors).flat();
+        quickCreateError.value = errors.join(", ");
+      } else {
+        quickCreateError.value = `An error occurred while creating the ${quickCreateType.value}.`;
+      }
+    } else {
+      quickCreateError.value = `An error occurred while creating the ${quickCreateType.value}.`;
+    }
+  } finally {
+    isQuickCreating.value = false;
+  }
+};
+
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -504,6 +950,7 @@ const toggleSort = async (column) => {
 const changePage = async (page) => {
   await getVariants(page);
 };
+
 const findById = (collection, id) => {
   if (!id || !collection || !collection.length) return null;
   const stringId = String(id);
@@ -538,6 +985,18 @@ const getBrandName = (brandId) => {
   if (!brandId) return "Unknown";
   const brand = findById(brands.value, brandId);
   return brand ? brand.name : "Unknown";
+};
+
+const getSelectedColorName = () => {
+  if (!variantForm.product_color_id) return "";
+  const color = findById(colors.value, variantForm.product_color_id);
+  return color ? color.name : "";
+};
+
+const getSelectedColorCode = () => {
+  if (!variantForm.product_color_id) return "#cccccc";
+  const color = findById(colors.value, variantForm.product_color_id);
+  return color ? color.code : "#cccccc";
 };
 
 const handleProductChange = () => {
@@ -817,8 +1276,9 @@ const updateVariant = async () => {
         // Format validation errors
         const errors = Object.values(error.response.data.errors).flat();
         modalError.value = errors.join("\n");
+      } else {
+        modalError.value = "An error occurred while updating the variant.";
       }
-      elsemodalError.value = "An error occurred while updating the variant.";
     } else {
       modalError.value = "An error occurred while updating the variant.";
     }
@@ -896,12 +1356,19 @@ onMounted(async () => {
 }
 
 .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding-top: 30px;
   padding-bottom: 30px;
   overflow-y: auto;
+  z-index: 1050;
 }
 
 .modal-content {
@@ -912,10 +1379,47 @@ onMounted(async () => {
   padding: 2rem;
   border-radius: 0.5rem;
   margin: auto;
+  background-color: white;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.quick-create-form {
+  max-width: 500px;
 }
 
 .variant-form .form-label {
   font-weight: 500;
+}
+
+/* Create button styling */
+.input-group .btn {
+  border-left: 0;
+}
+
+.input-group .form-select {
+  border-right: 0;
+}
+
+.form-control-color {
+  max-width: 60px;
+}
+
+/* Color preview in form */
+.color-preview-addon {
+  padding: 0.375rem 0.75rem;
+}
+
+.color-preview-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+}
+
+/* Warning text styling */
+.form-text.text-warning {
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 /* Additional styling for sortable columns */
@@ -993,6 +1497,82 @@ th a:hover {
   border-top: 1px solid #dee2e6;
 }
 
+/* Toast container */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1200;
+}
+
+.toast-notification {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  background-color: white;
+  border: 1px solid #dee2e6;
+  min-width: 300px;
+}
+
+.toast-notification.success {
+  border-left: 4px solid #198754;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #dc3545;
+}
+
+.toast-notification.warning {
+  border-left: 4px solid #ffc107;
+}
+
+.toast-icon {
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.toast-content {
+  flex-grow: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.toast-message {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  margin-left: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Toast animations */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
 /* Media queries for responsive modal */
 @media (max-width: 992px) {
   .modal-content {
@@ -1005,6 +1585,17 @@ th a:hover {
   .modal-overlay {
     align-items: flex-start;
     padding: 20px 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .toast-container {
+    right: 10px;
+    left: 10px;
+  }
+
+  .toast-notification {
+    min-width: unset;
   }
 }
 </style>

@@ -75,28 +75,88 @@
         {{ modalMessage }}
       </div>
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
-        <div class="col-md-12">
-          <label class="form-label" for="brandName">Brand Name</label>
-          <input
-            v-model="newBrand.name"
-            class="form-control"
-            id="brandName"
-            type="text"
-            required
-          />
-          <div class="invalid-feedback">Brand name is required</div>
+        <!-- Existing Brand Selection (Default for new brands) -->
+        <div v-if="!isEditMode && availableBrands.length > 0" class="col-12">
+          <div class="existing-brand-section">
+            <div class="section-header">
+              <label class="form-label" for="existingBrand">Select Existing Brand</label>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm add-new-brand-btn"
+                @click="switchToCreateMode"
+                title="Create New Brand"
+              >
+                <i class="fas fa-plus me-1"></i>Create New
+              </button>
+            </div>
+
+            <div class="existing-brand-selector">
+              <select
+                v-model="selectedExistingBrandId"
+                class="form-select"
+                id="existingBrand"
+                @change="onExistingBrandSelect"
+                required
+              >
+                <option value="" disabled>Choose an existing brand</option>
+                <option
+                  v-for="brand in availableBrands"
+                  :key="brand.id"
+                  :value="brand.id"
+                >
+                  {{ brand.name }} ({{ brand.name_km }})
+                </option>
+              </select>
+              <div class="invalid-feedback">Please select an existing brand</div>
+            </div>
+
+            <!-- Enhanced Preview of selected existing brand -->
+            <div v-if="previewExistingBrand" class="existing-brand-preview">
+              <div class="preview-card">
+                <div class="brand-display">
+                  <div class="brand-badge-large">
+                    {{ previewExistingBrand.name.charAt(0).toUpperCase() }}
+                  </div>
+                </div>
+                <div class="brand-info">
+                  <h6 class="brand-name">{{ previewExistingBrand.name }}</h6>
+                  <span class="brand-local-name">{{ previewExistingBrand.name_km }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="col-md-12">
-          <label class="form-label" for="brandLocalName">Brand Local Name</label>
-          <input
-            v-model="newBrand.name_km"
-            class="form-control"
-            id="brandLocalName"
-            type="text"
-            required
-          />
-          <div class="invalid-feedback">Brand local name is required</div>
-        </div>
+
+        <!-- New Brand Creation Fields (Hidden by default, shown when no existing brands or when user clicks + button) -->
+        <template
+          v-if="
+            brandInputMethod === 'create' || isEditMode || availableBrands.length === 0
+          "
+        >
+          <div class="col-md-12">
+            <label class="form-label" for="brandName">Brand Name</label>
+            <input
+              v-model="newBrand.name"
+              class="form-control"
+              id="brandName"
+              type="text"
+              required
+            />
+            <div class="invalid-feedback">Brand name is required</div>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label" for="brandLocalName">Brand Local Name</label>
+            <input
+              v-model="newBrand.name_km"
+              class="form-control"
+              id="brandLocalName"
+              type="text"
+              required
+            />
+            <div class="invalid-feedback">Brand local name is required</div>
+          </div>
+        </template>
+
         <div class="col-12 float-end">
           <button class="btn btn-secondary me-2" type="button" @click="closeModal">
             Cancel
@@ -176,6 +236,11 @@ const currentBrandId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 
+// New variables for brand selection
+const brandInputMethod = ref("select"); // 'create' or 'select'
+const selectedExistingBrandId = ref("");
+const previewExistingBrand = ref(null);
+
 // Confirmation modal state
 const confirmationModal = reactive({
   show: false,
@@ -189,6 +254,50 @@ const newBrand = reactive({
   name: "",
   name_km: "",
 });
+
+// Get unique brands for selection
+const availableBrands = computed(() => {
+  const uniqueBrands = [];
+  const seen = new Set();
+
+  state.brands.forEach((brand) => {
+    const key = `${brand.name}-${brand.name_km}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueBrands.push({
+        id: brand.id,
+        name: brand.name,
+        name_km: brand.name_km,
+      });
+    }
+  });
+
+  return uniqueBrands;
+});
+
+const onExistingBrandSelect = () => {
+  if (selectedExistingBrandId.value) {
+    const selectedBrand = availableBrands.value.find(
+      (brand) => brand.id === selectedExistingBrandId.value
+    );
+    if (selectedBrand) {
+      previewExistingBrand.value = selectedBrand;
+      // Auto-fill the brand data
+      newBrand.name = selectedBrand.name;
+      newBrand.name_km = selectedBrand.name_km;
+    }
+  } else {
+    previewExistingBrand.value = null;
+  }
+};
+
+const switchToCreateMode = () => {
+  brandInputMethod.value = "create";
+  selectedExistingBrandId.value = "";
+  previewExistingBrand.value = null;
+  newBrand.name = "";
+  newBrand.name_km = "";
+};
 
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
@@ -322,6 +431,8 @@ const deleteBrand = (brandId) => {
 const openModal = () => {
   resetBrandForm();
   isEditMode.value = false;
+  // Default to select mode if there are existing brands, otherwise create mode
+  brandInputMethod.value = availableBrands.value.length > 0 ? "select" : "create";
   showModal.value = true;
 };
 
@@ -346,10 +457,25 @@ const resetBrandForm = () => {
   newBrand.name = "";
   newBrand.name_km = "";
   currentBrandId.value = null;
+  selectedExistingBrandId.value = "";
+  previewExistingBrand.value = null;
+  // Don't reset brandInputMethod here - let openModal handle it
 };
 
 const handleSubmit = async (event) => {
   event.preventDefault();
+
+  // Validation for select existing brand mode
+  if (
+    brandInputMethod.value === "select" &&
+    !isEditMode.value &&
+    !selectedExistingBrandId.value &&
+    availableBrands.value.length > 0
+  ) {
+    modalMessage.value = "Please select an existing brand";
+    return;
+  }
+
   if (!newBrand.name.trim() || !newBrand.name_km.trim()) {
     modalMessage.value = "Both brand name and local name are required";
     return;
@@ -374,3 +500,295 @@ const filteredBrands = computed(() => {
 
 onMounted(fetchBrands);
 </script>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Enhanced existing brand section styling */
+.existing-brand-section {
+  background: transparent;
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header .form-label {
+  color: #495057;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+.add-new-brand-btn {
+  background: transparent;
+  border: 1px solid #6c757d;
+  color: #6c757d;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.add-new-brand-btn:hover {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.existing-brand-selector {
+  margin-bottom: 1rem;
+}
+
+.existing-brand-preview {
+  margin-top: 1rem;
+}
+
+.preview-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.preview-card:hover {
+  transform: translateY(-2px);
+}
+
+.brand-display {
+  flex-shrink: 0;
+}
+
+.brand-badge-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  background: white;
+  color: #495057;
+  font-weight: bold;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  border: 2px solid #dee2e6;
+}
+
+.brand-badge-large:hover {
+  transform: scale(1.05);
+}
+
+.brand-info {
+  flex-grow: 1;
+}
+
+.brand-name {
+  margin: 0;
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.brand-local-name {
+  color: #718096;
+  font-size: 0.9rem;
+  background: #f7fafc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-top: 0.25rem;
+}
+
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.confirmation-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.confirmation-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.confirmation-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.confirmation-icon.warning {
+  background-color: #fff3cd;
+  color: #ff9800;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.confirmation-body {
+  padding: 1rem;
+}
+
+.confirmation-footer {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #dee2e6;
+}
+
+.form-control,
+.form-select {
+  border-color: #e5e5e5;
+  padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 500;
+}
+
+/* Toast styles */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1050;
+}
+
+.toast-notification {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  width: 300px;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem 1rem;
+  animation: toast-in 0.2s ease-in;
+}
+
+.toast-notification.success {
+  border-left: 4px solid #198754;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #dc3545;
+}
+
+.toast-icon {
+  margin-right: 0.75rem;
+  color: #6c757d;
+}
+
+.toast-notification.success .toast-icon {
+  color: #198754;
+}
+
+.toast-notification.error .toast-icon {
+  color: #dc3545;
+}
+
+.toast-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.toast-message {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+</style>

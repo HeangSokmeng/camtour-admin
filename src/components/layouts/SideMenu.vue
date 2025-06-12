@@ -25,7 +25,7 @@
             </div>
           </li>
 
-          <!-- User Management - Only for admin and system admin -->
+          <!-- Customer Management - Only for admin and system admin -->
           <li class="nav-item" v-if="globalStore.canAccessUserManagement">
             <p class="navbar-vertical-label">Customers Management</p>
             <hr class="navbar-vertical-line" />
@@ -49,7 +49,7 @@
             </div>
           </li>
 
-          <!-- Location Management - Accessible to staff and above -->
+          <!-- Address Management - Accessible to staff and above -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">Address Management</p>
             <hr class="navbar-vertical-line" />
@@ -181,9 +181,27 @@
                   <div class="d-flex align-items-center">
                     <div class="dropdown-indicator-icon-wrapper"></div>
                     <span class="nav-link-icon">
-                      <span data-feather="navigation"></span>
+                      <span data-feather="monitor"></span>
                     </span>
                     <span class="nav-link-text">Location Guide</span>
+                  </div>
+                </a>
+              </RouterLink>
+            </div>
+            <div class="nav-item-wrapper">
+              <RouterLink to="/location/activity" custom v-slot="{ navigate, isActive }">
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{ active: isActive || route.path === '/location/activity' }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="activity"></span>
+                    </span>
+                    <span class="nav-link-text">Location Activity</span>
                   </div>
                 </a>
               </RouterLink>
@@ -403,6 +421,30 @@
             </div>
           </li>
 
+          <!-- Invoices -->
+          <li class="nav-item" v-if="globalStore.atLeastStaff">
+            <p class="navbar-vertical-label">Invoices</p>
+            <hr class="navbar-vertical-line" />
+            <div class="nav-item-wrapper">
+              <RouterLink to="/product/invoice" custom v-slot="{ navigate, isActive }">
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{ active: isActive || route.path === '/product/invoice' }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="file-text"></span>
+                    </span>
+                    <span class="nav-link-text">Invoices</span>
+                  </div>
+                </a>
+              </RouterLink>
+            </div>
+          </li>
+
           <!-- User Management - Only for admin and system admin -->
           <li class="nav-item" v-if="globalStore.canAccessUserManagement">
             <p class="navbar-vertical-label">User Management</p>
@@ -430,7 +472,7 @@
               <RouterLink to="/user-role" custom v-slot="{ navigate, isActive }">
                 <a
                   class="nav-link dropdown-indicator label-1"
-                  :class="{ active: isActive || route.path === '/' }"
+                  :class="{ active: isActive || route.path === '/user-role' }"
                   @click="navigate"
                   href="#"
                 >
@@ -446,7 +488,7 @@
             </div>
           </li>
 
-          <!-- General Settings - Accessible to staff and above -->
+          <!-- ChatBot Questions -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">ChatBot Questions</p>
             <hr class="navbar-vertical-line" />
@@ -461,7 +503,7 @@
                   <div class="d-flex align-items-center">
                     <div class="dropdown-indicator-icon-wrapper"></div>
                     <span class="nav-link-icon">
-                      <span data-feather="grid"></span>
+                      <span data-feather="message-circle"></span>
                     </span>
                     <span class="nav-link-text">ChatBot</span>
                   </div>
@@ -469,7 +511,8 @@
               </RouterLink>
             </div>
           </li>
-          <!-- General Settings - Accessible to staff and above -->
+
+          <!-- General Settings -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">
             <p class="navbar-vertical-label">General Settings</p>
             <hr class="navbar-vertical-line" />
@@ -510,30 +553,6 @@
               </RouterLink>
             </div>
           </li>
-
-          <!-- System Settings - Only for system admin -->
-          <li class="nav-item" v-if="globalStore.isSystemAdmin">
-            <p class="navbar-vertical-label">System Settings</p>
-            <hr class="navbar-vertical-line" />
-            <div class="nav-item-wrapper">
-              <RouterLink to="/" custom v-slot="{ navigate, isActive }">
-                <a
-                  class="nav-link dropdown-indicator label-1"
-                  :class="{ active: isActive || route.path.startsWith('/system') }"
-                  @click="navigate"
-                  href="#"
-                >
-                  <div class="d-flex align-items-center">
-                    <div class="dropdown-indicator-icon-wrapper"></div>
-                    <span class="nav-link-icon">
-                      <span data-feather="settings"></span>
-                    </span>
-                    <span class="nav-link-text">System Settings</span>
-                  </div>
-                </a>
-              </RouterLink>
-            </div>
-          </li>
         </ul>
       </div>
     </div>
@@ -554,8 +573,11 @@ import { useGlobalStore } from "@/stores/global";
 import { replace } from "feather-icons";
 import { computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
+
 const route = useRoute();
 const globalStore = useGlobalStore();
+
+// Address menu logic
 const isAddressRouteActive = computed(() => {
   const addressRoutes = ["/province", "/district", "/commune", "/village"];
   return addressRoutes.some((path) => route.path.startsWith(path));
@@ -565,18 +587,24 @@ const isAddressMenuExpanded = computed(() => {
   return isAddressRouteActive.value;
 });
 
+// Product menu logic - FIXED: Only check actual product routes
 const isProductRouteActive = computed(() => {
-  return (
-    route.path.includes("/product") ||
-    route.path.includes("/color") ||
-    route.path.includes("/product/size") ||
-    route.path.includes("/product/variant") ||
-    route.path.includes("/product/brand") ||
-    route.path.includes("/product/category") ||
-    route.path.includes("/customer/comment") ||
-    route.path.includes("/profile/edit-profile") ||
-    route.path.includes("/product/photo")
-  );
+  const productRoutes = [
+    "/product", // This will match /product, /product/category, /product/photo, etc.
+    "/color", // Only color is outside the /product path
+  ];
+
+  return productRoutes.some((path) => {
+    if (path === "/product") {
+      // For /product, check if it starts with /product but exclude /product/order and /product/invoice
+      return (
+        route.path.startsWith("/product") &&
+        !route.path.startsWith("/product/order") &&
+        !route.path.startsWith("/product/invoice")
+      );
+    }
+    return route.path.startsWith(path);
+  });
 });
 
 const isProductMenuExpanded = computed(() => {
@@ -592,20 +620,23 @@ onMounted(() => {
 });
 
 function initializeBootstrapCollapse() {
+  // Bootstrap collapse initialization if needed
   const addressCollapse = document.getElementById("nv-address");
   const productCollapse = document.getElementById("nv-product");
+
   if (isAddressMenuExpanded.value && addressCollapse) {
+    // Add any specific initialization for address collapse
   }
   if (isProductMenuExpanded.value && productCollapse) {
+    // Add any specific initialization for product collapse
   }
 }
 
 watch(
-  () => route.path,
+  [() => route.path, () => globalStore.profile],
   () => {
     initializeBootstrapCollapse();
   },
-  () => globalStore.profile,
   { immediate: true }
 );
 </script>
@@ -640,17 +671,18 @@ watch(
   border-radius: 4px;
 }
 
-.parent.show + .nav-link .dropdown-indicator-icon {
-  transform: rotate(90deg);
-}
-
 .dropdown-indicator-icon {
   transition: transform 0.2s ease;
+}
+
+.parent.show .dropdown-indicator-icon {
+  transform: rotate(90deg);
 }
 
 .parent .nav-item .nav-link {
   padding-left: 2.5rem;
 }
+
 .nav-link.active .nav-link-icon,
 .dropdown-indicator.active .nav-link-icon {
   color: var(--falcon-sidebar-link-active-color, #7367f0) !important;

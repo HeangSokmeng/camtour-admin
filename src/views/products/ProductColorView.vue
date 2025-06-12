@@ -81,41 +81,102 @@
         {{ modalMessage }}
       </div>
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
-        <!-- Color Information -->
-        <div class="col-md-6">
-          <label class="form-label" for="colorName">Color Name</label>
-          <input
-            v-model="newColor.name"
-            class="form-control"
-            id="colorName"
-            type="text"
-            required
-          />
-          <div class="invalid-feedback">Color name is required</div>
+        <!-- Existing Color Selection (Default for new colors) -->
+        <div v-if="!isEditMode && availableColors.length > 0" class="col-12">
+          <div class="existing-color-section">
+            <div class="section-header">
+              <label class="form-label" for="existingColor">Select Existing Color</label>
+              <button
+                type="button"
+                class="btn btn-outline-primary btn-sm add-new-color-btn"
+                @click="switchToCreateMode"
+                title="Create New Color"
+              >
+                <i class="fas fa-plus me-1"></i>Create New
+              </button>
+            </div>
+
+            <div class="existing-color-selector">
+              <select
+                v-model="selectedExistingColorId"
+                class="form-select stylish-select"
+                id="existingColor"
+                @change="onExistingColorSelect"
+                required
+              >
+                <option value="" disabled>Choose an existing color</option>
+                <option
+                  v-for="color in availableColors"
+                  :key="color.id"
+                  :value="color.id"
+                >
+                  {{ color.name }} ({{ color.code }})
+                </option>
+              </select>
+              <div class="invalid-feedback">Please select an existing color</div>
+            </div>
+
+            <!-- Enhanced Preview of selected existing color -->
+            <div v-if="previewExistingColor" class="existing-color-preview">
+              <div class="preview-card">
+                <div class="color-display">
+                  <div
+                    class="color-swatch-large"
+                    :style="{ backgroundColor: previewExistingColor.code }"
+                  ></div>
+                </div>
+                <div class="color-info">
+                  <h6 class="color-name">{{ previewExistingColor.name }}</h6>
+                  <span class="color-code">{{ previewExistingColor.code }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="col-md-6">
-          <label class="form-label" for="colorCode">Color Code</label>
-          <div class="input-group">
+        <!-- New Color Creation Fields (Hidden by default, shown when no existing colors or when user clicks + button) -->
+        <template
+          v-if="
+            colorInputMethod === 'create' || isEditMode || availableColors.length === 0
+          "
+        >
+          <div class="col-md-6">
+            <label class="form-label" for="colorName">Color Name</label>
             <input
-              v-model="newColor.code"
+              v-model="newColor.name"
               class="form-control"
-              id="colorCode"
+              id="colorName"
               type="text"
-              pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
-              placeholder="#123456"
               required
             />
-            <span class="input-group-text p-0">
-              <input
-                type="color"
-                class="form-control form-control-color p-0 border-0"
-                v-model="newColor.code"
-              />
-            </span>
+            <div class="invalid-feedback">Color name is required</div>
           </div>
-          <div class="invalid-feedback">Valid color code is required (e.g., #FF5733)</div>
-        </div>
+
+          <div class="col-md-6">
+            <label class="form-label" for="colorCode">Color Code</label>
+            <div class="input-group">
+              <input
+                v-model="newColor.code"
+                class="form-control"
+                id="colorCode"
+                type="text"
+                pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                placeholder="#123456"
+                required
+              />
+              <span class="input-group-text p-0">
+                <input
+                  type="color"
+                  class="form-control form-control-color p-0 border-0"
+                  v-model="newColor.code"
+                />
+              </span>
+            </div>
+            <div class="invalid-feedback">
+              Valid color code is required (e.g., #FF5733)
+            </div>
+          </div>
+        </template>
 
         <!-- Product Selection -->
         <div class="col-md-12">
@@ -190,11 +251,13 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
+
 const { toasts, showNotification, removeToast } = useToast();
 const globalStore = useGlobalStore();
 
@@ -213,6 +276,11 @@ const currentColorId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 
+// New variables for color selection
+const colorInputMethod = ref("create"); // 'create' or 'select'
+const selectedExistingColorId = ref("");
+const previewExistingColor = ref(null);
+
 const confirmationModal = reactive({
   show: false,
   title: "Confirm Action",
@@ -226,6 +294,42 @@ const newColor = reactive({
   code: "#000000",
   product_id: "",
 });
+
+// Get unique colors (same name and code) for selection
+const availableColors = computed(() => {
+  const uniqueColors = [];
+  const seen = new Set();
+
+  state.colors.forEach((color) => {
+    const key = `${color.name}-${color.code}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueColors.push({
+        id: color.id,
+        name: color.name,
+        code: color.code,
+      });
+    }
+  });
+
+  return uniqueColors;
+});
+
+const onExistingColorSelect = () => {
+  if (selectedExistingColorId.value) {
+    const selectedColor = availableColors.value.find(
+      (color) => color.id === selectedExistingColorId.value
+    );
+    if (selectedColor) {
+      previewExistingColor.value = selectedColor;
+      // Auto-fill the color data
+      newColor.name = selectedColor.name;
+      newColor.code = selectedColor.code;
+    }
+  } else {
+    previewExistingColor.value = null;
+  }
+};
 
 const showConfirmation = (title, message, action, actionParams) => {
   confirmationModal.show = true;
@@ -416,9 +520,19 @@ const deleteColor = (colorId) => {
   );
 };
 
+const switchToCreateMode = () => {
+  colorInputMethod.value = "create";
+  selectedExistingColorId.value = "";
+  previewExistingColor.value = null;
+  newColor.name = "";
+  newColor.code = "#000000";
+};
+
 const openModal = () => {
   resetColorForm();
   isEditMode.value = false;
+  // Default to select mode if there are existing colors, otherwise create mode
+  colorInputMethod.value = availableColors.value.length > 0 ? "select" : "create";
   showModal.value = true;
 };
 
@@ -454,7 +568,7 @@ const editColor = async (colorId) => {
   } catch (error) {
     console.error("Error fetching color details:", error);
     showNotification("error", "Error", "An error occurred while fetching color details");
-    await globalStore.onCheckError(error); // FIX: Added error handling with global store
+    await globalStore.onCheckError(error);
   } finally {
     state.isLoading = false;
   }
@@ -471,7 +585,11 @@ const resetColorForm = () => {
   newColor.code = "#000000";
   newColor.product_id = "";
   currentColorId.value = null;
+  selectedExistingColorId.value = "";
+  previewExistingColor.value = null;
+  // Don't reset colorInputMethod here - let openModal handle it
 };
+
 const handleSubmit = async (event) => {
   event.preventDefault();
   if (!event.target.checkValidity()) {
@@ -479,6 +597,18 @@ const handleSubmit = async (event) => {
     event.target.classList.add("was-validated");
     return;
   }
+
+  // Validation for select existing color mode
+  if (
+    colorInputMethod.value === "select" &&
+    !isEditMode.value &&
+    !selectedExistingColorId.value &&
+    availableColors.value.length > 0
+  ) {
+    modalMessage.value = "Please select an existing color";
+    return;
+  }
+
   if (!newColor.name.trim()) {
     modalMessage.value = "Color name is required";
     return;
@@ -508,6 +638,7 @@ const filteredColors = computed(() => {
       color.code?.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
+
 onMounted(async () => {
   try {
     await fetchProducts();
@@ -559,6 +690,142 @@ onMounted(async () => {
 
 .color-form .form-label {
   font-weight: 500;
+}
+
+/* Enhanced existing color section styling */
+.existing-color-section {
+  background: linear-gradient(135deg, #667eea 0%, #000000 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header .form-label {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+.add-new-color-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.add-new-color-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.stylish-select {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.stylish-select:focus {
+  background: white;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  outline: none;
+}
+
+.existing-color-preview {
+  margin-top: 1rem;
+}
+
+.preview-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.preview-card:hover {
+  transform: translateY(-2px);
+}
+
+.color-display {
+  flex-shrink: 0;
+}
+
+.color-swatch-large {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.color-swatch-large:hover {
+  transform: scale(1.05);
+}
+
+.color-info {
+  flex-grow: 1;
+}
+
+.color-name {
+  margin: 0;
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.color-code {
+  color: #718096;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-size: 0.9rem;
+  background: #f7fafc;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Form check group styling */
+.form-check-group {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+}
+
+.form-check-input {
+  margin-right: 0.5rem;
+}
+
+.form-check-label {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* Existing color selector styling */
+.existing-color-selector {
+  margin-bottom: 1rem;
 }
 
 .confirmation-modal-overlay {
