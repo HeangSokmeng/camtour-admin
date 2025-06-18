@@ -1185,26 +1185,24 @@ onMounted(async () => {
 
 /* Modal */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1050;
-  backdrop-filter: blur(4px);
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  overflow-y: auto;
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
+  top: 0;
   width: 90%;
-  max-width: 700px;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 1200px;
+  /* max-height: 100vh; */
+  left: 0;
+  overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
 }
 
 .modal-header {

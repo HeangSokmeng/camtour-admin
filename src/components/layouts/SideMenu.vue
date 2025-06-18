@@ -48,6 +48,28 @@
               </RouterLink>
             </div>
           </li>
+          <li class="nav-item" v-if="globalStore.canAccessUserManagement">
+            <p class="navbar-vertical-label">Siem Reap Management</p>
+            <hr class="navbar-vertical-line" />
+            <div class="nav-item-wrapper">
+              <RouterLink to="/siemreap/hotel" custom v-slot="{ navigate, isActive }">
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{ active: isActive || route.path.startsWith('/siemreap') }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="shield"></span>
+                    </span>
+                    <span class="nav-link-text">Hotels</span>
+                  </div>
+                </a>
+              </RouterLink>
+            </div>
+          </li>
 
           <!-- Address Management - Accessible to staff and above -->
           <li class="nav-item" v-if="globalStore.atLeastStaff">

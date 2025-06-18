@@ -34,6 +34,7 @@ const UserRole = () => import('@/views/users/UserRoleView.vue')
 const ChatBot = () => import('@/views/chatbot/ChatbotView.vue')
 const LocationActivity = () => import('@/views/locations/LocationActivityView.vue')
 const Invoice = () => import('@/views/invoice/InvoiceView.vue')
+const SiemReapHotel = () => import('@/views/siemreap/HotelView.vue')
 
 // Role constants
 const ROLES = {
@@ -133,6 +134,17 @@ const router = createRouter({
             component: CategoryView,
             meta: {
                 title: 'Admin Camtour . Categories',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+        {
+            path: '/siemreap/hotel',
+            name: 'Hotels',
+            component: SiemReapHotel,
+            meta: {
+                title: 'Admin Camtour . Hotels',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
