@@ -68,6 +68,72 @@
                   </div>
                 </a>
               </RouterLink>
+              <RouterLink
+                to="/siemreap/hotel/room"
+                custom
+                v-slot="{ navigate, isActive }"
+              >
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{
+                    active: isActive || route.path.startsWith('/siemreap/hotel/room'),
+                  }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="shield"></span>
+                    </span>
+                    <span class="nav-link-text">Room Types</span>
+                  </div>
+                </a>
+              </RouterLink>
+              <RouterLink
+                to="/siemreap/hotel/location"
+                custom
+                v-slot="{ navigate, isActive }"
+              >
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{
+                    active: isActive || route.path.startsWith('/siemreap/hotel/location'),
+                  }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="shield"></span>
+                    </span>
+                    <span class="nav-link-text">Location Hotels</span>
+                  </div>
+                </a>
+              </RouterLink>
+              <RouterLink
+                to="/siemreap/hotel/photo"
+                custom
+                v-slot="{ navigate, isActive }"
+              >
+                <a
+                  class="nav-link dropdown-indicator label-1"
+                  :class="{
+                    active: isActive || route.path.startsWith('/siemreap/hotel/photo'),
+                  }"
+                  @click="navigate"
+                  href="#"
+                >
+                  <div class="d-flex align-items-center">
+                    <div class="dropdown-indicator-icon-wrapper"></div>
+                    <span class="nav-link-icon">
+                      <span data-feather="shield"></span>
+                    </span>
+                    <span class="nav-link-text">Hotel Photos</span>
+                  </div>
+                </a>
+              </RouterLink>
             </div>
           </li>
 

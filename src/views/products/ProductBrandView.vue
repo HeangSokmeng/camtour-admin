@@ -157,7 +157,7 @@
           </div>
         </template>
 
-        <div class="col-12 float-end">
+        <div class="col-12 d-flex justify-content-end">
           <button class="btn btn-secondary me-2" type="button" @click="closeModal">
             Cancel
           </button>
@@ -503,26 +503,24 @@ onMounted(fetchBrands);
 
 <style scoped>
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  overflow-y: auto;
 }
 
 .modal-content {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
+  top: 0;
   width: 90%;
-  max-width: 600px;
+  max-width: 1200px;
   max-height: 90vh;
+  left: 0;
   overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
 }
 
 /* Enhanced existing brand section styling */

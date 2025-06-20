@@ -243,7 +243,10 @@
       <div v-if="modalError" class="alert alert-danger">
         {{ modalError }}
       </div>
-      <button class="btn-close" @click="closeModal"></button>
+      <div class="d-flex justify-content-end">
+        <button class="btn-close" @click="closeModal"></button>
+      </div>
+
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
         <!-- Location Input -->
         <div class="col-md-6">
@@ -1117,34 +1120,25 @@ onMounted(async () => {
 }
 
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding-top: 30px;
   padding-bottom: 30px;
   overflow-y: auto;
-  z-index: 1000;
 }
 
 .modal-content {
-  top: 50px;
-  width: 100%;
-  left: 100px;
-  max-width: 1100px;
+  top: 0;
+  width: 90%;
+  max-width: 1200px;
   max-height: 90vh;
+  left: 0;
   overflow-y: auto;
   padding: 2rem;
-  background-color: white;
   border-radius: 0.5rem;
   margin: auto;
 }
-
 .view-tour {
   max-width: 700px;
 }

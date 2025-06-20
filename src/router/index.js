@@ -35,6 +35,9 @@ const ChatBot = () => import('@/views/chatbot/ChatbotView.vue')
 const LocationActivity = () => import('@/views/locations/LocationActivityView.vue')
 const Invoice = () => import('@/views/invoice/InvoiceView.vue')
 const SiemReapHotel = () => import('@/views/siemreap/HotelView.vue')
+const SiemReapHotelPhoto = () => import('@/views/siemreap/PhotoHotelView.vue')
+const SiemReapHotelRoom = () => import('@/views/siemreap/RoomTypeView.vue')
+const SiemReapHotelLocation = () => import('@/views/siemreap/LocationHotelView.vue')
 
 // Role constants
 const ROLES = {
@@ -74,7 +77,7 @@ const router = createRouter({
             component: ForbiddenView,
             meta: {
                 title: 'Admin Camtour . Access Forbidden',
-                 layout: null,
+                layout: null,
             }
         },
         {
@@ -87,7 +90,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN] // Only admin and system admin
             }
-        },{
+        }, {
             path: '/user-role',
             name: 'user role',
             component: UserRole,
@@ -141,15 +144,60 @@ const router = createRouter({
         },
         {
             path: '/siemreap/hotel',
-            name: 'Hotels',
+            name: 'SiemReapHotels',
             component: SiemReapHotel,
             meta: {
-                title: 'Admin Camtour . Hotels',
+                title: 'Admin Camtour - Hotels',
                 layout: 'board',
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        },{
+        },
+        {
+            path: '/siemreap/hotel/photo',
+            name: 'SiemReapHotelPhotos',
+            component: SiemReapHotelPhoto,
+            meta: {
+                title: 'Admin Camtour - Hotel Photos',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+        {
+            path: '/siemreap/hotel/room',
+            name: 'SiemReapHotelRooms',
+            component: SiemReapHotelRoom,
+            meta: {
+                title: 'Admin Camtour - Hotel Rooms',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+        {
+            path: '/siemreap/hotel/location',
+            name: 'SiemReapHotelLocations',
+            component: SiemReapHotelLocation,
+            meta: {
+                title: 'Admin Camtour - Hotel Locations',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+        {
+            path: '/chatbot',
+            name: 'ChatBot',
+            component: ChatBot,
+            meta: {
+                title: 'Admin Camtour - ChatBot',
+                layout: 'board',
+                auth: true,
+                roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
+            }
+        },
+        {
             path: '/chatbot',
             name: 'chatbot',
             component: ChatBot,
@@ -159,7 +207,8 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, {
+        },
+        {
             path: '/setting',
             name: 'setting',
             component: SettingProfile,
@@ -180,7 +229,7 @@ const router = createRouter({
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
         },
-         {
+        {
             path: '/location/activity',
             name: 'location activity',
             component: LocationActivity,
@@ -234,7 +283,7 @@ const router = createRouter({
                 auth: true,
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
-        }, 
+        },
         {
             path: '/product/order',
             name: 'product.order',
@@ -246,7 +295,7 @@ const router = createRouter({
                 roles: [ROLES.SYSTEM_ADMIN, ROLES.ADMIN, ROLES.STAFF]
             }
         },
-         {
+        {
             path: '/product/invoice',
             name: 'product.invoice',
             component: Invoice,

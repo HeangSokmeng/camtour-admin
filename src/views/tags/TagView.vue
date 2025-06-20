@@ -80,7 +80,7 @@
           />
           <div class="invalid-feedback">Tag name is required</div>
         </div>
-        <div class="col-12 float-end">
+        <div class="col-12 d-flex justify-content-end">
           <button class="btn btn-secondary me-2" type="button" @click="closeModal">
             Cancel
           </button>

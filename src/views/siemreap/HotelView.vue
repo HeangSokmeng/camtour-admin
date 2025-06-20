@@ -2,10 +2,10 @@
   <div class="mb-9">
     <div class="row g-2 mb-4">
       <div class="col-auto">
-        <h2 class="mb-0">Hotels</h2>
+        <h2 class="mb-0">Hotel Management</h2>
       </div>
     </div>
-    <div id="hotels">
+    <div id="hotel-management">
       <div class="mb-4">
         <div class="row g-3 justify-content-between">
           <div class="col-auto">
@@ -34,61 +34,78 @@
           <thead>
             <tr>
               <th class="align-middle ps-0">#</th>
+              <th class="align-middle">Thumbnail</th>
               <th class="align-middle">Name</th>
-              <!-- <th class="align-middle">Star Rating</th> -->
-              <th class="align-middle">Price/Night</th>
-              <th class="align-middle">Contact</th>
-              <th class="align-middle">Status</th>
+              <th class="align-middle">Name (KM)</th>
+              <th class="align-middle">Description</th>
+              <th class="align-middle">Meal</th>
+              <th class="align-middle">Room Types</th>
+              <th class="align-middle">Locations</th>
               <th class="align-middle text-end">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="filteredHotels.length === 0">
-              <td colspan="7" class="text-center">No hotels found</td>
+              <td colspan="9" class="text-center">No hotels found</td>
             </tr>
             <tr v-else v-for="(hotel, index) in filteredHotels" :key="hotel.id">
               <td class="align-middle ps-0">{{ index + 1 }}</td>
               <td class="align-middle">
-                <div>
-                  <strong>{{ hotel.name }}</strong>
-                  <div v-if="hotel.address" class="text-muted small">
-                    {{ hotel.address }}
-                  </div>
+                <div class="hotel-thumbnail-preview">
+                  <img
+                    :src="getHotelThumbnailUrl(hotel.thumbnail)"
+                    :alt="hotel.name"
+                    class="hotel-thumbnail"
+                  />
                 </div>
               </td>
-              <!-- <td class="align-middle">
-                <div class="star-rating">
-                  <span
-                    v-for="i in 5"
-                    :key="i"
-                    class="star"
-                    :class="{ filled: i <= hotel.star_rating }"
-                  >
-                    ★
-                  </span>
-                </div>
-              </td> -->
-              <td class="align-middle">${{ formatPrice(hotel.price_per_night) }}</td>
+              <td class="align-middle">{{ hotel.name }}</td>
+              <td class="align-middle">{{ hotel.name_km }}</td>
               <td class="align-middle">
-                <div v-if="hotel.contact_phone" class="small">
-                  {{ hotel.contact_phone }}
-                </div>
-                <div v-if="hotel.contact_email" class="small text-muted">
-                  {{ hotel.contact_email }}
-                </div>
-              </td>
-              <td class="align-middle">
-                <span class="badge" :class="hotel.is_active ? 'bg-success' : 'bg-danger'">
-                  {{ hotel.is_active ? "Active" : "Inactive" }}
+                <span v-if="hotel.description" :title="hotel.description">
+                  {{ truncateText(hotel.description, 50) }}
                 </span>
+                <span v-else class="text-muted">-</span>
+              </td>
+              <td class="align-middle">
+                <span v-if="hotel.meal">{{ hotel.meal }}</span>
+                <span v-else class="text-muted">-</span>
+              </td>
+              <td class="align-middle">
+                <span class="badge bg-info">{{ hotel.room_types?.length || 0 }}</span>
+              </td>
+              <td class="align-middle">
+                <span class="badge bg-success">{{ hotel.locations?.length || 0 }}</span>
               </td>
               <td class="align-middle text-end">
-                <button class="btn btn-sm btn-primary me-2" @click="editHotel(hotel.id)">
-                  <span class="fas fa-edit me-1"></span>Edit
-                </button>
-                <button class="btn btn-sm btn-danger" @click="deleteHotel(hotel.id)">
-                  <span class="fas fa-trash me-1"></span>Delete
-                </button>
+                <div class="btn-group btn-group-sm">
+                  <button
+                    class="btn btn-outline-info"
+                    @click="viewThumbnail(hotel)"
+                    :disabled="
+                      !hotel.thumbnail || hotel.thumbnail === 'default-hotel.jpg'
+                    "
+                    title="View Thumbnail"
+                  >
+                    <span class="fas fa-eye"></span>
+                  </button>
+                  <button class="btn btn-primary" @click="editHotel(hotel.id)">
+                    <span class="fas fa-edit"></span>
+                  </button>
+                  <button
+                    class="btn btn-outline-danger"
+                    @click="resetThumbnail(hotel.id)"
+                    :disabled="
+                      !hotel.thumbnail || hotel.thumbnail === 'default-hotel.jpg'
+                    "
+                    title="Reset Thumbnail"
+                  >
+                    <span class="fas fa-image"></span>
+                  </button>
+                  <button class="btn btn-danger" @click="deleteHotel(hotel.id)">
+                    <span class="fas fa-trash"></span>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -104,7 +121,6 @@
         {{ modalMessage }}
       </div>
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
-        <!-- Hotel Name -->
         <div class="col-md-6">
           <label class="form-label" for="hotelName">Hotel Name</label>
           <input
@@ -117,194 +133,106 @@
           <div class="invalid-feedback">Hotel name is required</div>
         </div>
 
-        <!-- Star Rating -->
         <div class="col-md-6">
-          <label class="form-label" for="starRating">Star Rating</label>
-          <select
-            v-model="newHotel.star_rating"
-            class="form-select"
-            id="starRating"
-            required
-          >
-            <option value="" disabled>Select rating</option>
-            <option v-for="i in 5" :key="i" :value="i">
-              {{ i }} Star{{ i > 1 ? "s" : "" }}
-            </option>
-          </select>
-          <div class="invalid-feedback">Star rating is required</div>
-        </div>
-
-        <!-- Price per Night -->
-        <div class="col-md-6">
-          <label class="form-label" for="pricePerNight">Price per Night ($)</label>
+          <label class="form-label" for="hotelNameKm">Hotel Name (KM)</label>
           <input
-            v-model="newHotel.price_per_night"
+            v-model="newHotel.name_km"
             class="form-control"
-            id="pricePerNight"
-            type="number"
-            step="0.01"
-            min="0"
+            id="hotelNameKm"
+            type="text"
             required
           />
-          <div class="invalid-feedback">Price per night is required</div>
+          <div class="invalid-feedback">Hotel name in Khmer is required</div>
         </div>
 
-        <!-- Status -->
         <div class="col-md-6">
-          <label class="form-label" for="isActive">Status</label>
-          <select v-model="newHotel.is_active" class="form-select" id="isActive">
-            <option :value="true">Active</option>
-            <option :value="false">Inactive</option>
-          </select>
+          <label class="form-label" for="hotelThumbnail">Hotel Thumbnail</label>
+          <input
+            ref="thumbnailInput"
+            class="form-control"
+            id="hotelThumbnail"
+            type="file"
+            accept="image/jpeg,image/png"
+            @change="handleThumbnailSelect"
+          />
+          <small class="text-muted">JPEG, PNG only (max 2MB)</small>
         </div>
 
-        <!-- Description -->
-        <div class="col-12">
-          <label class="form-label" for="description">Description</label>
+        <div v-if="thumbnailPreview" class="col-12">
+          <div class="thumbnail-preview-container">
+            <label class="form-label">Thumbnail Preview</label>
+            <div class="thumbnail-preview">
+              <img :src="thumbnailPreview" alt="Preview" class="preview-thumbnail" />
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger remove-preview"
+                @click="removeThumbnailPreview"
+              >
+                <span class="fas fa-times"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label" for="hotelDescription">Description</label>
           <textarea
             v-model="newHotel.description"
             class="form-control"
-            id="description"
-            rows="3"
-            placeholder="Hotel description..."
+            id="hotelDescription"
+            rows="4"
+            placeholder="Enter hotel description..."
           ></textarea>
         </div>
 
-        <!-- Address -->
         <div class="col-12">
-          <label class="form-label" for="address">Address</label>
+          <label class="form-label" for="hotelMeal">Meal Information</label>
           <input
-            v-model="newHotel.address"
+            v-model="newHotel.meal"
             class="form-control"
-            id="address"
+            id="hotelMeal"
             type="text"
-            placeholder="Hotel address..."
+            placeholder="e.g., Breakfast included, Half board..."
           />
         </div>
 
-        <!-- Contact Information -->
-        <div class="col-md-6">
-          <label class="form-label" for="contactPhone">Contact Phone</label>
-          <input
-            v-model="newHotel.contact_phone"
-            class="form-control"
-            id="contactPhone"
-            type="text"
-            placeholder="+855-xx-xxxxxx"
-          />
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label" for="contactEmail">Contact Email</label>
-          <input
-            v-model="newHotel.contact_email"
-            class="form-control"
-            id="contactEmail"
-            type="email"
-            placeholder="hotel@example.com"
-          />
-        </div>
-
-        <!-- Location -->
-        <div class="col-md-6">
-          <label class="form-label" for="latitude">Latitude</label>
-          <input
-            v-model="newHotel.latitude"
-            class="form-control"
-            id="latitude"
-            type="number"
-            step="any"
-            min="-90"
-            max="90"
-            placeholder="13.3671"
-          />
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label" for="longitude">Longitude</label>
-          <input
-            v-model="newHotel.longitude"
-            class="form-control"
-            id="longitude"
-            type="number"
-            step="any"
-            min="-180"
-            max="180"
-            placeholder="103.8448"
-          />
-        </div>
-
-        <!-- Amenities -->
         <div class="col-12">
-          <label class="form-label">Amenities</label>
-          <div class="amenities-section">
-            <div class="row g-2">
-              <div class="col-auto" v-for="amenity in availableAmenities" :key="amenity">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    :id="`amenity-${amenity}`"
-                    :value="amenity"
-                    v-model="newHotel.amenities"
-                  />
-                  <label class="form-check-label" :for="`amenity-${amenity}`">
-                    {{ amenity }}
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div class="mt-2">
+          <label class="form-label">Services</label>
+          <div class="services-input">
+            <div class="input-group mb-2">
               <input
-                v-model="newAmenity"
-                class="form-control form-control-sm"
+                v-model="newServiceInput"
+                class="form-control"
                 type="text"
-                placeholder="Add custom amenity..."
-                @keyup.enter="addCustomAmenity"
+                placeholder="Enter service..."
+                @keypress.enter.prevent="addService"
               />
-              <small class="text-muted">Press Enter to add custom amenity</small>
+              <button class="btn btn-outline-primary" type="button" @click="addService">
+                <span class="fas fa-plus"></span>
+              </button>
             </div>
-          </div>
-        </div>
-
-        <!-- Room Types -->
-        <div class="col-12">
-          <label class="form-label">Room Types</label>
-          <div class="room-types-section">
-            <div class="row g-2">
+            <div
+              v-if="newHotel.services && newHotel.services.length > 0"
+              class="services-list"
+            >
               <div
-                class="col-auto"
-                v-for="roomType in availableRoomTypes"
-                :key="roomType"
+                v-for="(service, index) in newHotel.services"
+                :key="index"
+                class="service-tag"
               >
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    :id="`room-${roomType}`"
-                    :value="roomType"
-                    v-model="newHotel.room_types"
-                  />
-                  <label class="form-check-label" :for="`room-${roomType}`">
-                    {{ roomType }}
-                  </label>
-                </div>
+                {{ service }}
+                <button
+                  type="button"
+                  class="btn-remove-service"
+                  @click="removeService(index)"
+                >
+                  &times;
+                </button>
               </div>
-            </div>
-            <div class="mt-2">
-              <input
-                v-model="newRoomType"
-                class="form-control form-control-sm"
-                type="text"
-                placeholder="Add custom room type..."
-                @keyup.enter="addCustomRoomType"
-              />
-              <small class="text-muted">Press Enter to add custom room type</small>
             </div>
           </div>
         </div>
 
-        <!-- Form Buttons -->
         <div class="col-12 d-flex justify-content-end">
           <button class="btn btn-secondary me-2" type="button" @click="closeModal">
             Cancel
@@ -317,7 +245,6 @@
     </div>
   </div>
 
-  <!-- Toast Notifications -->
   <div class="toast-container">
     <transition-group name="toast">
       <div
@@ -338,7 +265,6 @@
     </transition-group>
   </div>
 
-  <!-- Confirmation Modal -->
   <div v-if="confirmationModal.show" class="confirmation-modal-overlay">
     <div class="confirmation-modal-content">
       <div class="confirmation-header">
@@ -359,13 +285,32 @@
       </div>
     </div>
   </div>
+  <transition name="modal">
+    <div v-if="previewThumbnail" class="modal-overlay" @click="closeThumbnailPreview">
+      <div class="modal-content thumbnail-preview-modal" @click.stop>
+        <div class="modal-header">
+          <h5 class="modal-title">Hotel Thumbnail - {{ previewThumbnail.name }}</h5>
+          <button class="btn-close" @click="closeThumbnailPreview">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body p-0">
+          <img
+            :src="previewThumbnail.url"
+            :alt="previewThumbnail.name"
+            class="img-fluid"
+          />
+        </div>
+      </div>
+    </div>
+  </transition>
 </template>
 
 <script setup>
 import { useToast } from "@/composables/useToast";
 import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 const { toasts, showNotification, removeToast } = useToast();
 const globalStore = useGlobalStore();
@@ -382,8 +327,12 @@ const isEditMode = ref(false);
 const currentHotelId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
-const newAmenity = ref("");
-const newRoomType = ref("");
+const newServiceInput = ref("");
+const thumbnailInput = ref(null);
+const thumbnailPreview = ref(null);
+const selectedThumbnailFile = ref(null);
+const previewThumbnail = ref(null);
+const objectUrls = ref([]);
 
 const confirmationModal = reactive({
   show: false,
@@ -395,77 +344,66 @@ const confirmationModal = reactive({
 
 const newHotel = reactive({
   name: "",
+  name_km: "",
   description: "",
-  star_rating: "",
-  price_per_night: "",
-  latitude: "",
-  longitude: "",
-  amenities: [],
-  room_types: [],
-  contact_phone: "",
-  contact_email: "",
-  address: "",
-  is_active: true,
+  meal: "",
+  services: [],
 });
 
-const availableAmenities = ref([
-  "WiFi",
-  "Swimming Pool",
-  "Restaurant",
-  "Gym",
-  "Spa",
-  "Bar",
-  "Room Service",
-  "Laundry",
-  "Parking",
-  "Air Conditioning",
-  "Private Bathroom",
-  "Shared Kitchen",
-  "Balcony",
-  "Airport Shuttle",
-  "Business Center",
-]);
-
-const availableRoomTypes = ref([
-  "Single",
-  "Double",
-  "Twin",
-  "Triple",
-  "Suite",
-  "Deluxe",
-  "Standard",
-  "Dormitory",
-  "Private Room",
-  "Family Room",
-  "Executive Suite",
-  "Presidential Suite",
-]);
-
-const formatPrice = (price) => {
-  return parseFloat(price).toFixed(2);
+const cleanupObjectURLs = () => {
+  objectUrls.value.forEach((url) => {
+    URL.revokeObjectURL(url);
+  });
+  objectUrls.value = [];
 };
 
-const addCustomAmenity = () => {
-  if (newAmenity.value.trim() && !newHotel.amenities.includes(newAmenity.value.trim())) {
-    newHotel.amenities.push(newAmenity.value.trim());
-    if (!availableAmenities.value.includes(newAmenity.value.trim())) {
-      availableAmenities.value.push(newAmenity.value.trim());
+const getHotelThumbnailUrl = (thumbnailPath) => {
+  if (!thumbnailPath || thumbnailPath === "default-hotel.jpg") {
+    return "/default-hotel.jpg";
+  }
+  return `${thumbnailPath}`;
+};
+
+const handleThumbnailSelect = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 2048 * 1024) {
+      modalMessage.value = "Thumbnail size must be less than 2MB";
+      return;
     }
-    newAmenity.value = "";
+
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      modalMessage.value = "Only JPEG and PNG images are allowed";
+      return;
+    }
+
+    selectedThumbnailFile.value = file;
+    const url = URL.createObjectURL(file);
+    objectUrls.value.push(url);
+    thumbnailPreview.value = url;
+    modalMessage.value = "";
   }
 };
 
-const addCustomRoomType = () => {
-  if (
-    newRoomType.value.trim() &&
-    !newHotel.room_types.includes(newRoomType.value.trim())
-  ) {
-    newHotel.room_types.push(newRoomType.value.trim());
-    if (!availableRoomTypes.value.includes(newRoomType.value.trim())) {
-      availableRoomTypes.value.push(newRoomType.value.trim());
-    }
-    newRoomType.value = "";
+const removeThumbnailPreview = () => {
+  thumbnailPreview.value = null;
+  selectedThumbnailFile.value = null;
+  if (thumbnailInput.value) {
+    thumbnailInput.value.value = "";
   }
+};
+
+const viewThumbnail = (hotel) => {
+  if (hotel.thumbnail && hotel.thumbnail !== "default-hotel.jpg") {
+    previewThumbnail.value = {
+      url: getHotelThumbnailUrl(hotel.thumbnail),
+      name: hotel.name,
+    };
+  }
+};
+
+const closeThumbnailPreview = () => {
+  previewThumbnail.value = null;
 };
 
 const showConfirmation = (title, message, action, actionParams) => {
@@ -489,11 +427,17 @@ const confirmAction = () => {
   closeConfirmationModal();
 };
 
+const truncateText = (text, maxLength) => {
+  if (!text) return "";
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + "...";
+};
+
 const fetchHotels = async () => {
   state.isLoading = true;
   state.error = null;
   try {
-    const res = await axios.get("/api/hotels", globalStore.getAxiosHeader());
+    const res = await axios.get("/api/hotels/siemreap", globalStore.getAxiosHeader());
     if (res.data.result && Array.isArray(res.data.data)) {
       state.hotels = res.data.data;
     } else {
@@ -512,21 +456,29 @@ const createHotel = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
   try {
-    const hotelData = {
-      name: newHotel.name,
-      description: newHotel.description,
-      star_rating: parseInt(newHotel.star_rating),
-      price_per_night: parseFloat(newHotel.price_per_night),
-      latitude: newHotel.latitude ? parseFloat(newHotel.latitude) : null,
-      longitude: newHotel.longitude ? parseFloat(newHotel.longitude) : null,
-      amenities: newHotel.amenities,
-      room_types: newHotel.room_types,
-      contact_phone: newHotel.contact_phone,
-      contact_email: newHotel.contact_email,
-      address: newHotel.address,
-      is_active: newHotel.is_active,
-    };
-    const res = await axios.post(`/api/hotels`, hotelData, globalStore.getAxiosHeader());
+    const formData = new FormData();
+    formData.append("name", newHotel.name);
+    formData.append("name_km", newHotel.name_km);
+    if (newHotel.description) {
+      formData.append("description", newHotel.description);
+    }
+    if (newHotel.meal) {
+      formData.append("meal", newHotel.meal);
+    }
+    if (newHotel.services && newHotel.services.length > 0) {
+      newHotel.services.forEach((service, index) => {
+        formData.append(`services[${index}]`, service);
+      });
+    }
+    if (selectedThumbnailFile.value) {
+      formData.append("thumbnail", selectedThumbnailFile.value);
+    }
+
+    const res = await axios.post(
+      `/api/hotels/siemreap`,
+      formData,
+      globalStore.getAxiosHeader()
+    );
     if (res.data.result) {
       await fetchHotels();
       closeModal();
@@ -558,23 +510,27 @@ const updateHotel = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
   try {
-    const hotelData = {
-      name: newHotel.name,
-      description: newHotel.description,
-      star_rating: parseInt(newHotel.star_rating),
-      price_per_night: parseFloat(newHotel.price_per_night),
-      latitude: newHotel.latitude ? parseFloat(newHotel.latitude) : null,
-      longitude: newHotel.longitude ? parseFloat(newHotel.longitude) : null,
-      amenities: newHotel.amenities,
-      room_types: newHotel.room_types,
-      contact_phone: newHotel.contact_phone,
-      contact_email: newHotel.contact_email,
-      address: newHotel.address,
-      is_active: newHotel.is_active,
-    };
-    const res = await axios.put(
-      `/api/hotels/${currentHotelId.value}`,
-      hotelData,
+    const formData = new FormData();
+    formData.append("name", newHotel.name);
+    formData.append("name_km", newHotel.name_km);
+    if (newHotel.description) {
+      formData.append("description", newHotel.description);
+    }
+    if (newHotel.meal) {
+      formData.append("meal", newHotel.meal);
+    }
+    if (newHotel.services && newHotel.services.length > 0) {
+      newHotel.services.forEach((service, index) => {
+        formData.append(`services[${index}]`, service);
+      });
+    }
+    if (selectedThumbnailFile.value) {
+      formData.append("thumbnail", selectedThumbnailFile.value);
+    }
+
+    const res = await axios.post(
+      `/api/hotels/siemreap/${currentHotelId.value}?_method=PUT`,
+      formData,
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
@@ -607,7 +563,7 @@ const updateHotel = async () => {
 const performDeleteHotel = async (hotelId) => {
   try {
     const res = await axios.delete(
-      `/api/hotels/${hotelId}`,
+      `/api/hotels/siemreap/${hotelId}`,
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
@@ -623,6 +579,36 @@ const performDeleteHotel = async (hotelId) => {
   }
 };
 
+const performResetThumbnail = async (hotelId) => {
+  try {
+    const res = await axios.delete(
+      `/api/hotels/siemreap/${hotelId}/thumbnail`,
+      globalStore.getAxiosHeader()
+    );
+    if (res.data.result) {
+      await fetchHotels();
+      showNotification("success", "Success", "Hotel thumbnail reset successfully!");
+    } else {
+      showNotification("error", "Error", res.data.message || "Failed to reset thumbnail");
+    }
+  } catch (error) {
+    showNotification(
+      "error",
+      "Error",
+      "An error occurred while resetting the thumbnail."
+    );
+    await globalStore.onCheckError(error);
+  }
+};
+
+const resetThumbnail = (hotelId) => {
+  showConfirmation(
+    "Reset Thumbnail",
+    "Are you sure you want to reset this hotel thumbnail to default?",
+    performResetThumbnail,
+    hotelId
+  );
+};
 const deleteHotel = (hotelId) => {
   showConfirmation(
     "Delete Hotel",
@@ -644,7 +630,7 @@ const editHotel = async (hotelId) => {
     let hotel = state.hotels.find((h) => String(h.id) === String(hotelId));
     if (!hotel) {
       const response = await axios.get(
-        `/api/hotels/${hotelId}`,
+        `/api/hotels/siemreap/${hotelId}`,
         globalStore.getAxiosHeader()
       );
       if (response.data.result && response.data.data) {
@@ -655,20 +641,11 @@ const editHotel = async (hotelId) => {
         return;
       }
     }
-
     newHotel.name = hotel.name || "";
+    newHotel.name_km = hotel.name_km || "";
     newHotel.description = hotel.description || "";
-    newHotel.star_rating = hotel.star_rating || "";
-    newHotel.price_per_night = hotel.price_per_night || "";
-    newHotel.latitude = hotel.latitude || "";
-    newHotel.longitude = hotel.longitude || "";
-    newHotel.amenities = hotel.amenities || [];
-    newHotel.room_types = hotel.room_types || [];
-    newHotel.contact_phone = hotel.contact_phone || "";
-    newHotel.contact_email = hotel.contact_email || "";
-    newHotel.address = hotel.address || "";
-    newHotel.is_active = hotel.is_active !== undefined ? hotel.is_active : true;
-
+    newHotel.meal = hotel.meal || "";
+    newHotel.services = Array.isArray(hotel.services) ? [...hotel.services] : [];
     currentHotelId.value = hotelId;
     isEditMode.value = true;
     showModal.value = true;
@@ -689,20 +666,28 @@ const closeModal = () => {
 
 const resetHotelForm = () => {
   newHotel.name = "";
+  newHotel.name_km = "";
   newHotel.description = "";
-  newHotel.star_rating = "";
-  newHotel.price_per_night = "";
-  newHotel.latitude = "";
-  newHotel.longitude = "";
-  newHotel.amenities = [];
-  newHotel.room_types = [];
-  newHotel.contact_phone = "";
-  newHotel.contact_email = "";
-  newHotel.address = "";
-  newHotel.is_active = true;
+  newHotel.meal = "";
+  newHotel.services = [];
   currentHotelId.value = null;
-  newAmenity.value = "";
-  newRoomType.value = "";
+  newServiceInput.value = "";
+  removeThumbnailPreview();
+  cleanupObjectURLs();
+};
+
+const addService = () => {
+  if (newServiceInput.value.trim()) {
+    if (!newHotel.services) {
+      newHotel.services = [];
+    }
+    newHotel.services.push(newServiceInput.value.trim());
+    newServiceInput.value = "";
+  }
+};
+
+const removeService = (index) => {
+  newHotel.services.splice(index, 1);
 };
 
 const handleSubmit = async (event) => {
@@ -717,12 +702,8 @@ const handleSubmit = async (event) => {
     modalMessage.value = "Hotel name is required";
     return;
   }
-  if (!newHotel.star_rating) {
-    modalMessage.value = "Star rating is required";
-    return;
-  }
-  if (!newHotel.price_per_night || parseFloat(newHotel.price_per_night) < 0) {
-    modalMessage.value = "Valid price per night is required";
+  if (!newHotel.name_km.trim()) {
+    modalMessage.value = "Hotel name in Khmer is required";
     return;
   }
 
@@ -737,9 +718,12 @@ const filteredHotels = computed(() => {
   return state.hotels.filter(
     (hotel) =>
       hotel.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      hotel.address?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      hotel.description?.toLowerCase().includes(searchQuery.value.toLowerCase())
+      hotel.name_km?.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
+});
+
+onBeforeUnmount(() => {
+  cleanupObjectURLs();
 });
 
 onMounted(async () => {
@@ -754,65 +738,83 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 30px;
-  padding-bottom: 30px;
-  overflow-y: auto;
+.hotel-thumbnail-preview {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-.modal-content {
-  top: 0;
-  width: 90%;
-  max-width: 1200px;
-  max-height: 90vh;
-  left: 0;
-  overflow-y: auto;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  margin: auto;
+.hotel-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.product-form .form-label {
-  font-weight: 500;
+.thumbnail-preview-container {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+  background-color: #f8f9fa;
 }
 
 .thumbnail-preview {
-  border-radius: 4px;
-  border: 1px solid #dee2e6;
+  position: relative;
+  display: inline-block;
+  max-width: 200px;
 }
 
-/* Additional styling for sortable columns */
-th a {
-  color: inherit;
-  text-decoration: none;
+.preview-thumbnail {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.remove-preview {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  padding: 0;
 }
 
-th a:hover {
-  text-decoration: underline;
+.thumbnail-preview-modal {
+  max-width: 900px;
 }
 
-/* Media queries for responsive modal */
-@media (max-width: 992px) {
-  .modal-content {
-    width: 95%;
-    padding: 1.5rem;
-  }
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -2rem -2rem 2rem -2rem;
 }
 
-@media (max-height: 800px) {
-  .modal-overlay {
-    align-items: flex-start;
-    padding: 20px 0;
-  }
+.modal-body {
+  padding: 1.5rem;
+  margin: -2rem;
 }
 
-.confirmation-modal-overlay {
+.btn-close {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.btn-close:hover {
+  color: #4b5563;
+}
+
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -822,174 +824,61 @@ th a:hover {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1100;
+  z-index: 1000;
 }
 
-.confirmation-modal-content {
+.modal-content {
   background-color: white;
   border-radius: 8px;
+  padding: 20px;
   width: 90%;
-  max-width: 400px;
-  overflow: hidden;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.confirmation-header {
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.confirmation-icon {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
-
-.confirmation-icon.warning {
-  background-color: #fff3cd;
-  color: #ff9800;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
-.confirmation-body {
-  padding: 1rem;
-}
-
-.confirmation-footer {
-  padding: 1rem;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #dee2e6;
-}
-.section-header .form-label {
-  color: white;
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 0;
-}
-
-.add-new-color-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.add-new-color-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: white;
-  transform: translateY(-1px);
-}
-
-.stylish-select {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.stylish-select:focus {
-  background: white;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-  outline: none;
-}
-
-.existing-color-preview {
-  margin-top: 1rem;
-}
-
-.preview-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 10px;
-  padding: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
-}
-
-.preview-card:hover {
-  transform: translateY(-2px);
-}
-
-.color-display {
-  flex-shrink: 0;
-}
-
-.color-swatch-large {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: 3px solid white;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
-}
-
-.color-swatch-large:hover {
-  transform: scale(1.05);
-}
-
-.color-info {
-  flex-grow: 1;
-}
-
-.color-name {
-  margin: 0;
-  color: #2d3748;
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-.color-code {
-  color: #718096;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-  font-size: 0.9rem;
-  background: #f7fafc;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-/* Form check group styling */
-.form-check-group {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.form-check {
-  display: flex;
-  align-items: center;
-}
-
-.form-check-input {
-  margin-right: 0.5rem;
-}
-
-.form-check-label {
-  cursor: pointer;
+.hotel-form .form-label {
   font-weight: 500;
 }
 
-/* Existing color selector styling */
-.existing-color-selector {
-  margin-bottom: 1rem;
+.services-input {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+  background-color: #f8f9fa;
+}
+
+.services-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.service-tag {
+  background-color: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-remove-service {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  margin-left: 0.25rem;
+}
+
+.btn-remove-service:hover {
+  color: #dc3545;
 }
 
 .confirmation-modal-overlay {
@@ -1070,7 +959,6 @@ th a:hover {
   font-weight: 500;
 }
 
-/* Toast styles */
 .toast-container {
   position: fixed;
   top: 1rem;
@@ -1150,5 +1038,16 @@ th a:hover {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(30px);
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 </style>
