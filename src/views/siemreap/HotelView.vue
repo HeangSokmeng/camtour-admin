@@ -1132,7 +1132,6 @@ onMounted(async () => {
 .modal-leave-active {
   transition: all 0.3s ease;
 }
-
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
