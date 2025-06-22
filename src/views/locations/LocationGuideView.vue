@@ -259,16 +259,39 @@
             <!-- Best Time to Visit -->
             <div class="col-md-12 mb-3">
               <label class="form-label" for="bestTimeToVisit">Best Time to Visit</label>
+              <div class="input-group">
+                <select
+                  v-model="formData.best_time_to_visit"
+                  class="form-select"
+                  id="bestTimeToVisitSelect"
+                  @change="onSelectChange('best_time_to_visit')"
+                >
+                  <option value="">Choose from existing or type new...</option>
+                  <option
+                    v-for="option in uniqueOptions.bestTimeToVisit"
+                    :key="option"
+                    :value="option"
+                  >
+                    {{ option }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  @click="toggleCustomInput('best_time_to_visit')"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
               <textarea
+                v-if="customInputs.best_time_to_visit"
                 v-model="formData.best_time_to_visit"
-                class="form-control"
+                class="form-control mt-2"
                 id="bestTimeToVisit"
                 rows="3"
+                placeholder="Enter custom best time to visit..."
                 required
               ></textarea>
-              <div class="invalid-feedback">
-                Please provide information about the best time to visit.
-              </div>
             </div>
 
             <!-- Currency and Budget Section -->
@@ -277,40 +300,144 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label" for="currency">Currency</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.currency_and_budget.currency"
+                      class="form-select"
+                      id="currencySelect"
+                      @change="onSelectChange('currency')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.currencies"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('currency')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.currency"
                     v-model="formData.currency_and_budget.currency"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="currency"
+                    placeholder="Enter custom currency..."
                     required
                   />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label" for="budget">Budget</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.currency_and_budget.budget"
+                      class="form-select"
+                      id="budgetSelect"
+                      @change="onSelectChange('budget')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.budgets"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('budget')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.budget"
                     v-model="formData.currency_and_budget.budget"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="budget"
+                    placeholder="Enter custom budget range..."
                     required
                   />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label" for="notes">Notes</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.currency_and_budget.notes"
+                      class="form-select"
+                      id="notesSelect"
+                      @change="onSelectChange('notes')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.notes"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('notes')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.notes"
                     v-model="formData.currency_and_budget.notes"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="notes"
+                    placeholder="Enter custom notes..."
                   />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label" for="atms">ATMs</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.currency_and_budget.ATMs"
+                      class="form-select"
+                      id="atmsSelect"
+                      @change="onSelectChange('atms')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.atms"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('atms')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.atms"
                     v-model="formData.currency_and_budget.ATMs"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="atms"
+                    placeholder="Enter custom ATM info..."
                   />
                 </div>
               </div>
@@ -322,31 +449,109 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label" for="shortDistances">Short Distances</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.local_transportation.shortDistances"
+                      class="form-select"
+                      id="shortDistancesSelect"
+                      @change="onSelectChange('shortDistances')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.shortDistances"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('shortDistances')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.shortDistances"
                     v-model="formData.local_transportation.shortDistances"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="shortDistances"
+                    placeholder="Enter custom short distance transport..."
                     required
                   />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label" for="longDistances">Long Distances</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.local_transportation.longDistances"
+                      class="form-select"
+                      id="longDistancesSelect"
+                      @change="onSelectChange('longDistances')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.longDistances"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('longDistances')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.longDistances"
                     v-model="formData.local_transportation.longDistances"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="longDistances"
+                    placeholder="Enter custom long distance transport..."
                     required
                   />
                 </div>
                 <div class="col-md-12">
                   <label class="form-label" for="transportTip">Tip</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.local_transportation.tip"
+                      class="form-select"
+                      id="transportTipSelect"
+                      @change="onSelectChange('transportTip')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.transportTips"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('transportTip')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.transportTip"
                     v-model="formData.local_transportation.tip"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="transportTip"
+                    placeholder="Enter custom transport tip..."
                     required
                   />
                 </div>
@@ -365,11 +570,37 @@
                   <label class="form-label" :for="'contactName' + index"
                     >Contact Type</label
                   >
+                  <div class="input-group">
+                    <select
+                      v-model="contact.key"
+                      class="form-select"
+                      :id="'contactNameSelect' + index"
+                      @change="onContactTypeChange(index)"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.contactTypes"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleContactCustomInput(index, 'type')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="contact.customType"
                     v-model="contact.key"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     :id="'contactName' + index"
+                    placeholder="Enter custom contact type..."
                     required
                   />
                 </div>
@@ -382,6 +613,7 @@
                     type="text"
                     class="form-control"
                     :id="'contactValue' + index"
+                    placeholder="Enter contact number..."
                     required
                   />
                 </div>
@@ -413,11 +645,37 @@
                 class="row g-2 mb-2"
               >
                 <div class="col-10">
+                  <div class="input-group">
+                    <select
+                      v-model="formData.what_to_pack[index]"
+                      class="form-select"
+                      :id="'packItemSelect' + index"
+                      @change="onPackItemChange(index)"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.packItems"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="togglePackCustomInput(index)"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="packCustomInputs[index]"
                     v-model="formData.what_to_pack[index]"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     :id="'packItem' + index"
+                    placeholder="Enter custom pack item..."
                     required
                   />
                 </div>
@@ -448,11 +706,37 @@
                 class="row g-2 mb-2"
               >
                 <div class="col-10">
+                  <div class="input-group">
+                    <select
+                      v-model="formData.what_on_sale[index]"
+                      class="form-select"
+                      :id="'saleItemSelect' + index"
+                      @change="onSaleItemChange(index)"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.saleItems"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleSaleCustomInput(index)"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="saleCustomInputs[index]"
                     v-model="formData.what_on_sale[index]"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     :id="'saleItem' + index"
+                    placeholder="Enter custom sale item..."
                     required
                   />
                 </div>
@@ -481,11 +765,37 @@
               <div class="row g-3">
                 <div class="col-md-12 mb-3">
                   <label class="form-label" for="greeting">Traditional Greeting</label>
+                  <div class="input-group">
+                    <select
+                      v-model="formData.local_etiquette.greeting"
+                      class="form-select"
+                      id="greetingSelect"
+                      @change="onSelectChange('greeting')"
+                    >
+                      <option value="">Choose from existing or type new...</option>
+                      <option
+                        v-for="option in uniqueOptions.greetings"
+                        :key="option"
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      @click="toggleCustomInput('greeting')"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </div>
                   <input
+                    v-if="customInputs.greeting"
                     v-model="formData.local_etiquette.greeting"
                     type="text"
-                    class="form-control"
+                    class="form-control mt-2"
                     id="greeting"
+                    placeholder="Enter custom greeting..."
                     required
                   />
                 </div>
@@ -498,11 +808,37 @@
                     class="row g-2 mb-2"
                   >
                     <div class="col-10">
+                      <div class="input-group">
+                        <select
+                          v-model="formData.local_etiquette.customs[index]"
+                          class="form-select"
+                          :id="'customItemSelect' + index"
+                          @change="onCustomChange(index)"
+                        >
+                          <option value="">Choose from existing or type new...</option>
+                          <option
+                            v-for="option in uniqueOptions.customs"
+                            :key="option"
+                            :value="option"
+                          >
+                            {{ option }}
+                          </option>
+                        </select>
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary"
+                          @click="toggleCustomCustomInput(index)"
+                        >
+                          <i class="fas fa-edit"></i>
+                        </button>
+                      </div>
                       <input
+                        v-if="customCustomInputs[index]"
                         v-model="formData.local_etiquette.customs[index]"
                         type="text"
-                        class="form-control"
+                        class="form-control mt-2"
                         :id="'customItem' + index"
+                        placeholder="Enter custom etiquette..."
                         required
                       />
                     </div>
@@ -583,7 +919,277 @@ const isEditMode = ref(false);
 const modalError = ref("");
 const submitting = ref(false);
 const toasts = ref([]);
+const allGuides = ref([]); // Store all guides to extract server data
 let toastId = 0;
+
+// Custom input toggles
+const customInputs = ref({
+  best_time_to_visit: false,
+  currency: false,
+  budget: false,
+  notes: false,
+  atms: false,
+  shortDistances: false,
+  longDistances: false,
+  transportTip: false,
+  greeting: false,
+});
+
+const packCustomInputs = ref({});
+const saleCustomInputs = ref({});
+const customCustomInputs = ref({});
+
+// Default guide options
+const defaultGuideOptions = ref({
+  bestTimeToVisit: [
+    "November to March (Cool Season)",
+    "April to June (Hot Season)",
+    "July to October (Rainy Season)",
+    "Year-round (Tropical Climate)",
+    "December to February (Dry Season)",
+    "May to September (Summer)",
+    "October to April (Winter)",
+  ],
+  currencies: [
+    "USD (US Dollar)",
+    "KHR (Cambodian Riel)",
+    "THB (Thai Baht)",
+    "VND (Vietnamese Dong)",
+    "EUR (Euro)",
+    "GBP (British Pound)",
+    "JPY (Japanese Yen)",
+    "CNY (Chinese Yuan)",
+  ],
+  budgets: [
+    "$20-30/day (Budget)",
+    "$30-50/day (Mid-range)",
+    "$50-100/day (Comfortable)",
+    "$100+/day (Luxury)",
+    "$15-25/day (Backpacker)",
+    "$40-70/day (Standard)",
+  ],
+  notes: [
+    "Cash preferred in most places",
+    "Credit cards accepted in major establishments",
+    "ATM fees may apply",
+    "Negotiate prices at markets",
+    "Tipping is appreciated but not mandatory",
+    "Keep small bills for tips and small purchases",
+  ],
+  atms: [
+    "Widely available in cities",
+    "Limited in rural areas",
+    "ABA Bank, ANZ Royal, Canadia Bank",
+    "Usually dispense USD",
+    "24/7 availability in tourist areas",
+    "Check with your bank for international fees",
+  ],
+  shortDistances: [
+    "Tuk-tuk",
+    "Motorbike taxi",
+    "Walking",
+    "Bicycle rental",
+    "Grab (ride-hailing app)",
+    "Local bus",
+    "Rickshaw",
+  ],
+  longDistances: [
+    "Bus (Mekong Express, Giant Ibis)",
+    "Private car/taxi",
+    "Domestic flights",
+    "Boat/ferry",
+    "Train",
+    "Shared taxi",
+    "Tour bus",
+  ],
+  transportTips: [
+    "Negotiate prices before starting journey",
+    "Use reputable bus companies for long distances",
+    "Grab app is reliable and safe",
+    "Always wear helmets on motorbikes",
+    "Keep valuables secure during travel",
+    "Book flights in advance for better prices",
+  ],
+  contactTypes: [
+    "Emergency",
+    "Police",
+    "Tourist Police",
+    "Hospital",
+    "Embassy",
+    "Fire Department",
+    "Tourist Hotline",
+    "Local Guide",
+  ],
+  packItems: [
+    "Sunscreen (high SPF)",
+    "Insect repellent",
+    "Light, breathable clothing",
+    "Rain jacket/umbrella",
+    "Comfortable walking shoes",
+    "Sandals",
+    "Hat/cap",
+    "Sunglasses",
+    "Mosquito net",
+    "Water bottle",
+    "Hand sanitizer",
+    "First aid kit",
+    "Power adapter",
+    "Portable charger",
+    "Cash in small bills",
+  ],
+  saleItems: [
+    "Silk products",
+    "Local handicrafts",
+    "Spices and herbs",
+    "Coffee beans",
+    "Traditional textiles",
+    "Jewelry",
+    "Wood carvings",
+    "Ceramics",
+    "Local artwork",
+    "Traditional clothing",
+    "Souvenirs",
+    "Local snacks",
+  ],
+  greetings: [
+    "Sampeah (palms together, slight bow)",
+    "Chom reap suor (formal hello)",
+    "Wai (Thai-style greeting)",
+    "Handshake (Western style)",
+    "Slight bow",
+    "Sawasdee (informal hello)",
+  ],
+  customs: [
+    "Remove shoes before entering homes/temples",
+    "Dress modestly in religious sites",
+    "Don't point feet toward Buddha statues",
+    "Use both hands when giving/receiving items",
+    "Don't touch someone's head",
+    "Respect elders and monks",
+    "Avoid public displays of affection",
+    "Don't raise your voice in public",
+    "Learn basic local phrases",
+    "Be patient and smile often",
+  ],
+});
+
+// Extract unique options from server data combined with defaults
+const uniqueOptions = computed(() => {
+  const extractFromGuides = (field, subField = null) => {
+    const serverValues = new Set();
+
+    allGuides.value.forEach((guide) => {
+      if (guide[field]) {
+        const parsed = parseJsonField(guide[field]);
+        if (subField) {
+          if (parsed[subField]) {
+            serverValues.add(parsed[subField]);
+          }
+        } else if (Array.isArray(parsed)) {
+          parsed.forEach((item) => {
+            if (item && item.trim()) {
+              serverValues.add(item.trim());
+            }
+          });
+        } else if (typeof parsed === "string" && parsed.trim()) {
+          serverValues.add(parsed.trim());
+        }
+      }
+    });
+
+    return serverValues;
+  };
+
+  const extractContactTypes = () => {
+    const contactTypes = new Set();
+    allGuides.value.forEach((guide) => {
+      if (guide.local_contacts) {
+        const parsed = parseJsonField(guide.local_contacts);
+        Object.keys(parsed).forEach((key) => {
+          if (key && key.trim()) {
+            contactTypes.add(key.trim());
+          }
+        });
+      }
+    });
+    return contactTypes;
+  };
+
+  const extractCustoms = () => {
+    const customs = new Set();
+    allGuides.value.forEach((guide) => {
+      if (guide.local_etiquette) {
+        const parsed = parseJsonField(guide.local_etiquette);
+        if (parsed.customs && Array.isArray(parsed.customs)) {
+          parsed.customs.forEach((custom) => {
+            if (custom && custom.trim()) {
+              customs.add(custom.trim());
+            }
+          });
+        }
+      }
+    });
+    return customs;
+  };
+
+  // Combine server data with defaults and remove duplicates
+  const combineOptions = (defaultOptions, serverOptions) => {
+    const combined = new Set([...defaultOptions, ...serverOptions]);
+    return Array.from(combined).sort();
+  };
+
+  return {
+    bestTimeToVisit: combineOptions(
+      defaultGuideOptions.value.bestTimeToVisit,
+      extractFromGuides("best_time_to_visit")
+    ),
+    currencies: combineOptions(
+      defaultGuideOptions.value.currencies,
+      extractFromGuides("currency_and_budget", "currency")
+    ),
+    budgets: combineOptions(
+      defaultGuideOptions.value.budgets,
+      extractFromGuides("currency_and_budget", "budget")
+    ),
+    notes: combineOptions(
+      defaultGuideOptions.value.notes,
+      extractFromGuides("currency_and_budget", "notes")
+    ),
+    atms: combineOptions(
+      defaultGuideOptions.value.atms,
+      extractFromGuides("currency_and_budget", "ATMs")
+    ),
+    shortDistances: combineOptions(
+      defaultGuideOptions.value.shortDistances,
+      extractFromGuides("local_transportation", "shortDistances")
+    ),
+    longDistances: combineOptions(
+      defaultGuideOptions.value.longDistances,
+      extractFromGuides("local_transportation", "longDistances")
+    ),
+    transportTips: combineOptions(
+      defaultGuideOptions.value.transportTips,
+      extractFromGuides("local_transportation", "tip")
+    ),
+    contactTypes: combineOptions(
+      defaultGuideOptions.value.contactTypes,
+      extractContactTypes()
+    ),
+    packItems: combineOptions(
+      defaultGuideOptions.value.packItems,
+      extractFromGuides("what_to_pack")
+    ),
+    saleItems: combineOptions(
+      defaultGuideOptions.value.saleItems,
+      extractFromGuides("what_on_sale")
+    ),
+    greetings: combineOptions(
+      defaultGuideOptions.value.greetings,
+      extractFromGuides("local_etiquette", "greeting")
+    ),
+    customs: combineOptions(defaultGuideOptions.value.customs, extractCustoms()),
+  };
+});
 
 // Form data
 const formData = reactive({
@@ -643,7 +1249,6 @@ const parsedEtiquette = computed(() => {
   return parseJsonField(currentGuide.value.local_etiquette);
 });
 
-// Utility functions
 const parseJsonField = (field) => {
   if (typeof field === "string") {
     try {
@@ -671,7 +1276,46 @@ const formatDate = (dateStr) => {
   }
 };
 
-// API functions
+const toggleCustomInput = (field) => {
+  customInputs.value[field] = !customInputs.value[field];
+};
+
+const toggleContactCustomInput = (index, type) => {
+  contactEntries.value[index].customType = !contactEntries.value[index].customType;
+};
+
+const togglePackCustomInput = (index) => {
+  packCustomInputs.value[index] = !packCustomInputs.value[index];
+};
+
+const toggleSaleCustomInput = (index) => {
+  saleCustomInputs.value[index] = !saleCustomInputs.value[index];
+};
+
+const toggleCustomCustomInput = (index) => {
+  customCustomInputs.value[index] = !customCustomInputs.value[index];
+};
+
+const onSelectChange = (field) => {
+  customInputs.value[field] = false;
+};
+
+const onContactTypeChange = (index) => {
+  contactEntries.value[index].customType = false;
+};
+
+const onPackItemChange = (index) => {
+  packCustomInputs.value[index] = false;
+};
+
+const onSaleItemChange = (index) => {
+  saleCustomInputs.value[index] = false;
+};
+
+const onCustomChange = (index) => {
+  customCustomInputs.value[index] = false;
+};
+
 const fetchLocations = async () => {
   loading.value = true;
   error.value = null;
@@ -693,6 +1337,22 @@ const fetchLocations = async () => {
   }
 };
 
+const fetchAllGuides = async () => {
+  try {
+    const response = await axios.get(
+      "/api/locations/guide/get",
+      globalStore.getAxiosHeader()
+    );
+
+    if (response.data.error === false && Array.isArray(response.data.data)) {
+      allGuides.value = response.data.data;
+    }
+  } catch (err) {
+    console.error("Error fetching all guides:", err);
+    // Continue with empty array if API fails
+  }
+};
+
 const fetchGuideForLocation = async () => {
   if (!selectedLocationId.value) {
     currentGuide.value = null;
@@ -703,21 +1363,14 @@ const fetchGuideForLocation = async () => {
   error.value = null;
 
   try {
-    const response = await axios.get(
-      "/api/locations/guide/get",
-      globalStore.getAxiosHeader()
-    );
+    // First fetch all guides to populate options
+    await fetchAllGuides();
 
-    if (response.data.error === false && Array.isArray(response.data.data)) {
-      const guides = response.data.data;
-      const guide = guides.find(
-        (g) => g.location_id === Number(selectedLocationId.value)
-      );
-      currentGuide.value = guide || null;
-    } else {
-      error.value = response.data.message || "Failed to fetch travel guide";
-      console.error("API error when fetching guide:", response.data);
-    }
+    // Then find the guide for the selected location
+    const guide = allGuides.value.find(
+      (g) => g.location_id === Number(selectedLocationId.value)
+    );
+    currentGuide.value = guide || null;
   } catch (err) {
     console.error("Error fetching travel guide:", err);
     error.value = "An error occurred while fetching the travel guide.";
@@ -729,6 +1382,14 @@ const fetchGuideForLocation = async () => {
 
 // Form handling functions
 const initFormData = () => {
+  // Reset custom input states
+  Object.keys(customInputs.value).forEach((key) => {
+    customInputs.value[key] = false;
+  });
+  packCustomInputs.value = {};
+  saleCustomInputs.value = {};
+  customCustomInputs.value = {};
+
   if (currentGuide.value) {
     // Edit mode - populate with existing data
     formData.location_id = currentGuide.value.location_id;
@@ -747,8 +1408,24 @@ const initFormData = () => {
     // Setup contacts
     contactEntries.value = [];
     Object.entries(parsedContacts.value).forEach(([key, value]) => {
-      contactEntries.value.push({ key, value });
+      contactEntries.value.push({ key, value, customType: false });
     });
+
+    // Ensure at least one empty contact if none exist
+    if (contactEntries.value.length === 0) {
+      contactEntries.value.push({ key: "", value: "", customType: false });
+    }
+
+    // Ensure arrays have at least one item
+    if (formData.what_to_pack.length === 0) {
+      formData.what_to_pack.push("");
+    }
+    if (formData.what_on_sale.length === 0) {
+      formData.what_on_sale.push("");
+    }
+    if (formData.local_etiquette.customs.length === 0) {
+      formData.local_etiquette.customs.push("");
+    }
   } else {
     // Create mode - setup empty form
     formData.location_id = selectedLocationId.value;
@@ -770,7 +1447,7 @@ const initFormData = () => {
       greeting: "",
       customs: [""],
     };
-    contactEntries.value = [{ key: "Emergency", value: "" }];
+    contactEntries.value = [{ key: "", value: "", customType: false }];
   }
 };
 
@@ -812,16 +1489,23 @@ const removeListItem = (listName, index) => {
   if (formData[listName].length === 0) {
     formData[listName].push("");
   }
+
+  // Clean up custom input states
+  if (listName === "what_to_pack") {
+    delete packCustomInputs.value[index];
+  } else if (listName === "what_on_sale") {
+    delete saleCustomInputs.value[index];
+  }
 };
 
 const addContact = () => {
-  contactEntries.value.push({ key: "", value: "" });
+  contactEntries.value.push({ key: "", value: "", customType: false });
 };
 
 const removeContact = (index) => {
   contactEntries.value.splice(index, 1);
   if (contactEntries.value.length === 0) {
-    contactEntries.value.push({ key: "Emergency", value: "" });
+    contactEntries.value.push({ key: "", value: "", customType: false });
   }
 };
 
@@ -834,6 +1518,7 @@ const removeCustom = (index) => {
   if (formData.local_etiquette.customs.length === 0) {
     formData.local_etiquette.customs.push("");
   }
+  delete customCustomInputs.value[index];
 };
 
 // Toast notification functions
@@ -945,8 +1630,9 @@ const handleSubmit = async (event) => {
 };
 
 // Initialize component
-onMounted(() => {
-  fetchLocations();
+onMounted(async () => {
+  await fetchLocations();
+  await fetchAllGuides(); // Fetch all guides on mount to populate options
 });
 </script>
 
@@ -960,28 +1646,24 @@ onMounted(() => {
 }
 
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  overflow-y: auto;
 }
 
 .modal-content {
-  top: 40px;
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
+  top: 0;
   width: 90%;
-  max-width: 1000px;
+  max-width: 1200px;
   max-height: 90vh;
-  left: 100px;
+  left: 0;
   overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
 }
 
 .form-control-color {
@@ -1097,6 +1779,16 @@ onMounted(() => {
 
 .icon-container {
   margin-bottom: 1rem;
+}
+
+.input-group .btn-outline-secondary {
+  border-color: #6c757d;
+}
+
+.input-group .btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
 }
 
 /* Toast styles */

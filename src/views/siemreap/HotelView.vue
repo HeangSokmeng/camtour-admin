@@ -38,7 +38,7 @@
               <th class="align-middle">Name</th>
               <th class="align-middle">Name (KM)</th>
               <th class="align-middle">Description</th>
-              <th class="align-middle">Meal</th>
+              <th class="align-middle">Meals</th>
               <th class="align-middle">Room Types</th>
               <th class="align-middle">Locations</th>
               <th class="align-middle text-end">Action</th>
@@ -68,7 +68,12 @@
                 <span v-else class="text-muted">-</span>
               </td>
               <td class="align-middle">
-                <span v-if="hotel.meal">{{ hotel.meal }}</span>
+                <span
+                  v-if="hotel.meals && hotel.meals.length > 0"
+                  class="badge bg-warning"
+                >
+                  {{ hotel.meals.length }}
+                </span>
                 <span v-else class="text-muted">-</span>
               </td>
               <td class="align-middle">
@@ -186,14 +191,29 @@
         </div>
 
         <div class="col-12">
-          <label class="form-label" for="hotelMeal">Meal Information</label>
-          <input
-            v-model="newHotel.meal"
-            class="form-control"
-            id="hotelMeal"
-            type="text"
-            placeholder="e.g., Breakfast included, Half board..."
-          />
+          <label class="form-label">Meals</label>
+          <div class="meals-input">
+            <div class="input-group mb-2">
+              <input
+                v-model="newMealInput"
+                class="form-control"
+                type="text"
+                placeholder="Enter meal option (e.g., Breakfast included, Half board)..."
+                @keypress.enter.prevent="addMeal"
+              />
+              <button class="btn btn-outline-primary" type="button" @click="addMeal">
+                <span class="fas fa-plus"></span>
+              </button>
+            </div>
+            <div v-if="newHotel.meals && newHotel.meals.length > 0" class="meals-list">
+              <div v-for="(meal, index) in newHotel.meals" :key="index" class="meal-tag">
+                {{ meal }}
+                <button type="button" class="btn-remove-meal" @click="removeMeal(index)">
+                  &times;
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="col-12">
@@ -328,6 +348,7 @@ const currentHotelId = ref(null);
 const isSubmitting = ref(false);
 const modalMessage = ref("");
 const newServiceInput = ref("");
+const newMealInput = ref("");
 const thumbnailInput = ref(null);
 const thumbnailPreview = ref(null);
 const selectedThumbnailFile = ref(null);
@@ -346,7 +367,7 @@ const newHotel = reactive({
   name: "",
   name_km: "",
   description: "",
-  meal: "",
+  meals: [],
   services: [],
 });
 
@@ -462,8 +483,10 @@ const createHotel = async () => {
     if (newHotel.description) {
       formData.append("description", newHotel.description);
     }
-    if (newHotel.meal) {
-      formData.append("meal", newHotel.meal);
+    if (newHotel.meals && newHotel.meals.length > 0) {
+      newHotel.meals.forEach((meal, index) => {
+        formData.append(`meal[${index}]`, meal);
+      });
     }
     if (newHotel.services && newHotel.services.length > 0) {
       newHotel.services.forEach((service, index) => {
@@ -516,8 +539,10 @@ const updateHotel = async () => {
     if (newHotel.description) {
       formData.append("description", newHotel.description);
     }
-    if (newHotel.meal) {
-      formData.append("meal", newHotel.meal);
+    if (newHotel.meals && newHotel.meals.length > 0) {
+      newHotel.meals.forEach((meal, index) => {
+        formData.append(`meal[${index}]`, meal);
+      });
     }
     if (newHotel.services && newHotel.services.length > 0) {
       newHotel.services.forEach((service, index) => {
@@ -644,7 +669,17 @@ const editHotel = async (hotelId) => {
     newHotel.name = hotel.name || "";
     newHotel.name_km = hotel.name_km || "";
     newHotel.description = hotel.description || "";
-    newHotel.meal = hotel.meal || "";
+    // Handle both 'meal' (singular from backend) and 'meals' (plural)
+    if (hotel.meals && Array.isArray(hotel.meals)) {
+      newHotel.meals = [...hotel.meals];
+    } else if (hotel.meal && Array.isArray(hotel.meal)) {
+      newHotel.meals = [...hotel.meal];
+    } else if (hotel.meal && typeof hotel.meal === "string") {
+      // Handle case where meal is a single string
+      newHotel.meals = [hotel.meal];
+    } else {
+      newHotel.meals = [];
+    }
     newHotel.services = Array.isArray(hotel.services) ? [...hotel.services] : [];
     currentHotelId.value = hotelId;
     isEditMode.value = true;
@@ -668,12 +703,27 @@ const resetHotelForm = () => {
   newHotel.name = "";
   newHotel.name_km = "";
   newHotel.description = "";
-  newHotel.meal = "";
+  newHotel.meals = [];
   newHotel.services = [];
   currentHotelId.value = null;
   newServiceInput.value = "";
+  newMealInput.value = "";
   removeThumbnailPreview();
   cleanupObjectURLs();
+};
+
+const addMeal = () => {
+  if (newMealInput.value.trim()) {
+    if (!newHotel.meals) {
+      newHotel.meals = [];
+    }
+    newHotel.meals.push(newMealInput.value.trim());
+    newMealInput.value = "";
+  }
+};
+
+const removeMeal = (index) => {
+  newHotel.meals.splice(index, 1);
 };
 
 const addService = () => {
@@ -815,30 +865,68 @@ onMounted(async () => {
 }
 
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  overflow-y: auto;
 }
 
 .modal-content {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
+  top: 0;
   width: 90%;
-  max-width: 800px;
+  max-width: 1200px;
   max-height: 90vh;
+  left: 0;
   overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
 }
 
 .hotel-form .form-label {
   font-weight: 500;
+}
+
+.meals-input {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+  background-color: #f8f9fa;
+}
+
+.meals-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.meal-tag {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 20px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-remove-meal {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  margin-left: 0.25rem;
+}
+
+.btn-remove-meal:hover {
+  color: #dc3545;
 }
 
 .services-input {

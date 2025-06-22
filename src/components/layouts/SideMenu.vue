@@ -55,14 +55,14 @@
               <RouterLink to="/siemreap/hotel" custom v-slot="{ navigate, isActive }">
                 <a
                   class="nav-link dropdown-indicator label-1"
-                  :class="{ active: isActive || route.path.startsWith('/siemreap') }"
+                  :class="{ active: isActive }"
                   @click="navigate"
                   href="#"
                 >
                   <div class="d-flex align-items-center">
                     <div class="dropdown-indicator-icon-wrapper"></div>
                     <span class="nav-link-icon">
-                      <span data-feather="shield"></span>
+                      <span data-feather="home"></span>
                     </span>
                     <span class="nav-link-text">Hotels</span>
                   </div>
@@ -75,16 +75,14 @@
               >
                 <a
                   class="nav-link dropdown-indicator label-1"
-                  :class="{
-                    active: isActive || route.path.startsWith('/siemreap/hotel/room'),
-                  }"
+                  :class="{ active: isActive }"
                   @click="navigate"
                   href="#"
                 >
                   <div class="d-flex align-items-center">
                     <div class="dropdown-indicator-icon-wrapper"></div>
                     <span class="nav-link-icon">
-                      <span data-feather="shield"></span>
+                      <span data-feather="grid"></span>
                     </span>
                     <span class="nav-link-text">Room Types</span>
                   </div>
@@ -97,16 +95,14 @@
               >
                 <a
                   class="nav-link dropdown-indicator label-1"
-                  :class="{
-                    active: isActive || route.path.startsWith('/siemreap/hotel/location'),
-                  }"
+                  :class="{ active: isActive }"
                   @click="navigate"
                   href="#"
                 >
                   <div class="d-flex align-items-center">
                     <div class="dropdown-indicator-icon-wrapper"></div>
                     <span class="nav-link-icon">
-                      <span data-feather="shield"></span>
+                      <span data-feather="map-pin"></span>
                     </span>
                     <span class="nav-link-text">Location Hotels</span>
                   </div>
@@ -119,16 +115,14 @@
               >
                 <a
                   class="nav-link dropdown-indicator label-1"
-                  :class="{
-                    active: isActive || route.path.startsWith('/siemreap/hotel/photo'),
-                  }"
+                  :class="{ active: isActive }"
                   @click="navigate"
                   href="#"
                 >
                   <div class="d-flex align-items-center">
                     <div class="dropdown-indicator-icon-wrapper"></div>
                     <span class="nav-link-icon">
-                      <span data-feather="shield"></span>
+                      <span data-feather="camera"></span>
                     </span>
                     <span class="nav-link-text">Hotel Photos</span>
                   </div>

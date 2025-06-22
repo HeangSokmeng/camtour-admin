@@ -49,7 +49,7 @@
               <td colspan="9" class="text-center">No activities found</td>
             </tr>
             <tr v-else v-for="(activity, index) in filteredActivities" :key="activity.id">
-              <td class="align-middle ps-0">{{ index + 1 }}</td>
+              <td class="align-middle ps-0">{{ getItemNumber(index) }}</td>
               <td class="align-middle">
                 <div class="activity-image">
                   <img
@@ -105,25 +105,130 @@
             </tr>
           </tbody>
         </table>
+
+        <!-- Pagination Section -->
+        <div v-if="state.pagination.total > 0" class="row g-3 align-items-center mt-3">
+          <!-- Per Page Selector -->
+          <div class="col-auto">
+            <div class="d-flex align-items-center">
+              <label class="form-label mb-0 me-2">Show:</label>
+              <select
+                v-model="selectedPerPage"
+                class="form-select form-select-sm"
+                style="width: auto"
+                @change="changePerPage"
+              >
+                <option v-for="option in perPageOptions" :key="option" :value="option">
+                  {{ option }}
+                </option>
+              </select>
+              <span class="ms-2 text-muted">entries</span>
+            </div>
+          </div>
+
+          <!-- Pagination Info -->
+          <div class="col">
+            <div class="text-muted small">
+              Showing {{ state.pagination.first_item }} to
+              {{ state.pagination.last_item }} of {{ state.pagination.total }} entries
+              <span v-if="searchQuery"
+                >(filtered from {{ state.pagination.total }} total entries)</span
+              >
+            </div>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="col-auto">
+            <nav aria-label="Activities pagination">
+              <ul class="pagination pagination-sm mb-0">
+                <!-- Previous Button -->
+                <li class="page-item" :class="{ disabled: currentPage <= 1 }">
+                  <button
+                    class="page-link"
+                    @click="goToPage(currentPage - 1)"
+                    :disabled="currentPage <= 1"
+                    aria-label="Previous"
+                  >
+                    <span aria-hidden="true">&laquo;</span>
+                  </button>
+                </li>
+
+                <!-- Page Numbers -->
+                <li
+                  v-for="page in visiblePages"
+                  :key="page"
+                  class="page-item"
+                  :class="{ active: page === currentPage }"
+                >
+                  <button class="page-link" @click="goToPage(page)">
+                    {{ page }}
+                  </button>
+                </li>
+
+                <!-- Next Button -->
+                <li
+                  class="page-item"
+                  :class="{ disabled: currentPage >= state.pagination.last_page }"
+                >
+                  <button
+                    class="page-link"
+                    @click="goToPage(currentPage + 1)"
+                    :disabled="currentPage >= state.pagination.last_page"
+                    aria-label="Next"
+                  >
+                    <span aria-hidden="true">&raquo;</span>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div v-if="showModal" class="modal-overlay">
-    <div class="modal-content activity-form">
+  <div v-if="showModal" class="modal-overlay" @click="closeModal">
+    <div class="modal-content activity-form" @click.stop>
       <h4>{{ isEditMode ? "Edit" : "Create" }} Travel Activity</h4>
       <div v-if="modalMessage" class="alert alert-danger">
         {{ modalMessage }}
       </div>
+
       <form class="row g-3 needs-validation" novalidate @submit.prevent="handleSubmit">
         <!-- Activity Information -->
         <div class="col-md-6">
           <label class="form-label" for="activityTitle">Activity Title</label>
+          <div class="input-group">
+            <select
+              v-model="newActivity.title"
+              class="form-select"
+              id="activityTitleSelect"
+              @change="onSelectChange('title')"
+            >
+              <option value="">Choose from existing or type new...</option>
+              <option
+                v-for="option in activityOptions.titles"
+                :key="option"
+                :value="option"
+              >
+                {{ option }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="toggleCustomInput('title')"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
           <input
+            v-if="customInputs.title"
             v-model="newActivity.title"
-            class="form-control"
+            class="form-control mt-2"
             id="activityTitle"
             type="text"
+            placeholder="Enter custom activity title..."
             required
           />
           <div class="invalid-feedback">Activity title is required</div>
@@ -152,11 +257,37 @@
 
         <div class="col-md-12">
           <label class="form-label" for="activityDescription">Description</label>
+          <div class="input-group">
+            <select
+              v-model="newActivity.description"
+              class="form-select"
+              id="activityDescriptionSelect"
+              @change="onSelectChange('description')"
+            >
+              <option value="">Choose from existing or type new...</option>
+              <option
+                v-for="option in activityOptions.descriptions"
+                :key="option"
+                :value="option"
+              >
+                {{ truncateText(option, 60) }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="toggleCustomInput('description')"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
           <textarea
+            v-if="customInputs.description"
             v-model="newActivity.description"
-            class="form-control"
+            class="form-control mt-2"
             id="activityDescription"
             rows="3"
+            placeholder="Enter custom description..."
             required
           ></textarea>
           <div class="invalid-feedback">Description is required</div>
@@ -164,12 +295,38 @@
 
         <div class="col-md-4">
           <label class="form-label" for="activityDuration">Duration (hours)</label>
+          <div class="input-group">
+            <select
+              v-model="newActivity.duration_hours"
+              class="form-select"
+              id="activityDurationSelect"
+              @change="onSelectChange('duration')"
+            >
+              <option value="">Choose from existing or type new...</option>
+              <option
+                v-for="option in activityOptions.durations"
+                :key="option"
+                :value="option"
+              >
+                {{ option }} hours
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="toggleCustomInput('duration')"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
           <input
+            v-if="customInputs.duration"
             v-model.number="newActivity.duration_hours"
-            class="form-control"
+            class="form-control mt-2"
             id="activityDuration"
             type="number"
             min="1"
+            placeholder="Enter custom duration..."
             required
           />
           <div class="invalid-feedback">Duration is required (minimum 1 hour)</div>
@@ -193,13 +350,39 @@
 
         <div class="col-md-4">
           <label class="form-label" for="activityPrice">Price per Person ($)</label>
+          <div class="input-group">
+            <select
+              v-model="newActivity.price_per_person"
+              class="form-select"
+              id="activityPriceSelect"
+              @change="onSelectChange('price')"
+            >
+              <option value="">Choose from existing or type new...</option>
+              <option
+                v-for="option in activityOptions.prices"
+                :key="option"
+                :value="option"
+              >
+                ${{ option }}
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="toggleCustomInput('price')"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
           <input
+            v-if="customInputs.price"
             v-model.number="newActivity.price_per_person"
-            class="form-control"
+            class="form-control mt-2"
             id="activityPrice"
             type="number"
             min="0"
             step="0.01"
+            placeholder="Enter custom price..."
             required
           />
           <div class="invalid-feedback">Price is required</div>
@@ -226,81 +409,163 @@
           <label class="form-label" for="maxParticipants"
             >Max Participants (optional)</label
           >
+          <div class="input-group">
+            <select
+              v-model="newActivity.max_participants"
+              class="form-select"
+              id="maxParticipantsSelect"
+              @change="onSelectChange('maxParticipants')"
+            >
+              <option value="">Choose from existing or type new...</option>
+              <option
+                v-for="option in activityOptions.maxParticipants"
+                :key="option"
+                :value="option"
+              >
+                {{ option }} people
+              </option>
+            </select>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="toggleCustomInput('maxParticipants')"
+            >
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
           <input
+            v-if="customInputs.maxParticipants"
             v-model.number="newActivity.max_participants"
-            class="form-control"
+            class="form-control mt-2"
             id="maxParticipants"
             type="number"
             min="1"
+            placeholder="Enter custom max participants..."
           />
         </div>
 
         <!-- Included Items -->
         <div class="col-md-6">
-          <label class="form-label" for="includedItems">Included Items</label>
-          <div class="input-group mb-2">
-            <input
-              v-model="newIncludedItem"
-              class="form-control"
-              placeholder="Enter included item"
-              @keyup.enter="addIncludedItem"
-            />
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              @click="addIncludedItem"
-            >
-              Add
-            </button>
-          </div>
-          <div class="included-items-list">
-            <span
-              v-for="(item, index) in newActivity.included_items"
-              :key="index"
-              class="badge bg-primary me-1 mb-1"
-            >
-              {{ item }}
+          <label class="form-label m-lg-2" for="includedItems">Included Items</label>
+          <div
+            v-for="(item, index) in newActivity.included_items"
+            :key="'included' + index"
+            class="row g-2 mb-2"
+          >
+            <div class="col-10">
+              <div class="input-group">
+                <select
+                  v-model="newActivity.included_items[index]"
+                  class="form-select"
+                  :id="'includedItemSelect' + index"
+                  @change="onIncludedItemChange(index)"
+                >
+                  <option value="">Choose from existing or type new...</option>
+                  <option
+                    v-for="option in activityOptions.includedItems"
+                    :key="option"
+                    :value="option"
+                  >
+                    {{ option }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  @click="toggleIncludedCustomInput(index)"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+              <input
+                v-if="includedCustomInputs[index]"
+                v-model="newActivity.included_items[index]"
+                type="text"
+                class="form-control mt-2"
+                :id="'includedItem' + index"
+                placeholder="Enter custom included item..."
+                required
+              />
+            </div>
+            <div class="col-2">
               <button
                 type="button"
-                class="btn-close btn-close-white ms-1"
+                class="btn btn-danger w-100"
                 @click="removeIncludedItem(index)"
-              ></button>
-            </span>
+              >
+                <span class="fas fa-trash"></span>
+              </button>
+            </div>
           </div>
+          <button
+            type="button"
+            class="btn btn-outline-primary mt-2"
+            @click="addIncludedItem"
+          >
+            <span class="fas fa-plus me-1"></span>Add Item
+          </button>
         </div>
 
         <!-- Requirements -->
         <div class="col-md-6">
-          <label class="form-label" for="requirements">Requirements</label>
-          <div class="input-group mb-2">
-            <input
-              v-model="newRequirement"
-              class="form-control"
-              placeholder="Enter requirement"
-              @keyup.enter="addRequirement"
-            />
-            <button
-              class="btn btn-outline-secondary"
-              type="button"
-              @click="addRequirement"
-            >
-              Add
-            </button>
-          </div>
-          <div class="requirements-list">
-            <span
-              v-for="(requirement, index) in newActivity.requirements"
-              :key="index"
-              class="badge bg-warning me-1 mb-1"
-            >
-              {{ requirement }}
+          <label class="form-label m-lg-2" for="requirements">Requirements</label>
+          <div
+            v-for="(requirement, index) in newActivity.requirements"
+            :key="'requirement' + index"
+            class="row g-2 mb-2"
+          >
+            <div class="col-10">
+              <div class="input-group">
+                <select
+                  v-model="newActivity.requirements[index]"
+                  class="form-select"
+                  :id="'requirementSelect' + index"
+                  @change="onRequirementChange(index)"
+                >
+                  <option value="">Choose from existing or type new...</option>
+                  <option
+                    v-for="option in activityOptions.requirements"
+                    :key="option"
+                    :value="option"
+                  >
+                    {{ option }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  @click="toggleRequirementCustomInput(index)"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+              <input
+                v-if="requirementCustomInputs[index]"
+                v-model="newActivity.requirements[index]"
+                type="text"
+                class="form-control mt-2"
+                :id="'requirement' + index"
+                placeholder="Enter custom requirement..."
+                required
+              />
+            </div>
+            <div class="col-2">
               <button
                 type="button"
-                class="btn-close ms-1"
+                class="btn btn-danger w-100"
                 @click="removeRequirement(index)"
-              ></button>
-            </span>
+              >
+                <span class="fas fa-trash"></span>
+              </button>
+            </div>
           </div>
+          <button
+            type="button"
+            class="btn btn-outline-primary mt-2"
+            @click="addRequirement"
+          >
+            <span class="fas fa-plus me-1"></span>Add Requirement
+          </button>
         </div>
 
         <!-- Status -->
@@ -386,6 +651,15 @@ const state = reactive({
   activities: [],
   isLoading: false,
   error: null,
+  pagination: {
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: 10,
+    has_more_pages: false,
+    first_item: 0,
+    last_item: 0,
+  },
 });
 
 const locations = ref([]);
@@ -397,8 +671,28 @@ const isSubmitting = ref(false);
 const modalMessage = ref("");
 const imagePreview = ref("");
 const imageInput = ref(null);
-const newIncludedItem = ref("");
-const newRequirement = ref("");
+const currentPage = ref(1);
+const perPageOptions = [10, 25, 50, 100];
+const selectedPerPage = ref(10);
+const customInputs = ref({
+  title: false,
+  description: false,
+  duration: false,
+  price: false,
+  maxParticipants: false,
+});
+
+const includedCustomInputs = ref({});
+const requirementCustomInputs = ref({});
+const activityOptions = ref({
+  titles: [],
+  descriptions: [],
+  durations: [],
+  prices: [],
+  maxParticipants: [],
+  includedItems: [],
+  requirements: [],
+});
 
 const confirmationModal = reactive({
   show: false,
@@ -422,35 +716,61 @@ const newActivity = reactive({
   image: null,
 });
 
-const showConfirmation = (title, message, action, actionParams) => {
-  confirmationModal.show = true;
-  confirmationModal.title = title;
-  confirmationModal.message = message;
-  confirmationModal.action = action;
-  confirmationModal.actionParams = actionParams;
-};
-
-const closeConfirmationModal = () => {
-  confirmationModal.show = false;
-  confirmationModal.action = null;
-  confirmationModal.actionParams = null;
-};
-
-const confirmAction = () => {
-  if (confirmationModal.action && typeof confirmationModal.action === "function") {
-    confirmationModal.action(confirmationModal.actionParams);
+const filteredActivities = computed(() => {
+  if (searchQuery.value.trim()) {
+    return state.activities.filter(
+      (activity) =>
+        activity.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        (activity.description &&
+          activity.description.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+        activity.difficulty_level?.toLowerCase().includes(searchQuery.value.toLowerCase())
+    );
   }
-  closeConfirmationModal();
+  return state.activities;
+});
+
+const visiblePages = computed(() => {
+  const pages = [];
+  const totalPages = state.pagination.last_page;
+  const current = currentPage.value;
+
+  if (totalPages > 0) pages.push(1);
+
+  let startPage = Math.max(2, current - 2);
+  let endPage = Math.min(totalPages - 1, current + 2);
+  if (startPage > 2) {
+    pages.push("...");
+  }
+  for (let i = startPage; i <= endPage; i++) {
+    if (i !== 1 && i !== totalPages) {
+      pages.push(i);
+    }
+  }
+  if (endPage < totalPages - 1) {
+    pages.push("...");
+  }
+  if (totalPages > 1) pages.push(totalPages);
+  return pages;
+});
+
+const isValidId = (id) => {
+  return (
+    id !== null &&
+    id !== undefined &&
+    id !== "null" &&
+    id !== "undefined" &&
+    String(id).trim() !== ""
+  );
 };
 
 const findById = (collection, id) => {
-  if (!id || !collection || !collection.length) return null;
+  if (!isValidId(id) || !collection || !collection.length) return null;
   const stringId = String(id);
   return collection.find((item) => String(item.id) === stringId);
 };
 
 const getLocationName = (locationId) => {
-  if (!locationId) return "Unknown";
+  if (!isValidId(locationId)) return "Unknown";
   const location = findById(locations.value, locationId);
   if (location) {
     return `${location.name}, ${location.city}`;
@@ -482,6 +802,34 @@ const truncateText = (text, maxLength) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
+const getItemNumber = (index) => {
+  return (currentPage.value - 1) * selectedPerPage.value + index + 1;
+};
+
+const toggleCustomInput = (field) => {
+  customInputs.value[field] = !customInputs.value[field];
+};
+
+const toggleIncludedCustomInput = (index) => {
+  includedCustomInputs.value[index] = !includedCustomInputs.value[index];
+};
+
+const toggleRequirementCustomInput = (index) => {
+  requirementCustomInputs.value[index] = !requirementCustomInputs.value[index];
+};
+
+const onSelectChange = (field) => {
+  customInputs.value[field] = false;
+};
+
+const onIncludedItemChange = (index) => {
+  includedCustomInputs.value[index] = false;
+};
+
+const onRequirementChange = (index) => {
+  requirementCustomInputs.value[index] = false;
+};
+
 const handleImageChange = (event) => {
   const file = event.target.files[0];
   if (file) {
@@ -495,25 +843,52 @@ const handleImageChange = (event) => {
 };
 
 const addIncludedItem = () => {
-  if (newIncludedItem.value.trim()) {
-    newActivity.included_items.push(newIncludedItem.value.trim());
-    newIncludedItem.value = "";
+  if (!Array.isArray(newActivity.included_items)) {
+    newActivity.included_items = [];
   }
+  newActivity.included_items.push("");
 };
 
 const removeIncludedItem = (index) => {
-  newActivity.included_items.splice(index, 1);
-};
-
-const addRequirement = () => {
-  if (newRequirement.value.trim()) {
-    newActivity.requirements.push(newRequirement.value.trim());
-    newRequirement.value = "";
+  if (Array.isArray(newActivity.included_items)) {
+    newActivity.included_items.splice(index, 1);
+    delete includedCustomInputs.value[index];
   }
 };
 
+const addRequirement = () => {
+  if (!Array.isArray(newActivity.requirements)) {
+    newActivity.requirements = [];
+  }
+  newActivity.requirements.push("");
+};
+
 const removeRequirement = (index) => {
-  newActivity.requirements.splice(index, 1);
+  if (Array.isArray(newActivity.requirements)) {
+    newActivity.requirements.splice(index, 1);
+    delete requirementCustomInputs.value[index];
+  }
+};
+
+const showConfirmation = (title, message, action, actionParams) => {
+  confirmationModal.show = true;
+  confirmationModal.title = title;
+  confirmationModal.message = message;
+  confirmationModal.action = action;
+  confirmationModal.actionParams = actionParams;
+};
+
+const closeConfirmationModal = () => {
+  confirmationModal.show = false;
+  confirmationModal.action = null;
+  confirmationModal.actionParams = null;
+};
+
+const confirmAction = () => {
+  if (confirmationModal.action && typeof confirmationModal.action === "function") {
+    confirmationModal.action(confirmationModal.actionParams);
+  }
+  closeConfirmationModal();
 };
 
 const fetchActivities = async () => {
@@ -554,45 +929,168 @@ const fetchLocations = async () => {
   }
 };
 
+const fetchActivityOptions = async () => {
+  try {
+    const response = await axios.get(
+      "/api/locations/travel-activities",
+      globalStore.getAxiosHeader()
+    );
+    if (response.data.result && Array.isArray(response.data.data)) {
+      const activities = response.data.data;
+      const titles = [...new Set(activities.map((a) => a.title).filter(Boolean))].sort();
+      const descriptions = [
+        ...new Set(activities.map((a) => a.description).filter(Boolean)),
+      ].sort();
+      const durations = [
+        ...new Set(activities.map((a) => a.duration_hours).filter(Boolean)),
+      ].sort((a, b) => a - b);
+      const prices = [
+        ...new Set(activities.map((a) => parseFloat(a.price_per_person)).filter(Boolean)),
+      ].sort((a, b) => a - b);
+      const maxParticipants = [
+        ...new Set(activities.map((a) => a.max_participants).filter(Boolean)),
+      ].sort((a, b) => a - b);
+      const allIncludedItems = [];
+      activities.forEach((activity) => {
+        if (activity.included_items) {
+          let items;
+          if (Array.isArray(activity.included_items)) {
+            items = activity.included_items;
+          } else if (typeof activity.included_items === "string") {
+            try {
+              items = JSON.parse(activity.included_items);
+            } catch (e) {
+              items = [];
+            }
+          }
+          if (Array.isArray(items)) {
+            allIncludedItems.push(...items.filter((item) => item && item.trim()));
+          }
+        }
+      });
+      const includedItems = [...new Set(allIncludedItems)].sort();
+      const allRequirements = [];
+      activities.forEach((activity) => {
+        if (activity.requirements) {
+          let requirements;
+          if (Array.isArray(activity.requirements)) {
+            requirements = activity.requirements;
+          } else if (typeof activity.requirements === "string") {
+            try {
+              requirements = JSON.parse(activity.requirements);
+            } catch (e) {
+              requirements = [];
+            }
+          }
+          if (Array.isArray(requirements)) {
+            allRequirements.push(...requirements.filter((req) => req && req.trim()));
+          }
+        }
+      });
+      const requirements = [...new Set(allRequirements)].sort();
+      activityOptions.value = {
+        titles,
+        descriptions,
+        durations,
+        prices,
+        maxParticipants,
+        includedItems,
+        requirements,
+      };
+    }
+    try {
+      const optionsResponse = await axios.get(
+        "/api/travel-activities/options",
+        globalStore.getAxiosHeader()
+      );
+      if (optionsResponse.data.result && optionsResponse.data.data) {
+        Object.keys(optionsResponse.data.data).forEach((key) => {
+          if (
+            optionsResponse.data.data[key] &&
+            Array.isArray(optionsResponse.data.data[key])
+          ) {
+            const existing = activityOptions.value[key] || [];
+            const newItems = optionsResponse.data.data[key];
+            activityOptions.value[key] = [...new Set([...existing, ...newItems])].sort();
+          }
+        });
+      }
+    } catch (optionsError) {
+      console.error("Error fetching options:", optionsError);
+    }
+  } catch (err) {
+    console.error("Error fetching activity options:", err);
+    activityOptions.value = {
+      titles: ["Temple Tour", "Food Tour", "Cultural Workshop", "Bicycle Tour"],
+      descriptions: [
+        "Explore local culture",
+        "Discover traditional cuisine",
+        "Learn local crafts",
+      ],
+      durations: [1, 2, 3, 4, 5, 6, 8, 10, 12],
+      prices: [15, 20, 25, 30, 40, 50, 75, 100, 150],
+      maxParticipants: [2, 4, 6, 8, 10, 15, 20],
+      includedItems: ["Transportation", "Guide", "Entrance fees", "Lunch", "Water"],
+      requirements: ["Comfortable shoes", "Hat and sunscreen", "Camera", "Passport/ID"],
+    };
+  }
+};
+
 const createActivity = async () => {
   isSubmitting.value = true;
   modalMessage.value = "";
   try {
     const formData = new FormData();
-
-    // Append all form fields
     formData.append("title", newActivity.title);
-    formData.append("description", newActivity.description);
+    formData.append("description", newActivity.description || "");
     formData.append("duration_hours", newActivity.duration_hours);
-    formData.append("difficulty_level", newActivity.difficulty_level);
-    formData.append("price_per_person", newActivity.price_per_person);
+    formData.append("difficulty_level", newActivity.difficulty_level || "");
+    formData.append("price_per_person", newActivity.price_per_person || 0);
     formData.append("location_id", newActivity.location_id);
     formData.append("is_active", newActivity.is_active ? 1 : 0);
-
-    if (newActivity.max_participants) {
+    if (newActivity.max_participants && newActivity.max_participants > 0) {
       formData.append("max_participants", newActivity.max_participants);
     }
-
     if (newActivity.image) {
       formData.append("image", newActivity.image);
     }
-
-    // Send arrays properly
-    newActivity.included_items.forEach((item, index) => {
-      formData.append(`included_items[${index}]`, item);
+    if (!Array.isArray(newActivity.included_items)) {
+      newActivity.included_items = [];
+    }
+    if (!Array.isArray(newActivity.requirements)) {
+      newActivity.requirements = [];
+    }
+    const cleanedIncludedItems = newActivity.included_items.filter((item) => {
+      const isValid =
+        item !== null && item !== undefined && item !== "" && String(item).trim() !== "";
+      return isValid;
     });
-
-    newActivity.requirements.forEach((requirement, index) => {
-      formData.append(`requirements[${index}]`, requirement);
+    const cleanedRequirements = newActivity.requirements.filter((req) => {
+      const isValid =
+        req !== null && req !== undefined && req !== "" && String(req).trim() !== "";
+      return isValid;
     });
+    if (cleanedIncludedItems.length > 0) {
+      cleanedIncludedItems.forEach((item) => {
+        formData.append("included_items[]", item);
+      });
+    } else {
+      formData.append("included_items", JSON.stringify([]));
+    }
 
-    const res = await axios.post(`/api/travel-activities`, formData, {
-      ...globalStore.getAxiosHeader(),
-      "Content-Type": "multipart/form-data",
-    });
-
+    if (cleanedRequirements.length > 0) {
+      cleanedRequirements.forEach((requirement) => {
+        formData.append("requirements[]", requirement);
+      });
+    } else {
+      formData.append("requirements", JSON.stringify([]));
+    }
+    const axiosConfig = { ...globalStore.getAxiosHeader() };
+    delete axiosConfig.headers["Content-Type"];
+    const res = await axios.post("/api/travel-activities", formData, axiosConfig);
     if (res.data.result) {
       await fetchActivities();
+      await fetchActivityOptions();
       closeModal();
       resetActivityForm();
       showNotification("success", "Success", "Activity created successfully!");
@@ -619,49 +1117,70 @@ const createActivity = async () => {
 };
 
 const updateActivity = async () => {
+  if (!isValidId(currentActivityId.value)) {
+    modalMessage.value = "Invalid activity ID. Cannot update activity.";
+    console.error("Cannot update activity: invalid ID:", currentActivityId.value);
+    return;
+  }
   isSubmitting.value = true;
   modalMessage.value = "";
   try {
     const formData = new FormData();
-
-    // Append all form fields
     formData.append("title", newActivity.title);
-    formData.append("description", newActivity.description);
+    formData.append("description", newActivity.description || "");
     formData.append("duration_hours", newActivity.duration_hours);
-    formData.append("difficulty_level", newActivity.difficulty_level);
-    formData.append("price_per_person", newActivity.price_per_person);
+    formData.append("difficulty_level", newActivity.difficulty_level || "");
+    formData.append("price_per_person", newActivity.price_per_person || 0);
     formData.append("location_id", newActivity.location_id);
     formData.append("is_active", newActivity.is_active ? 1 : 0);
     formData.append("_method", "PUT");
 
-    if (newActivity.max_participants) {
+    if (newActivity.max_participants && newActivity.max_participants > 0) {
       formData.append("max_participants", newActivity.max_participants);
     }
-
     if (newActivity.image) {
       formData.append("image", newActivity.image);
     }
-
-    // Send arrays properly
-    newActivity.included_items.forEach((item, index) => {
-      formData.append(`included_items[${index}]`, item);
+    if (!Array.isArray(newActivity.included_items)) {
+      newActivity.included_items = [];
+    }
+    if (!Array.isArray(newActivity.requirements)) {
+      newActivity.requirements = [];
+    }
+    const cleanedIncludedItems = newActivity.included_items.filter((item) => {
+      const isValid =
+        item !== null && item !== undefined && item !== "" && String(item).trim() !== "";
+      return isValid;
     });
-
-    newActivity.requirements.forEach((requirement, index) => {
-      formData.append(`requirements[${index}]`, requirement);
+    const cleanedRequirements = newActivity.requirements.filter((req) => {
+      const isValid =
+        req !== null && req !== undefined && req !== "" && String(req).trim() !== "";
+      return isValid;
     });
-
+    if (cleanedIncludedItems.length > 0) {
+      cleanedIncludedItems.forEach((item) => {
+        formData.append("included_items[]", item);
+      });
+    } else {
+      formData.append("included_items", JSON.stringify([]));
+    }
+    if (cleanedRequirements.length > 0) {
+      cleanedRequirements.forEach((requirement) => {
+        formData.append("requirements[]", requirement);
+      });
+    } else {
+      formData.append("requirements", JSON.stringify([]));
+    }
+    const axiosConfig = { ...globalStore.getAxiosHeader() };
+    delete axiosConfig.headers["Content-Type"];
     const res = await axios.post(
       `/api/travel-activities/${currentActivityId.value}`,
       formData,
-      {
-        ...globalStore.getAxiosHeader(),
-        "Content-Type": "multipart/form-data",
-      }
+      axiosConfig
     );
-
     if (res.data.result) {
       await fetchActivities();
+      await fetchActivityOptions();
       closeModal();
       resetActivityForm();
       showNotification("success", "Success", "Activity updated successfully!");
@@ -688,25 +1207,38 @@ const updateActivity = async () => {
 };
 
 const performDeleteActivity = async (activityId) => {
+  if (!isValidId(activityId)) {
+    console.error("Cannot delete activity: invalid ID:", activityId);
+    showNotification("error", "Error", "Invalid activity ID provided");
+    return;
+  }
   try {
     const res = await axios.delete(
       `/api/travel-activities/${activityId}`,
       globalStore.getAxiosHeader()
     );
     if (res.data.result) {
-      state.activities = state.activities.filter((a) => a.id !== activityId);
+      state.activities = state.activities.filter(
+        (a) => String(a.id) !== String(activityId)
+      );
       await fetchActivities();
       showNotification("success", "Success", "Activity deleted successfully!");
     } else {
       showNotification("error", "Error", res.data.message || "Failed to delete activity");
     }
   } catch (error) {
+    console.error("Error deleting activity:", error);
     showNotification("error", "Error", "An error occurred while deleting the activity.");
     await globalStore.onCheckError(error);
   }
 };
 
 const deleteActivity = (activityId) => {
+  if (!isValidId(activityId)) {
+    console.error("Cannot delete activity: invalid ID:", activityId);
+    showNotification("error", "Error", "Invalid activity ID provided");
+    return;
+  }
   showConfirmation(
     "Delete Activity",
     "Are you sure you want to delete this activity?",
@@ -722,12 +1254,18 @@ const openModal = () => {
 };
 
 const editActivity = async (activityId) => {
+  if (!isValidId(activityId)) {
+    console.error("Invalid activity ID:", activityId);
+    showNotification("error", "Error", "Invalid activity ID provided");
+    return;
+  }
   try {
     state.isLoading = true;
-    let activity = state.activities.find((a) => String(a.id) === String(activityId));
+    const stringActivityId = String(activityId);
+    let activity = state.activities.find((a) => String(a.id) === stringActivityId);
     if (!activity) {
       const response = await axios.get(
-        `/api/travel-activities/${activityId}`,
+        `/api/travel-activities/${stringActivityId}`,
         globalStore.getAxiosHeader()
       );
       if (response.data.result && response.data.data) {
@@ -738,27 +1276,61 @@ const editActivity = async (activityId) => {
         return;
       }
     }
-
-    // Populate form with activity data
+    Object.keys(customInputs.value).forEach((key) => {
+      customInputs.value[key] = false;
+    });
+    includedCustomInputs.value = {};
+    requirementCustomInputs.value = {};
     newActivity.title = activity.title || "";
     newActivity.description = activity.description || "";
     newActivity.duration_hours = activity.duration_hours || 1;
     newActivity.difficulty_level = activity.difficulty_level || "";
     newActivity.price_per_person = parseFloat(activity.price_per_person) || 0;
     newActivity.max_participants = activity.max_participants || null;
-    newActivity.included_items = activity.included_items
-      ? Array.isArray(activity.included_items)
-        ? activity.included_items
-        : JSON.parse(activity.included_items)
-      : [];
-    newActivity.requirements = activity.requirements
-      ? Array.isArray(activity.requirements)
-        ? activity.requirements
-        : JSON.parse(activity.requirements)
-      : [];
+    if (activity.included_items) {
+      if (Array.isArray(activity.included_items)) {
+        newActivity.included_items = activity.included_items.filter(
+          (item) => item !== null && item !== ""
+        );
+      } else if (typeof activity.included_items === "string") {
+        try {
+          const parsed = JSON.parse(activity.included_items);
+          newActivity.included_items = Array.isArray(parsed)
+            ? parsed.filter((item) => item !== null && item !== "")
+            : [];
+        } catch (e) {
+          console.error("Error parsing included_items:", e);
+          newActivity.included_items = [];
+        }
+      } else {
+        newActivity.included_items = [];
+      }
+    } else {
+      newActivity.included_items = [];
+    }
+    if (activity.requirements) {
+      if (Array.isArray(activity.requirements)) {
+        newActivity.requirements = activity.requirements.filter(
+          (req) => req !== null && req !== ""
+        );
+      } else if (typeof activity.requirements === "string") {
+        try {
+          const parsed = JSON.parse(activity.requirements);
+          newActivity.requirements = Array.isArray(parsed)
+            ? parsed.filter((req) => req !== null && req !== "")
+            : [];
+        } catch (e) {
+          console.error("Error parsing requirements:", e);
+          newActivity.requirements = [];
+        }
+      } else {
+        newActivity.requirements = [];
+      }
+    } else {
+      newActivity.requirements = [];
+    }
     newActivity.is_active = activity.is_active ?? true;
-    newActivity.image = null; // Reset image for edit
-
+    newActivity.image = null;
     if (activity.location_id) {
       newActivity.location_id = String(activity.location_id);
     } else if (activity.location && activity.location.id) {
@@ -766,13 +1338,10 @@ const editActivity = async (activityId) => {
     } else {
       newActivity.location_id = "";
     }
-
-    // Show existing image preview
     if (activity.image) {
       imagePreview.value = activity.image;
     }
-
-    currentActivityId.value = activityId;
+    currentActivityId.value = stringActivityId;
     isEditMode.value = true;
     showModal.value = true;
   } catch (error) {
@@ -808,8 +1377,12 @@ const resetActivityForm = () => {
   newActivity.image = null;
   currentActivityId.value = null;
   imagePreview.value = "";
-  newIncludedItem.value = "";
-  newRequirement.value = "";
+  Object.keys(customInputs.value).forEach((key) => {
+    customInputs.value[key] = false;
+  });
+  includedCustomInputs.value = {};
+  requirementCustomInputs.value = {};
+
   if (imageInput.value) {
     imageInput.value.value = "";
   }
@@ -822,22 +1395,18 @@ const handleSubmit = async (event) => {
     event.target.classList.add("was-validated");
     return;
   }
-
   if (!newActivity.title.trim()) {
     modalMessage.value = "Activity title is required";
     return;
   }
-
   if (!newActivity.description.trim()) {
     modalMessage.value = "Description is required";
     return;
   }
-
   if (!newActivity.location_id) {
     modalMessage.value = "Location is required";
     return;
   }
-
   if (isEditMode.value) {
     await updateActivity();
   } else {
@@ -845,19 +1414,10 @@ const handleSubmit = async (event) => {
   }
 };
 
-const filteredActivities = computed(() => {
-  return state.activities.filter(
-    (activity) =>
-      activity.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (activity.description &&
-        activity.description.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
-      activity.difficulty_level?.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
-
 onMounted(async () => {
   try {
     await fetchLocations();
+    await fetchActivityOptions();
     await fetchActivities();
   } catch (error) {
     console.error("Error during initialization:", error);
@@ -868,68 +1428,154 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.activity-image {
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.activity-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.no-image {
-  font-size: 0.75rem;
-  color: #6c757d;
-  text-align: center;
-}
-
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-bottom: 30px;
   overflow-y: auto;
 }
 
-.activity-form .form-label {
-  font-weight: 500;
+.modal-content {
+  top: 0;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  left: 0;
+  overflow-y: auto;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  margin: auto;
 }
 
-.included-items-list,
-.requirements-list {
-  min-height: 40px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 8px;
+.form-control,
+.form-select {
+  border-color: #e5e5e5;
+  padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.input-group .btn-outline-secondary {
+  border-color: #6c757d;
+}
+
+.input-group .btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+/* Activity Image Styles */
+.activity-image img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+}
+
+.no-image {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
   background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #6c757d;
 }
 
-.badge .btn-close {
-  font-size: 0.65rem;
-  margin-left: 0.25rem;
+/* Toast Styles */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1050;
 }
 
+.toast-notification {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+  width: 300px;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem 1rem;
+  animation: toast-in 0.2s ease-in;
+}
+
+.toast-notification.success {
+  border-left: 4px solid #198754;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #dc3545;
+}
+
+.toast-icon {
+  margin-right: 0.75rem;
+  color: #6c757d;
+}
+
+.toast-notification.success .toast-icon {
+  color: #198754;
+}
+
+.toast-notification.error .toast-icon {
+  color: #dc3545;
+}
+
+.toast-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.toast-message {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.toast-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* Confirmation Modal Styles */
 .confirmation-modal-overlay {
   position: fixed;
   top: 0;
@@ -991,232 +1637,8 @@ onMounted(async () => {
   border-top: 1px solid #dee2e6;
 }
 
-.form-control,
-.form-select {
-  border-color: #e5e5e5;
-  padding: 0.5rem 0.75rem;
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.table th {
-  background-color: #f8f9fa;
-  font-weight: 500;
-}
-
-.table td {
-  vertical-align: middle;
-}
-
-/* Toast styles */
-.toast-container {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1050;
-}
-
-.toast-notification {
-  display: flex;
-  align-items: center;
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
-  width: 300px;
-  margin-bottom: 0.5rem;
-  padding: 0.75rem 1rem;
-  animation: toast-in 0.2s ease-in;
-}
-
-.toast-notification.success {
-  border-left: 4px solid #198754;
-}
-
-.toast-notification.error {
-  border-left: 4px solid #dc3545;
-}
-
-.toast-icon {
-  margin-right: 0.75rem;
-  color: #6c757d;
-}
-
-.toast-notification.success .toast-icon {
-  color: #198754;
-}
-
-.toast-notification.error .toast-icon {
-  color: #dc3545;
-}
-
-.toast-content {
-  flex: 1;
-}
-
-.toast-title {
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.toast-message {
-  color: #6c757d;
-  font-size: 0.875rem;
-}
-
-.toast-close {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: #6c757d;
-  font-size: 1.25rem;
-  cursor: pointer;
-}
-
-@keyframes toast-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-/* Search input styling */
-.search-box {
-  position: relative;
-}
-
-.search-input {
-  padding-left: 2.5rem;
-}
-
-.search-box::before {
-  content: "\f002";
-  font-family: "Font Awesome 5 Free";
-  font-weight: 900;
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #6c757d;
-  z-index: 2;
-}
-
-/* Button hover effects */
-.btn:hover {
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  background-color: #0056b3;
-  border-color: #004085;
-}
-
-.btn-danger:hover {
-  background-color: #c82333;
-  border-color: #bd2130;
-}
-
-/* Badge styling */
-.badge {
-  font-size: 0.75rem;
-  padding: 0.375rem 0.5rem;
-}
-
-/* Loading and error states */
-.text-center {
-  padding: 2rem;
-  color: #6c757d;
-}
-
-/* Form validation */
-.was-validated .form-control:invalid,
-.was-validated .form-select:invalid {
-  border-color: #dc3545;
-}
-
-.was-validated .form-control:valid,
-.was-validated .form-select:valid {
-  border-color: #198754;
-}
-
-.invalid-feedback {
-  display: block;
+.activity-form {
   width: 100%;
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: #dc3545;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .modal-content {
-    width: 95%;
-    margin: 1rem;
-  }
-
-  .table-responsive {
-    font-size: 0.875rem;
-  }
-
-  .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  .activity-image {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-/* Smooth transitions */
-* {
-  transition: all 0.2s ease;
-}
-
-/* Focus states for accessibility */
-.btn:focus,
-.form-control:focus,
-.form-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* Custom scrollbar for modal */
-.modal-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.modal-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  max-width: 1000px;
 }
 </style>
