@@ -14,6 +14,7 @@
             <div class="d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="fas fa-search me-2"></i>Search & Filter</h6>
               <button
+                style="background-color: blue; color: white; padding: 10px"
                 class="btn btn-outline-secondary btn-sm"
                 @click="toggleAdvancedSearch"
               >
@@ -87,6 +88,7 @@
                     class="form-control"
                     type="text"
                     placeholder="ORD-461A17..."
+                    @blur="applyFilters"
                   />
                 </div>
                 <div class="col-md-3">
@@ -96,6 +98,7 @@
                     class="form-control"
                     type="text"
                     placeholder="Customer name"
+                    @blur="applyFilters"
                   />
                 </div>
                 <div class="col-md-3">
@@ -105,6 +108,7 @@
                     class="form-control"
                     type="email"
                     placeholder="customer@email.com"
+                    @blur="applyFilters"
                   />
                 </div>
                 <div class="col-md-3">
@@ -114,6 +118,49 @@
                     class="form-control"
                     type="text"
                     placeholder="Phone number"
+                    @blur="applyFilters"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">City</label>
+                  <input
+                    v-model="searchFilters.city"
+                    class="form-control"
+                    type="text"
+                    placeholder="City"
+                    @blur="applyFilters"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">State</label>
+                  <input
+                    v-model="searchFilters.state"
+                    class="form-control"
+                    type="text"
+                    placeholder="State"
+                    @blur="applyFilters"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Min Amount</label>
+                  <input
+                    v-model="searchFilters.min_amount"
+                    class="form-control"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    @blur="applyFilters"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Max Amount</label>
+                  <input
+                    v-model="searchFilters.max_amount"
+                    class="form-control"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    @blur="applyFilters"
                   />
                 </div>
                 <div class="col-md-4">
@@ -122,6 +169,7 @@
                     v-model="searchFilters.date_from"
                     class="form-control"
                     type="date"
+                    @change="applyFilters"
                   />
                 </div>
                 <div class="col-md-4">
@@ -130,7 +178,22 @@
                     v-model="searchFilters.date_to"
                     class="form-control"
                     type="date"
+                    @change="applyFilters"
                   />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Payment Method</label>
+                  <select
+                    v-model="searchFilters.payment_method"
+                    class="form-select"
+                    @change="applyFilters"
+                  >
+                    <option value="">All Payment Methods</option>
+                    <option value="cash_on_delivery">Cash on Delivery</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="credit_card">Credit Card</option>
+                    <option value="paypal">PayPal</option>
+                  </select>
                 </div>
 
                 <div class="col-md-12">
@@ -140,6 +203,7 @@
                       class="form-check-input"
                       type="checkbox"
                       id="hasDiscount"
+                      @change="applyFilters"
                     />
                     <label class="form-check-label" for="hasDiscount">
                       Only orders with discount
@@ -202,7 +266,7 @@
             >
               <option value="order_date">Order Date</option>
               <option value="order_no">Order Number</option>
-              <option value="customer_name">Customer Name</option>
+              <option value="first_name">Customer Name</option>
               <option value="total_amount">Total Amount</option>
               <option value="payment_status">Payment Status</option>
             </select>
@@ -437,9 +501,11 @@ import { useGlobalStore } from "@/stores/global";
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
 
+// Composables and stores
 const { toasts, showNotification, removeToast } = useToast();
 const globalStore = useGlobalStore();
 
+// Reactive state
 const state = reactive({
   invoices: [],
   isLoading: false,
@@ -455,8 +521,10 @@ const pagination = reactive({
   has_more_pages: false,
 });
 
+// Refs
 const showAdvancedSearch = ref(false);
 
+// Search filters
 const searchFilters = reactive({
   search: "",
   order_no: "",
@@ -480,24 +548,32 @@ const searchFilters = reactive({
   page: 1,
 });
 
+// Timeout for debounced search
 let searchTimeout = null;
 
+// Debug function
+const debugFilters = (filters) => {
+  console.log("Current filters:", filters);
+  console.log(
+    "Active filters:",
+    Object.entries(filters).filter(([key, value]) => {
+      if (["sort_by", "sort_direction", "per_page", "page"].includes(key)) return false;
+      if (key === "has_discount") return value === true;
+      return value !== "" && value !== null && value !== undefined && value !== false;
+    })
+  );
+};
+
+// Computed properties
 const hasActiveFilters = computed(() => {
-  return Object.keys(searchFilters).some((key) => {
-    if (
-      key === "sort_by" ||
-      key === "sort_direction" ||
-      key === "per_page" ||
-      key === "page"
-    )
-      return false;
-    if (key === "has_discount") return searchFilters[key] === true;
-    return (
-      searchFilters[key] !== "" &&
-      searchFilters[key] !== null &&
-      searchFilters[key] !== undefined
-    );
+  const activeFilters = Object.entries(searchFilters).filter(([key, value]) => {
+    if (["sort_by", "sort_direction", "per_page", "page"].includes(key)) return false;
+    if (key === "has_discount") return value === true;
+    return value !== "" && value !== null && value !== undefined;
   });
+
+  console.log("Has active filters:", activeFilters.length > 0, activeFilters);
+  return activeFilters.length > 0;
 });
 
 const visiblePages = computed(() => {
@@ -534,6 +610,7 @@ const visiblePages = computed(() => {
   );
 });
 
+// Methods
 const toggleAdvancedSearch = () => {
   showAdvancedSearch.value = !showAdvancedSearch.value;
 };
@@ -550,21 +627,33 @@ const fetchInvoices = async () => {
   state.error = null;
 
   try {
+    // Debug the filters being sent
+    debugFilters(searchFilters);
+
     const params = new URLSearchParams();
 
     // Add all non-empty filter parameters
     Object.keys(searchFilters).forEach((key) => {
       const value = searchFilters[key];
-      if (value !== "" && value !== null && value !== undefined) {
-        if (key === "has_discount" && value === false) return;
+
+      // Skip empty values, but include has_discount when it's true
+      if (key === "has_discount") {
+        if (value === true) {
+          params.append(key, "1");
+        }
+      } else if (value !== "" && value !== null && value !== undefined) {
         params.append(key, value);
       }
     });
+
+    console.log("API URL:", `/api/invoices?${params.toString()}`);
 
     const response = await axios.get(
       `/api/invoices?${params.toString()}`,
       globalStore.getAxiosHeader()
     );
+
+    console.log("API Response:", response.data);
 
     if (response.data.result && Array.isArray(response.data.data)) {
       state.invoices = response.data.data;
@@ -595,11 +684,13 @@ const fetchInvoices = async () => {
 };
 
 const applyFilters = async () => {
+  console.log("Applying filters...");
   searchFilters.page = 1; // Reset to first page when applying filters
   await fetchInvoices();
 };
 
 const clearFilters = () => {
+  console.log("Clearing filters...");
   Object.assign(searchFilters, {
     search: "",
     order_no: "",
@@ -639,36 +730,6 @@ const exportResults = async (format = "csv") => {
     } else if (format === "pdf") {
       exportAsPDF(state.invoices);
     }
-
-    // Alternative: Server-side export
-    /*
-    const params = new URLSearchParams();
-    
-    Object.keys(searchFilters).forEach(key => {
-      const value = searchFilters[key];
-      if (value !== "" && value !== null && value !== undefined) {
-        if (key === 'has_discount' && value === false) return;
-        if (key === 'page' || key === 'per_page') return;
-        params.append(key, value);
-      }
-    });
-
-    params.append('format', format);
-
-    const response = await axios.get(`/api/invoices/export?${params.toString()}`, {
-      ...globalStore.getAxiosHeader(),
-      responseType: 'blob'
-    });
-    
-    if (response.data) {
-      const extension = format === 'pdf' ? 'pdf' : 'csv';
-      const mimeType = format === 'pdf' ? 'application/pdf' : 'text/csv';
-      downloadBlob(response.data, `invoices-export-${new Date().toISOString().split('T')[0]}.${extension}`, mimeType);
-      showNotification("success", "Success", `Export completed successfully as ${format.toUpperCase()}!`);
-    } else {
-      showNotification("error", "Error", "Export failed");
-    }
-    */
   } catch (error) {
     console.error("Error exporting invoices:", error);
     showNotification("error", "Error", "An error occurred while exporting invoices");
@@ -951,11 +1012,11 @@ const formatPaymentMethod = (method) => {
 };
 
 const formatPaymentStatus = (status) => {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
 };
 
 const formatStatus = (status) => {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  return status ? status.charAt(0).toUpperCase() + status.slice(1) : "";
 };
 
 const getPaymentStatusClass = (status) => {
@@ -981,6 +1042,8 @@ const viewInvoice = (invoiceId) => {
   const invoice = state.invoices.find((inv) => inv.id === invoiceId);
   if (invoice) {
     showNotification("info", "Info", `Viewing invoice ${invoice.order_no}`);
+    // Add your navigation logic here
+    // Example: router.push(`/invoices/${invoiceId}`)
   }
 };
 
@@ -988,6 +1051,8 @@ const editInvoice = (invoiceId) => {
   const invoice = state.invoices.find((inv) => inv.id === invoiceId);
   if (invoice) {
     showNotification("info", "Info", `Editing invoice ${invoice.order_no}`);
+    // Add your navigation logic here
+    // Example: router.push(`/invoices/${invoiceId}/edit`)
   }
 };
 
@@ -1083,7 +1148,7 @@ const generatePrintableInvoice = (invoice) => {
             </tr>
           </thead>
           <tbody>
-            ${invoice.order_details
+            ${(invoice.order_details || [])
               .map(
                 (detail) => `
               <tr>
@@ -1106,11 +1171,11 @@ const generatePrintableInvoice = (invoice) => {
           <tr>
             <td><strong>Subtotal:</strong></td>
             <td class="text-right">${(
-              parseFloat(invoice.total_amount) + parseFloat(invoice.discount_amount)
+              parseFloat(invoice.total_amount) + parseFloat(invoice.discount_amount || 0)
             ).toFixed(2)}</td>
           </tr>
           ${
-            parseFloat(invoice.discount_amount) > 0
+            parseFloat(invoice.discount_amount || 0) > 0
               ? `
           <tr>
             <td><strong>Discount:</strong></td>
@@ -1122,7 +1187,7 @@ const generatePrintableInvoice = (invoice) => {
           <tr class="total">
             <td><strong>Total:</strong></td>
             <td class="text-right"><strong>${invoice.total_amount} ${
-    invoice.currency
+    invoice.currency || "USD"
   }</strong></td>
           </tr>
         </table>
@@ -1156,20 +1221,10 @@ const downloadAsJSON = (invoice) => {
   URL.revokeObjectURL(url);
 };
 
-// Helper function to download blob data
-const downloadBlob = (blob, filename, mimeType) => {
-  const url = URL.createObjectURL(new Blob([blob], { type: mimeType }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
+// Initialize component
 onMounted(async () => {
   try {
+    console.log("Component mounted, fetching invoices...");
     await fetchInvoices();
   } catch (error) {
     console.error("Error during initialization:", error);

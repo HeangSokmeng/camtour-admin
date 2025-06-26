@@ -89,6 +89,21 @@
               </select>
             </div>
 
+            <!-- Delivery Type Filter -->
+            <div class="col-md-3">
+              <label class="form-label">Delivery Type</label>
+              <select
+                v-model="filters.deliveryType"
+                class="form-select"
+                @change="applyFilters"
+              >
+                <option value="">All Delivery Types</option>
+                <option v-for="type in availableDeliveryTypes" :key="type" :value="type">
+                  {{ formatDeliveryType(type) }}
+                </option>
+              </select>
+            </div>
+
             <!-- Amount Range Filter -->
             <div class="col-md-3">
               <label class="form-label">Min Amount</label>
@@ -205,7 +220,7 @@
                   <td class="align-middle">{{ userData.filteredOrders.length }}</td>
                   <td class="align-middle text-end">
                     <button
-                      class="btn btn-sm btn-primary"
+                      class="btn btn-sm btn-primary me-1"
                       @click="toggleUserOrders(userData.user_id)"
                     >
                       {{
@@ -214,27 +229,72 @@
                           : "View Orders"
                       }}
                     </button>
+                    <button
+                      class="btn btn-sm btn-success"
+                      @click="printUserOrders(userData)"
+                      :disabled="userData.filteredOrders.length === 0"
+                    >
+                      <i class="fas fa-print me-1"></i>Print All
+                    </button>
                   </td>
                 </tr>
                 <!-- Orders row that expands when user is selected -->
                 <tr v-if="selectedUserId === userData.user_id">
                   <td colspan="6" class="p-0">
                     <div class="user-orders-container p-3">
-                      <h5 class="mb-3">
-                        Orders for {{ userData.first_name }} {{ userData.last_name }}
-                        <small class="text-muted"
-                          >({{ userData.filteredOrders.length }} orders)</small
-                        >
-                      </h5>
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                          Orders for {{ userData.first_name }} {{ userData.last_name }}
+                          <small class="text-muted"
+                            >({{ userData.filteredOrders.length }} orders)</small
+                          >
+                        </h5>
+                        <div class="order-actions">
+                          <button
+                            class="btn btn-sm btn-outline-primary me-2"
+                            @click="selectAllUserOrders(userData.user_id)"
+                          >
+                            <i class="fas fa-check-square me-1"></i>Select All
+                          </button>
+                          <button
+                            class="btn btn-sm btn-outline-secondary me-2"
+                            @click="clearSelectedOrders"
+                          >
+                            <i class="fas fa-times me-1"></i>Clear Selection
+                          </button>
+                          <button
+                            class="btn btn-sm btn-success"
+                            @click="printSelectedOrders"
+                            :disabled="selectedOrderIds.length === 0"
+                          >
+                            <i class="fas fa-print me-1"></i>Print Selected ({{
+                              selectedOrderIds.length
+                            }})
+                          </button>
+                        </div>
+                      </div>
 
                       <div class="table-responsive">
                         <table class="table table-sm fs-9 mb-0">
                           <thead>
                             <tr>
-                              <th class="align-middle ps-3">#</th>
+                              <th class="align-middle ps-3">
+                                <input
+                                  type="checkbox"
+                                  @change="
+                                    toggleAllOrdersSelection(
+                                      userData.filteredOrders,
+                                      $event
+                                    )
+                                  "
+                                  :checked="areAllOrdersSelected(userData.filteredOrders)"
+                                />
+                              </th>
+                              <th class="align-middle">#</th>
                               <th class="align-middle">Order No</th>
                               <th class="align-middle">Date</th>
                               <th class="align-middle">Payment Method</th>
+                              <th class="align-middle">Delivery Type</th>
                               <th class="align-middle">Total Amount</th>
                               <th class="align-middle text-center">Status</th>
                               <th class="align-middle text-end">Action</th>
@@ -242,20 +302,40 @@
                           </thead>
                           <tbody>
                             <tr v-if="userData.filteredOrders.length === 0">
-                              <td colspan="7" class="text-center">No orders found</td>
+                              <td colspan="9" class="text-center">No orders found</td>
                             </tr>
                             <tr
                               v-else
                               v-for="(order, index) in userData.filteredOrders"
                               :key="order.order_id"
+                              :class="{
+                                'selected-order': selectedOrderIds.includes(
+                                  order.order_id
+                                ),
+                              }"
                             >
-                              <td class="align-middle ps-3">{{ index + 1 }}</td>
+                              <td class="align-middle ps-3">
+                                <input
+                                  type="checkbox"
+                                  :value="order.order_id"
+                                  v-model="selectedOrderIds"
+                                />
+                              </td>
+                              <td class="align-middle">{{ index + 1 }}</td>
                               <td class="align-middle">{{ order.order_no }}</td>
                               <td class="align-middle">
                                 {{ formatDate(order.created_at) }}
                               </td>
                               <td class="align-middle">
                                 {{ formatPaymentMethod(order.payment_method) }}
+                              </td>
+                              <td class="align-middle">
+                                <span
+                                  class="delivery-type-badge"
+                                  :class="getDeliveryTypeClass(order.delivery_type)"
+                                >
+                                  {{ formatDeliveryType(order.delivery_type) }}
+                                </span>
                               </td>
                               <td class="align-middle">
                                 {{ order.currency }} {{ order.total_amount }}
@@ -267,13 +347,13 @@
                               </td>
                               <td class="align-middle text-end">
                                 <button
-                                  class="btn btn-sm btn-primary me-2"
+                                  class="btn btn-sm btn-primary me-1"
                                   @click="viewOrderDetails(order.order_id)"
                                 >
                                   <span class="fas fa-eye me-1"></span>View
                                 </button>
                                 <button
-                                  class="btn btn-sm btn-secondary me-2"
+                                  class="btn btn-sm btn-secondary me-1"
                                   @click="updateOrderStatus(order.order_id)"
                                 >
                                   <span class="fas fa-edit me-1"></span>Status
@@ -331,6 +411,9 @@
                 </p>
                 <p class="mb-1"><strong>Email:</strong> {{ currentOrder.email }}</p>
                 <p class="mb-1"><strong>Phone:</strong> {{ currentOrder.phone }}</p>
+                <p class="mb-1">
+                  <strong>Address:</strong> {{ currentOrder.address_to_receive }}
+                </p>
               </div>
               <div class="col-md-6">
                 <p class="mb-1">
@@ -339,6 +422,15 @@
                 <p class="mb-1">
                   <strong>Payment Method:</strong>
                   {{ formatPaymentMethod(currentOrder.payment_method) }}
+                </p>
+                <p class="mb-1">
+                  <strong>Delivery Type:</strong>
+                  <span
+                    class="delivery-type-badge"
+                    :class="getDeliveryTypeClass(currentOrder.delivery_type)"
+                  >
+                    {{ formatDeliveryType(currentOrder.delivery_type) }}
+                  </span>
                 </p>
                 <p v-if="currentOrder.notes" class="mb-1">
                   <strong>Notes:</strong> {{ currentOrder.notes }}
@@ -502,6 +594,7 @@ const filters = reactive({
   dateTo: "",
   status: "",
   paymentMethod: "",
+  deliveryType: "",
   minAmount: null,
   maxAmount: null,
 });
@@ -513,6 +606,9 @@ const currentOrder = ref(null);
 const currentOrderId = ref(null);
 const newStatus = ref("pending");
 const selectedUserId = ref(null);
+
+// Multi-select order states
+const selectedOrderIds = ref([]);
 
 // Utility functions
 const formatDate = (dateString) => {
@@ -533,6 +629,34 @@ const formatPaymentMethod = (method) => {
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+};
+
+const formatDeliveryType = (type) => {
+  if (!type) return "Not Specified";
+
+  const deliveryTypeNames = {
+    phnom_penh_delivery: "Phnom Penh Local",
+    "j&t": "J&T Express",
+    virak_buntham: "Virak Buntham",
+  };
+
+  return (
+    deliveryTypeNames[type] ||
+    type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+  );
+};
+
+const getDeliveryTypeClass = (type) => {
+  switch (type) {
+    case "phnom_penh_delivery":
+      return "delivery-local";
+    case "j&t":
+      return "delivery-jnt";
+    case "virak_buntham":
+      return "delivery-virak";
+    default:
+      return "delivery-default";
+  }
 };
 
 const capitalizeFirstLetter = (string) => {
@@ -570,6 +694,7 @@ const activeFiltersCount = computed(() => {
   if (filters.dateTo) count++;
   if (filters.status) count++;
   if (filters.paymentMethod) count++;
+  if (filters.deliveryType) count++;
   if (filters.minAmount !== null && filters.minAmount !== "") count++;
   if (filters.maxAmount !== null && filters.maxAmount !== "") count++;
   return count;
@@ -585,6 +710,18 @@ const availablePaymentMethods = computed(() => {
     });
   });
   return Array.from(methods).sort();
+});
+
+const availableDeliveryTypes = computed(() => {
+  const types = new Set();
+  state.users.forEach((user) => {
+    user.orders.forEach((order) => {
+      if (order.delivery_type) {
+        types.add(order.delivery_type);
+      }
+    });
+  });
+  return Array.from(types).sort();
 });
 
 const setDateFilter = (period) => {
@@ -621,6 +758,7 @@ const clearFilters = () => {
   filters.dateTo = "";
   filters.status = "";
   filters.paymentMethod = "";
+  filters.deliveryType = "";
   filters.minAmount = null;
   filters.maxAmount = null;
   applyFilters();
@@ -654,6 +792,9 @@ const isOrderMatchingFilters = (order) => {
   // Payment method filter
   if (filters.paymentMethod && order.payment_method !== filters.paymentMethod)
     return false;
+
+  // Delivery type filter
+  if (filters.deliveryType && order.delivery_type !== filters.deliveryType) return false;
 
   // Amount filters
   const amount = parseFloat(order.total_amount);
@@ -714,6 +855,45 @@ const toggleUserOrders = (userId) => {
   } else {
     selectedUserId.value = userId;
   }
+};
+
+// Multi-select functions
+const selectAllUserOrders = (userId) => {
+  const user = filteredUsers.value.find((u) => u.user_id === userId);
+  if (user) {
+    const orderIds = user.filteredOrders.map((order) => order.order_id);
+    orderIds.forEach((id) => {
+      if (!selectedOrderIds.value.includes(id)) {
+        selectedOrderIds.value.push(id);
+      }
+    });
+  }
+};
+
+const clearSelectedOrders = () => {
+  selectedOrderIds.value = [];
+};
+
+const toggleAllOrdersSelection = (orders, event) => {
+  const orderIds = orders.map((order) => order.order_id);
+  if (event.target.checked) {
+    orderIds.forEach((id) => {
+      if (!selectedOrderIds.value.includes(id)) {
+        selectedOrderIds.value.push(id);
+      }
+    });
+  } else {
+    selectedOrderIds.value = selectedOrderIds.value.filter(
+      (id) => !orderIds.includes(id)
+    );
+  }
+};
+
+const areAllOrdersSelected = (orders) => {
+  const orderIds = orders.map((order) => order.order_id);
+  return (
+    orderIds.length > 0 && orderIds.every((id) => selectedOrderIds.value.includes(id))
+  );
 };
 
 const selectedUserOrders = computed(() => {
@@ -833,148 +1013,1116 @@ const calculateSubtotal = () => {
   return `${currentOrder.value.currency} ${subtotal.toFixed(2)}`;
 };
 
-// Print function
+// Fetch order details for printing
+const fetchOrderDetails = async (orderId) => {
+  const globalStore = useGlobalStore();
+  try {
+    const res = await axios.get(
+      `/api/web/product/order/${orderId}`,
+      globalStore.getAxiosHeader()
+    );
+    if (res.data.error === false) {
+      return res.data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    return null;
+  }
+};
+
+const getCompactPrintStyles = () => {
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+      
+      body {
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        margin: 0;
+        padding: 15px;
+        color: #333;
+        line-height: 1.4;
+        font-size: 12px;
+        direction: ltr;
+        unicode-bidi: embed;
+      }
+      
+      .orders-summary {
+        width: 100%;
+      }
+      
+      .summary-header {
+        text-align: center;
+        margin-bottom: 25px;
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 15px;
+      }
+      
+      .summary-header h1 {
+        margin: 0 0 8px 0;
+        color: #2c3e50;
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .summary-meta {
+        margin: 0;
+        color: #666;
+        font-size: 14px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .orders-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 11px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .orders-table th {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 8px 4px;
+        text-align: left;
+        font-weight: 600;
+        color: #495057;
+        font-size: 10px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .orders-table td {
+        border: 1px solid #dee2e6;
+        padding: 6px 4px;
+        vertical-align: top;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      .orders-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+      }
+      
+      .order-no {
+        font-family: 'Inter', monospace, Arial, sans-serif;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+      
+      .customer-info {
+        min-width: 120px;
+      }
+      
+      .customer-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 2px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .customer-contact {
+        font-size: 10px;
+        color: #666;
+        margin-bottom: 1px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .customer-address {
+        font-size: 9px;
+        color: #888;
+        margin-top: 2px;
+        font-style: italic;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        line-height: 1.3;
+      }
+      
+      .order-date {
+        white-space: nowrap;
+        font-size: 10px;
+        font-family: 'Inter', Arial, sans-serif;
+      }
+      
+      .payment-method {
+        font-size: 10px;
+        white-space: nowrap;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .delivery-type {
+        white-space: nowrap;
+      }
+      
+      .delivery-badge {
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 600;
+        white-space: nowrap;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .delivery-phnompenhdelivery {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      
+      .delivery-jt {
+        background-color: #cce5ff;
+        color: #004085;
+      }
+      
+      .delivery-virakbuntham {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      
+      .delivery-default {
+        background-color: #e2e3e5;
+        color: #495057;
+      }
+      
+      .status-badge {
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 600;
+        white-space: nowrap;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .status-pending { background-color: #fff3cd; color: #856404; }
+      .status-processing { background-color: #d1ecf1; color: #0c5460; }
+      .status-shipped { background-color: #cce5ff; color: #004085; }
+      .status-delivered, .status-completed { background-color: #d4edda; color: #155724; }
+      .status-cancelled { background-color: #f8d7da; color: #721c24; }
+      
+      .items-summary {
+        max-width: 140px;
+        font-size: 10px;
+      }
+      
+      .item-row {
+        margin-bottom: 3px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      
+      .item-name {
+        font-weight: 600;
+        color: #2c3e50;
+        flex: 1;
+        min-width: 60px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .item-variant {
+        color: #666;
+        font-size: 9px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .item-qty {
+        color: #007bff;
+        font-weight: 600;
+        font-size: 9px;
+        font-family: 'Inter', Arial, sans-serif;
+      }
+      
+      .no-items {
+        color: #999;
+        font-style: italic;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .total-amount {
+        white-space: nowrap;
+        font-weight: 600;
+        font-family: 'Inter', Arial, sans-serif;
+      }
+      
+      .amount-main {
+        color: #2c3e50;
+        font-weight: 600;
+      }
+      
+      .amount-discount {
+        color: #dc3545;
+        font-size: 9px;
+        margin-top: 1px;
+      }
+      
+      .text-end {
+        text-align: right;
+      }
+      
+      .summary-row {
+        background-color: #e9ecef !important;
+        font-weight: 600;
+      }
+      
+      .summary-row td {
+        border-top: 2px solid #495057;
+        padding: 8px 4px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .notes-section {
+        margin-top: 25px;
+        page-break-inside: avoid;
+      }
+      
+      .notes-section h3 {
+        color: #2c3e50;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .note-item {
+        margin-bottom: 8px;
+        padding: 5px;
+        background-color: #f8f9fa;
+        border-left: 3px solid #007bff;
+        font-size: 11px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        line-height: 1.4;
+      }
+      
+      /* Khmer text specific styles */
+      .khmer-text {
+        font-family: 'Noto Sans Khmer', Arial, sans-serif;
+        line-height: 1.6;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+      
+      .khmer-address {
+        font-family: 'Noto Sans Khmer', Arial, sans-serif;
+        line-height: 1.5;
+        word-wrap: break-word;
+        hyphens: none;
+      }
+      
+      @page {
+        margin: 0.5cm;
+        size: A4 landscape;
+      }
+      
+      @media print {
+        body { 
+          margin: 0; 
+          font-size: 11px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .orders-table {
+          font-size: 10px;
+        }
+        .orders-table th {
+          font-size: 9px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .delivery-badge,
+        .status-badge {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  `;
+};
+
+// Updated detailed print styles with Khmer support
+const getPrintStyles = () => {
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+      
+      body {
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+        line-height: 1.5;
+        direction: ltr;
+        unicode-bidi: embed;
+      }
+      
+      .order-page {
+        margin-bottom: 40px;
+        page-break-after: always;
+      }
+      
+      .order-page:last-child {
+        page-break-after: auto;
+      }
+      
+      .order-header {
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+      }
+      
+      .order-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .order-title h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 1.5em;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        font-weight: 700;
+      }
+      
+      .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      .status-pending { background-color: #fff3cd; color: #856404; }
+      .status-processing { background-color: #d1ecf1; color: #0c5460; }
+      .status-shipped { background-color: #cce5ff; color: #004085; }
+      .status-delivered, .status-completed { background-color: #d4edda; color: #155724; }
+      .status-cancelled { background-color: #f8d7da; color: #721c24; }
+      
+      .customer-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+      
+      .info-section p {
+        margin: 5px 0;
+        font-size: 14px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        line-height: 1.5;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      .info-section strong {
+        color: #2c3e50;
+        font-weight: 600;
+      }
+      
+      .items-section h3 {
+        color: #2c3e50;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        font-size: 1.2em;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        font-weight: 600;
+      }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 13px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      th, td {
+        padding: 8px 6px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      
+      th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 12px;
+      }
+      
+      .text-end {
+        text-align: right;
+      }
+      
+      .color-sample {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        display: inline-block;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      
+      .total-row {
+        font-weight: 600;
+        background-color: #f8f9fa;
+      }
+      
+      .print-date {
+        text-align: center;
+        color: #666;
+        font-size: 12px;
+        margin-top: 30px;
+        border-top: 1px solid #ddd;
+        padding-top: 15px;
+        font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+      }
+      
+      /* Khmer-specific styles */
+      .khmer-text {
+        font-family: 'Noto Sans Khmer', Arial, sans-serif;
+        line-height: 1.7;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+      
+      .khmer-name {
+        font-family: 'Noto Sans Khmer', Arial, sans-serif;
+        font-weight: 500;
+        line-height: 1.6;
+      }
+      
+      .khmer-address {
+        font-family: 'Noto Sans Khmer', Arial, sans-serif;
+        line-height: 1.6;
+        word-wrap: break-word;
+        hyphens: none;
+      }
+      
+      .khmer-notes {
+        font-family: 'Noto Sans Khmer', Arial, sans-serif;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+      
+      @media print {
+        body { 
+          margin: 0; 
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .order-page { margin-bottom: 0; }
+        .status-badge {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        th {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+      
+      @page {
+        margin: 1cm;
+        size: A4;
+      }
+    </style>
+  `;
+};
+// Updated createPrintDocument function with proper window closing
+const createPrintDocument = (htmlContent, title) => {
+  // Add proper encoding and meta tags for Khmer support
+  const fullHtmlContent = `
+    <!DOCTYPE html>
+    <html lang="km">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title}</title>
+    </head>
+    ${htmlContent.replace("<body>", "<body>")}
+    </html>
+  `;
+
+  const blob = new Blob([fullHtmlContent], {
+    type: "text/html;charset=UTF-8",
+  });
+  const url = URL.createObjectURL(blob);
+
+  const printWindow = window.open(url, "_blank", "width=1200,height=800");
+
+  if (!printWindow) {
+    showNotification(
+      "error",
+      "Error",
+      "Please allow popups for this site to enable printing"
+    );
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  let hasTriedToPrint = false;
+  let windowClosed = false;
+
+  // Function to safely close window and cleanup
+  const cleanupAndClose = () => {
+    if (!windowClosed) {
+      windowClosed = true;
+      try {
+        if (printWindow && !printWindow.closed) {
+          printWindow.close();
+        }
+      } catch (e) {
+        console.log("Window already closed or inaccessible");
+      }
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  // Function to handle printing
+  const handlePrint = () => {
+    if (hasTriedToPrint || windowClosed) return;
+    hasTriedToPrint = true;
+
+    try {
+      if (printWindow && !printWindow.closed) {
+        printWindow.focus();
+        printWindow.print();
+
+        // Close window after a short delay
+        setTimeout(() => {
+          cleanupAndClose();
+        }, 1000);
+      }
+    } catch (e) {
+      console.error("Print error:", e);
+      cleanupAndClose();
+    }
+  };
+
+  // Wait for window to load
+  printWindow.onload = () => {
+    // Wait a bit for fonts to load, then print
+    setTimeout(() => {
+      handlePrint();
+    }, 1500);
+  };
+
+  // Fallback - try to print after a delay even if onload doesn't fire
+  setTimeout(() => {
+    if (!hasTriedToPrint && printWindow && !printWindow.closed) {
+      handlePrint();
+    }
+  }, 3000);
+
+  // Cleanup if window is manually closed
+  const checkWindowClosed = setInterval(() => {
+    if (printWindow.closed) {
+      windowClosed = true;
+      clearInterval(checkWindowClosed);
+      URL.revokeObjectURL(url);
+    }
+  }, 500);
+
+  // Force cleanup after 10 seconds regardless
+  setTimeout(() => {
+    clearInterval(checkWindowClosed);
+    cleanupAndClose();
+  }, 10000);
+};
+
+// Alternative simpler approach using direct document.write (more reliable)
+const createPrintDocumentSimple = (htmlContent, title) => {
+  const printWindow = window.open("", "_blank", "width=1200,height=800");
+
+  if (!printWindow) {
+    showNotification(
+      "error",
+      "Error",
+      "Please allow popups for this site to enable printing"
+    );
+    return;
+  }
+
+  // Write content directly to the window
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="km">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${title}</title>
+    </head>
+    ${htmlContent.replace("<body>", "<body>")}
+    </html>
+  `);
+  printWindow.document.close();
+
+  // Wait for content to load, then print and close
+  setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+
+      // Close after printing
+      setTimeout(() => {
+        if (printWindow && !printWindow.closed) {
+          printWindow.close();
+        }
+      }, 1000);
+    } catch (e) {
+      console.error("Print error:", e);
+      if (printWindow && !printWindow.closed) {
+        printWindow.close();
+      }
+    }
+  }, 2000);
+};
+
+// Updated print functions to use the simpler approach
+const printUserOrders = async (userData) => {
+  if (!userData.filteredOrders || userData.filteredOrders.length === 0) {
+    showNotification("warning", "Warning", "No orders to print for this user");
+    return;
+  }
+
+  showNotification("info", "Processing", "Fetching order details for printing...");
+
+  const orders = [];
+  for (const orderSummary of userData.filteredOrders) {
+    const orderDetails = await fetchOrderDetails(orderSummary.order_id);
+    if (orderDetails) {
+      orders.push(orderDetails);
+    }
+  }
+
+  if (orders.length === 0) {
+    showNotification("error", "Error", "Failed to fetch order details");
+    return;
+  }
+
+  const title = `Orders for ${userData.first_name} ${userData.last_name}`;
+  const htmlContent = `
+    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2c3e50; padding-bottom: 20px;">
+      <h1 style="color: #2c3e50; margin: 0;">${title}</h1>
+      <p style="color: #666; margin: 5px 0 0 0;">${orders.length} order(s) • Email: ${
+    userData.email
+  } • Phone: ${userData.phone}</p>
+    </div>
+    ${generateCompactOrdersHTML(orders, title)}
+    ${getCompactPrintStyles()}
+  `;
+
+  createPrintDocumentSimple(htmlContent, title);
+
+  showNotification("success", "Success", `${orders.length} orders prepared for printing`);
+};
+
+const printSelectedOrders = async () => {
+  if (selectedOrderIds.value.length === 0) {
+    showNotification("warning", "Warning", "No orders selected for printing");
+    return;
+  }
+
+  showNotification(
+    "info",
+    "Processing",
+    "Fetching selected order details for printing..."
+  );
+
+  const orders = [];
+  for (const orderId of selectedOrderIds.value) {
+    const orderDetails = await fetchOrderDetails(orderId);
+    if (orderDetails) {
+      orders.push(orderDetails);
+    }
+  }
+
+  if (orders.length === 0) {
+    showNotification("error", "Error", "Failed to fetch order details");
+    return;
+  }
+
+  const title = "Selected Orders";
+  const htmlContent = `
+    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2c3e50; padding-bottom: 20px;">
+      <h1 style="color: #2c3e50; margin: 0;">${title}</h1>
+      <p style="color: #666; margin: 5px 0 0 0;">${
+        orders.length
+      } order(s) selected for printing</p>
+    </div>
+    ${generateCompactOrdersHTML(orders, title)}
+    ${getCompactPrintStyles()}
+  `;
+
+  createPrintDocumentSimple(htmlContent, title);
+
+  showNotification(
+    "success",
+    "Success",
+    `${orders.length} selected orders prepared for printing`
+  );
+
+  selectedOrderIds.value = []; // Clear selection after printing
+};
+
 const printOrder = () => {
   if (!currentOrder.value) return;
 
-  const printWindow = window.open("", "_blank");
-  const orderContent = document.getElementById("printable-order-content");
-  if (!orderContent) return;
+  const generateDetailedOrderHTML = (order) => {
+    const calculateOrderSubtotal = () => {
+      if (!order.items) return "0.00";
+      const subtotal = order.items.reduce((total, item) => {
+        return total + parseFloat(item.subtotal || 0);
+      }, 0);
+      return `${order.currency} ${subtotal.toFixed(2)}`;
+    };
 
-  const printContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Order ${currentOrder.value.order_no}</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 20px;
-          color: #333;
-        }
-        .order-header {
-          border-bottom: 2px solid #ddd;
-          padding-bottom: 20px;
-          margin-bottom: 30px;
-        }
-        .order-title {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-        .order-title h1 {
-          margin: 0;
-          color: #2c3e50;
-        }
-        .status-badge {
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-weight: bold;
-          text-transform: uppercase;
-          font-size: 12px;
-        }
-        .status-pending { background-color: #fff3cd; color: #856404; }
-        .status-processing { background-color: #d1ecf1; color: #0c5460; }
-        .status-shipped { background-color: #cce5ff; color: #004085; }
-        .status-delivered, .status-completed { background-color: #d4edda; color: #155724; }
-        .status-cancelled { background-color: #f8d7da; color: #721c24; }
-        .customer-info {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          margin-bottom: 30px;
-        }
-        .info-section p {
-          margin: 5px 0;
-        }
-        .info-section strong {
-          color: #2c3e50;
-        }
-        .items-section h2 {
-          color: #2c3e50;
-          border-bottom: 1px solid #ddd;
-          padding-bottom: 10px;
-          margin-bottom: 20px;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        th, td {
-          padding: 12px 8px;
-          text-align: left;
-          border-bottom: 1px solid #ddd;
-        }
-        th {
-          background-color: #f8f9fa;
-          font-weight: bold;
-          color: #2c3e50;
-        }
-        .text-end {
-          text-align: right;
-        }
-        .color-sample {
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          border: 1px solid #ddd;
-          display: inline-block;
-          margin-right: 8px;
-          vertical-align: middle;
-        }
-        .total-row {
-          font-weight: bold;
-          background-color: #f8f9fa;
-        }
-        .print-date {
-          text-align: center;
-          color: #666;
-          font-size: 12px;
-          margin-top: 30px;
-          border-top: 1px solid #ddd;
-          padding-top: 15px;
-        }
-        @media print {
-          body { margin: 0; }
-          .no-print { display: none; }
-        }
-      </style>
-    </head>
-    <body>
+    return `
+      <div class="order-page">
+        <div class="order-header">
+          <div class="order-title">
+            <h2>Order ${order.order_no}</h2>
+            <span class="status-badge status-${order.status}">
+              ${capitalizeFirstLetter(order.status)}
+            </span>
+          </div>
+          
+          <div class="customer-info">
+            <div class="info-section">
+              <p><strong>Customer:</strong> <span class="khmer-name">${
+                order.first_name
+              } ${order.last_name}</span></p>
+              <p><strong>Email:</strong> ${order.email}</p>
+              <p><strong>Phone:</strong> ${order.phone}</p>
+              <p><strong>Address:</strong> <span class="khmer-address">${
+                order.address_to_receive || "N/A"
+              }</span></p>
+            </div>
+            <div class="info-section">
+              <p><strong>Date:</strong> ${formatDate(order.created_at)}</p>
+              <p><strong>Payment Method:</strong> <span class="khmer-text">${formatPaymentMethod(
+                order.payment_method
+              )}</span></p>
+              <p><strong>Delivery Type:</strong> <span class="khmer-text">${formatDeliveryType(
+                order.delivery_type
+              )}</span></p>
+              ${
+                order.notes
+                  ? `<p><strong>Notes:</strong> <span class="khmer-notes">${order.notes}</span></p>`
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="items-section">
+          <h3>Order Items / ផលិតផល</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ផលិតផល<br>Product</th>
+                <th>វ៉ារ្យ៉ង់<br>Variant</th>
+                <th>តម្លៃ<br>Price</th>
+                <th>បរិមាណ<br>Qty</th>
+                <th class="text-end">សរុបរង<br>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                order.items && order.items.length > 0
+                  ? order.items
+                      .map(
+                        (item, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td><span class="khmer-text">${item.product_name}</span></td>
+                    <td>
+                      ${
+                        item.color_name
+                          ? `
+                        ${
+                          item.color_code
+                            ? `<span class="color-sample" style="background-color: ${item.color_code}"></span>`
+                            : ""
+                        }
+                        <span class="khmer-text">${item.color_name}</span>${
+                              item.size ? ` (${item.size})` : ""
+                            }
+                      `
+                          : "-"
+                      }
+                    </td>
+                    <td>${order.currency} ${item.price}</td>
+                    <td>${item.qty}</td>
+                    <td class="text-end">${order.currency} ${item.subtotal}</td>
+                  </tr>
+                `
+                      )
+                      .join("")
+                  : '<tr><td colspan="6" style="text-align: center;">មិនមានផលិតផលនៅក្នុងការបញ្ជាទិញនេះ / No items in this order</td></tr>'
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" class="text-end"><strong>សរុបរង / Subtotal:</strong></td>
+                <td class="text-end">${calculateOrderSubtotal()}</td>
+              </tr>
+              <tr>
+                <td colspan="5" class="text-end"><strong>បញ្ចុះតម្លៃ / Discount:</strong></td>
+                <td class="text-end">-${order.currency} ${order.discount_amount}</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="5" class="text-end"><strong>សរុប / Total:</strong></td>
+                <td class="text-end"><strong>${order.currency} ${
+      order.total_amount
+    }</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    `;
+  };
+
+  const htmlContent = `
+    ${generateDetailedOrderHTML(currentOrder.value)}
+    <div style="text-align: center; color: #666; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px;">
+      បោះពុម្ពនៅ / Printed on ${new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+    </div>
+    ${getPrintStyles()}
+  `;
+
+  createPrintDocumentSimple(htmlContent, `Order ${currentOrder.value.order_no}`);
+};
+
+// Updated generateCompactOrdersHTML with Khmer text handling
+const generateCompactOrdersHTML = (orders, title = "Orders") => {
+  if (!orders || orders.length === 0) {
+    return `
+      <div class="orders-summary">
+        <div class="summary-header">
+          <h1>${title}</h1>
+          <p class="summary-meta">រកមិនឃើញការបញ្ជាទិញ / No orders found</p>
+        </div>
+        <p>មិនមានការបញ្ជាទិញសម្រាប់បង្ហាញ / No orders to display.</p>
+      </div>
+    `;
+  }
+
+  // Helper function to safely render Khmer text
+  const renderKhmerText = (text) => {
+    if (!text) return "";
+    return `<span class="khmer-text">${text}</span>`;
+  };
+
+  const renderKhmerName = (firstName, lastName) => {
+    const fullName = `${firstName || ""} ${lastName || ""}`.trim();
+    return `<span class="khmer-name">${fullName}</span>`;
+  };
+
+  const renderKhmerAddress = (address) => {
+    if (!address) return "";
+    return `<span class="khmer-address">${address}</span>`;
+  };
+
+  return `
+    <div class="orders-summary">
+      <div class="summary-header">
+        <h1>${title}</h1>
+        <p class="summary-meta">${
+          orders.length
+        } ការបញ្ជាទិញ • បង្កើតនៅ ${new Date().toLocaleDateString("km-KH", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })} / ${orders.length} order(s) • Generated on ${new Date().toLocaleDateString(
+    "en-US",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  )}</p>
+      </div>
+      
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th style="width: 5%;">#</th>
+            <th style="width: 12%;">លេខបញ្ជាទិញ<br>Order No</th>
+            <th style="width: 18%;">អតិថិជន<br>Customer</th>
+            <th style="width: 12%;">កាលបរិច្ឆេទ<br>Date</th>
+            <th style="width: 10%;">ការទូទាត់<br>Payment</th>
+            <th style="width: 12%;">ប្រភេទដឹកជញ្ជូន<br>Delivery</th>
+            <th style="width: 8%;">ស្ថានភាព<br>Status</th>
+            <th style="width: 15%;">ផលិតផល<br>Items</th>
+            <th style="width: 8%;" class="text-end">សរុប<br>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders
+            .map(
+              (order, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td class="order-no">${order.order_no || "N/A"}</td>
+              <td class="customer-info">
+                <div class="customer-name">${renderKhmerName(
+                  order.first_name,
+                  order.last_name
+                )}</div>
+                <div class="customer-contact">${order.email || "N/A"}</div>
+                <div class="customer-contact">${order.phone || "N/A"}</div>
+                ${
+                  order.address_to_receive
+                    ? `<div class="customer-address">${renderKhmerAddress(
+                        order.address_to_receive
+                      )}</div>`
+                    : ""
+                }
+              </td>
+              <td class="order-date">${formatDate(order.created_at)}</td>
+              <td class="payment-method">${renderKhmerText(
+                formatPaymentMethod(order.payment_method)
+              )}</td>
+              <td class="delivery-type">
+                <span class="delivery-badge delivery-${
+                  order.delivery_type?.replace(/[^a-zA-Z0-9]/g, "") || "default"
+                }">
+                  ${renderKhmerText(formatDeliveryType(order.delivery_type))}
+                </span>
+              </td>
+              <td class="status">
+                <span class="status-badge status-${order.status || "pending"}">
+                  ${renderKhmerText(capitalizeFirstLetter(order.status || "pending"))}
+                </span>
+              </td>
+              <td class="items-summary">
+                ${
+                  order.items && order.items.length > 0
+                    ? order.items
+                        .map(
+                          (item) => `
+                    <div class="item-row">
+                      <span class="item-name">${renderKhmerText(
+                        item.product_name || "Unknown Product"
+                      )}</span>
+                      ${
+                        item.color_name
+                          ? `<span class="item-variant">${renderKhmerText(
+                              item.color_name
+                            )}${item.size ? ` (${item.size})` : ""}</span>`
+                          : ""
+                      }
+                      <span class="item-qty">×${item.qty || 0}</span>
+                    </div>
+                  `
+                        )
+                        .join("")
+                    : `<span class="no-items">${renderKhmerText(
+                        "គ្មានផលិតផល / No items"
+                      )}</span>`
+                }
+              </td>
+              <td class="text-end total-amount">
+                <div class="amount-main">${order.currency || "USD"} ${
+                order.total_amount || "0.00"
+              }</div>
+                ${
+                  parseFloat(order.discount_amount || 0) > 0
+                    ? `<div class="amount-discount">-${order.currency || "USD"} ${
+                        order.discount_amount
+                      }</div>`
+                    : ""
+                }
+              </td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+        <tfoot>
+          <tr class="summary-row">
+            <td colspan="8" class="text-end"><strong>សរុបការបញ្ជាទិញ / Total Orders: ${
+              orders.length
+            }</strong></td>
+            <td class="text-end">
+              <strong>
+                ${orders.length > 0 ? orders[0].currency || "USD" : "USD"} 
+                ${orders
+                  .reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0)
+                  .toFixed(2)}
+              </strong>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+      
+      
+    </div>
+  `;
+};
+
+// Add this missing function for individual order printing:
+const generateOrderHTML = (order) => {
+  const calculateOrderSubtotal = () => {
+    if (!order.items) return "0.00";
+    const subtotal = order.items.reduce((total, item) => {
+      return total + parseFloat(item.subtotal || 0);
+    }, 0);
+    return `${order.currency} ${subtotal.toFixed(2)}`;
+  };
+
+  return `
+    <div class="order-page">
       <div class="order-header">
         <div class="order-title">
-          <h1>Order ${currentOrder.value.order_no}</h1>
-          <span class="status-badge status-${currentOrder.value.status}">
-            ${capitalizeFirstLetter(currentOrder.value.status)}
+          <h2>Order ${order.order_no}</h2>
+          <span class="status-badge status-${order.status}">
+            ${capitalizeFirstLetter(order.status)}
           </span>
         </div>
         
         <div class="customer-info">
           <div class="info-section">
-            <p><strong>Customer:</strong> ${currentOrder.value.first_name} ${
-    currentOrder.value.last_name
-  }</p>
-            <p><strong>Email:</strong> ${currentOrder.value.email}</p>
-            <p><strong>Phone:</strong> ${currentOrder.value.phone}</p>
+            <p><strong>Customer:</strong> ${order.first_name} ${order.last_name}</p>
+            <p><strong>Email:</strong> ${order.email}</p>
+            <p><strong>Phone:</strong> ${order.phone}</p>
+            <p><strong>Address:</strong> ${order.address_to_receive || "N/A"}</p>
           </div>
           <div class="info-section">
-            <p><strong>Date:</strong> ${formatDate(currentOrder.value.created_at)}</p>
+            <p><strong>Date:</strong> ${formatDate(order.created_at)}</p>
             <p><strong>Payment Method:</strong> ${formatPaymentMethod(
-              currentOrder.value.payment_method
+              order.payment_method
             )}</p>
-            ${
-              currentOrder.value.notes
-                ? `<p><strong>Notes:</strong> ${currentOrder.value.notes}</p>`
-                : ""
-            }
+            <p><strong>Delivery Type:</strong> ${formatDeliveryType(
+              order.delivery_type
+            )}</p>
+            ${order.notes ? `<p><strong>Notes:</strong> ${order.notes}</p>` : ""}
           </div>
         </div>
       </div>
 
       <div class="items-section">
-        <h2>Order Items</h2>
+        <h3>Order Items</h3>
         <table>
           <thead>
             <tr>
@@ -988,8 +2136,8 @@ const printOrder = () => {
           </thead>
           <tbody>
             ${
-              currentOrder.value.items && currentOrder.value.items.length > 0
-                ? currentOrder.value.items
+              order.items && order.items.length > 0
+                ? order.items
                     .map(
                       (item, index) => `
                 <tr>
@@ -1009,11 +2157,9 @@ const printOrder = () => {
                         : "-"
                     }
                   </td>
-                  <td>${currentOrder.value.currency} ${item.price}</td>
+                  <td>${order.currency} ${item.price}</td>
                   <td>${item.qty}</td>
-                  <td class="text-end">${currentOrder.value.currency} ${
-                        item.subtotal
-                      }</td>
+                  <td class="text-end">${order.currency} ${item.subtotal}</td>
                 </tr>
               `
                     )
@@ -1024,24 +2170,42 @@ const printOrder = () => {
           <tfoot>
             <tr>
               <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
-              <td class="text-end">${calculateSubtotal()}</td>
+              <td class="text-end">${calculateOrderSubtotal()}</td>
             </tr>
             <tr>
               <td colspan="5" class="text-end"><strong>Discount:</strong></td>
-              <td class="text-end">-${currentOrder.value.currency} ${
-    currentOrder.value.discount_amount
-  }</td>
+              <td class="text-end">-${order.currency} ${order.discount_amount}</td>
             </tr>
             <tr class="total-row">
               <td colspan="5" class="text-end"><strong>Total:</strong></td>
-              <td class="text-end"><strong>${currentOrder.value.currency} ${
-    currentOrder.value.total_amount
+              <td class="text-end"><strong>${order.currency} ${
+    order.total_amount
   }</strong></td>
             </tr>
           </tfoot>
         </table>
       </div>
+    </div>
+  `;
+};
 
+// Also fix the printSingleOrder function:
+const printSingleOrder = async (orderId) => {
+  const order = await fetchOrderDetails(orderId);
+  if (!order) {
+    showNotification("error", "Error", "Failed to fetch order details for printing");
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Order ${order.order_no}</title>
+      ${getPrintStyles()}
+    </head>
+    <body>
+      ${generateOrderHTML(order)}
       <div class="print-date">
         Printed on ${new Date().toLocaleDateString("en-US", {
           year: "numeric",
@@ -1055,15 +2219,8 @@ const printOrder = () => {
     </html>
   `;
 
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-
-  printWindow.onload = () => {
-    printWindow.print();
-    printWindow.close();
-  };
+  createPrintDocument(htmlContent, `Order ${order.order_no}`);
 };
-
 onMounted(() => {
   fetchOrders();
 });
@@ -1182,6 +2339,46 @@ onMounted(() => {
 
 .badge.bg-warning {
   color: #000;
+}
+
+/* Delivery type badges */
+.delivery-type-badge {
+  padding: 0.25em 0.5em;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.delivery-local {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.delivery-jnt {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.delivery-virak {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.delivery-default {
+  background-color: #e2e3e5;
+  color: #495057;
+}
+
+/* Order selection styles */
+.selected-order {
+  background-color: rgba(78, 115, 223, 0.1);
+  border-left: 3px solid #4e73df;
+}
+
+.order-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Loading and error states */
@@ -1318,6 +2515,16 @@ onMounted(() => {
 .toast-notification.error .toast-icon {
   background: #f8d7da;
   color: #721c24;
+}
+
+.toast-notification.warning .toast-icon {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.toast-notification.info .toast-icon {
+  background: #d1ecf1;
+  color: #0c5460;
 }
 
 .toast-content {
