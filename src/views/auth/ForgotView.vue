@@ -65,6 +65,7 @@ const onSubmitForgot = async () => {
   if (vv.value.$error) {
     return;
   }
+
   state.ldi_send = true;
   try {
     await axios.post("/api/auth/forgot-pass", state.frm);
